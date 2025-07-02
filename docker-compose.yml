@@ -58,6 +58,7 @@ services:
     networks:
       - backend-network # バックエンド専用のネットワーク
 
+  # Cypress E2E Testing (Cypress公式推奨: run-and-exit パターン)
   cypress:
     build:
       context: ./cypress
@@ -66,16 +67,16 @@ services:
     image: cypress_container
     volumes:
       - ./cypress:/e2e
-      - /tmp/.X11-unix:/tmp/.X11-unix
     depends_on:
       - frontend
       - backend
     networks:
       - frontend-network
-    tty: true
-    stdin_open: true
     environment:
       - CYPRESS_baseUrl=http://frontend:5173
+    # Cypress公式推奨: プロファイル使用でテスト実行時のみ起動
+    profiles:
+      - test
 
 networks:
   frontend-network:

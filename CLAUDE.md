@@ -51,13 +51,14 @@ templete_web_system/
 
 ### Docker環境
 ```bash
-# 全サービス起動
-docker compose up
+# 基本サービス起動（フロントエンド・バックエンド・データベース）
+docker compose up frontend backend db
 
-# 特定サービス起動
-docker compose up frontend
-docker compose up backend db
-docker compose up cypress
+# 全サービス起動（テスト環境含む）
+docker compose --profile test up
+
+# E2Eテスト実行（Cypress公式推奨）
+docker compose --profile test run --rm cypress
 
 # コンテナ再ビルド
 docker compose build
@@ -80,7 +81,7 @@ docker compose down
 - **フロントエンド**: React Router + Vite（ポート3000/5173）
 - **バックエンド**: FastAPI + uvicorn（ポート8000）
 - **データベース**: PostgreSQL 13（ポート5432）
-- **Cypress**: Cypress 13.17.0（継続起動設定）
+- **Cypress**: Cypress 13.17.0（run-and-exit設定）
 
 ### ネットワーク構成
 - `frontend-network`: フロントエンド ↔ バックエンド ↔ Cypress
@@ -96,10 +97,10 @@ docker compose down
 
 ## 開発フロー
 
-1. **環境起動**: `docker compose up` で全サービス起動
+1. **基本環境起動**: `docker compose up frontend backend db` で基本サービス起動
 2. **フロントエンド開発**: `http://localhost:5173` でアクセス
 3. **バックエンドAPI**: `http://localhost:8000/docs` でSwagger UI確認
-4. **Cypressテスト実行**: `docker exec cypress_container ./run-tests.sh`
+4. **E2Eテスト実行**: `docker compose --profile test run --rm cypress`
 
 ## ファイル構成の特徴
 

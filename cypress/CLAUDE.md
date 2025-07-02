@@ -28,44 +28,45 @@ cypress/
 └── CLAUDE.md                    # このファイル
 ```
 
-## 開発コマンド
+## 開発コマンド（Cypress公式推奨）
 
-### Docker環境でのテスト実行
+### テスト実行（推奨方法）
 ```bash
-# Cypressコンテナを含む全サービス起動
-docker compose up
+# 基本サービス起動（フロントエンド・バックエンド・データベース）
+docker compose up frontend backend db
 
-# Cypressコンテナのみ起動
-docker compose up cypress
+# E2Eテスト実行（Cypress公式推奨: run-and-exit）
+docker compose --profile test run --rm cypress
 
-# Cypressコンテナ再ビルド
-docker compose build cypress
+# 特定テストファイルのみ実行
+docker compose --profile test run --rm cypress --spec "cypress/e2e/example.cy.js"
 
-# コンテナ内でシェルアクセス
-docker exec -it cypress_container sh
+# 異なるブラウザでテスト実行
+docker compose --profile test run --rm cypress --browser chrome
 ```
 
-### テスト実行
+### 開発時デバッグ用
 ```bash
-# 全テストをヘッドレスモードで実行
-docker exec cypress_container ./run-tests.sh
+# Cypressコンテナ内でシェルアクセス（デバッグ用）
+docker compose --profile test run --rm cypress sh
 
-# 特定のテストファイル実行
-docker exec cypress_container ./run-tests.sh --spec "cypress/e2e/example.cy.js"
-
-# カスタムオプション付きでテスト実行
-docker exec cypress_container ./run-tests.sh --browser chrome --headed
+# ワンショット実行（プロファイル不使用）
+docker compose run --rm cypress
 ```
 
-### Cypressコンテナ内での直接実行
+### CI/CD統合
 ```bash
-# コンテナ内でテスト実行
+# CI/CDパイプライン用（ヘッドレス実行）
+docker compose --profile test run --rm cypress --config video=false
+```
+
+### 従来の手動実行（デバッグ時のみ）
+```bash
+# シェルアクセス後の手動実行
+docker compose --profile test run --rm cypress sh
+# コンテナ内で:
 npx cypress run
-
-# ヘッドレスでブラウザ指定
 npx cypress run --browser chrome
-
-# 特定のテストファイル実行
 npx cypress run --spec "cypress/e2e/**/*.cy.js"
 ```
 
@@ -116,39 +117,40 @@ cy.logout()
 
 ## コンテナ設定詳細
 
-### Dockerfile
+### Dockerfile（Cypress公式推奨）
 - **ベースイメージ**: `cypress/included:13.17.0`
 - **作業ディレクトリ**: `/e2e`
-- **継続起動**: `CMD ["sh", "-c", "while true; do sleep 3600; done"]`
+- **エントリーポイント**: `ENTRYPOINT ["npx", "cypress", "run"]`
 
-### コンテナの特徴
+### コンテナの特徴（run-and-exitパターン）
 - **ヘッドレス実行**: GUI不要でCI/CD対応
-- **継続起動**: テスト完了後もコンテナが起動し続ける
+- **Run-and-Exit**: テスト完了後に自動終了（Cypress公式推奨）
 - **ボリュームマウント**: ホストとテストファイル同期
+- **プロファイル使用**: `--profile test` でテスト時のみ起動
 
 ### ネットワーク構成
 - **frontend-network**: フロントエンド、バックエンド、Cypressが接続
 - **テスト対象**: `http://frontend:5173`（コンテナ間通信）
 
-## テスト実行スクリプト（run-tests.sh）
+## Docker Compose プロファイル使用法
 
-### 基本使用方法
+### プロファイルのメリット
+- **依存関係の明確化**: テスト実行時のみCypressコンテナが起動
+- **リソース効率**: 不要時はCypressコンテナが起動しない
+- **Cypress公式推奨**: run-and-exitパターンに準拠
+- **CI/CD対応**: 自動化パイプラインに最適
+
+### 基本的な使用方法
 ```bash
-# 全テスト実行
-./run-tests.sh
+# ステップ1: 基本サービス起動
+docker compose up -d frontend backend db
 
-# 特定ファイル実行
-./run-tests.sh --spec "cypress/e2e/login.cy.js"
+# ステップ2: テスト実行
+docker compose --profile test run --rm cypress
 
-# 複数オプション
-./run-tests.sh --browser chrome --spec "cypress/e2e/**/*.cy.js"
+# ステップ3: 基本サービス停止
+docker compose down
 ```
-
-### スクリプトの機能
-- フロントエンド・バックエンドの起動待機（10秒）
-- 引数なしの場合は全テスト実行
-- 引数ありの場合はオプション渡し
-- テスト完了メッセージ表示
 
 ## 開発時の注意点
 
@@ -156,9 +158,13 @@ cy.logout()
 - **コンテナ内**: `http://frontend:5173`
 - **ローカル開発**: `http://localhost:5173`（必要に応じて設定変更）
 
-### テスト実行タイミング
-- フロントエンドとバックエンドが完全に起動してから実行
-- `depends_on` でコンテナ起動順序を制御済み
+### テスト実行タイミング（重要）
+- **事前起動必須**: フロントエンドとバックエンドを事前に起動
+- **依存関係**: `depends_on` は起動順序のみ制御（起動完了は保証しない）
+- **推奨手順**: 
+  1. `docker compose up -d frontend backend db`
+  2. 各サービスの起動完了を確認
+  3. `docker compose --profile test run --rm cypress`
 
 ### ファイル同期
 - `./cypress:/e2e` でボリュームマウント
@@ -168,17 +174,17 @@ cy.logout()
 
 ### よくある問題
 1. **テスト対象に接続できない**:
-   - フロントエンドコンテナが起動していることを確認
+   - 事前にフロントエンド・バックエンドが起動しているか確認
    - `docker compose logs frontend` でフロントエンドログ確認
-   - ネットワーク接続確認: `docker exec cypress_container ping frontend`
+   - ネットワーク接続確認: `docker compose --profile test run --rm cypress sh -c "ping frontend"`
 
-2. **テストファイルが見つからない**:
+2. **プロファイルが見つからない**:
+   - `--profile test` オプションを忘れていないか確認
+   - `docker compose config --profile test` で設定確認
+
+3. **テストファイルが見つからない**:
    - ボリュームマウントが正しく設定されているか確認
-   - `docker exec cypress_container ls /e2e` でファイル確認
-
-3. **権限エラー**:
-   - `run-tests.sh` に実行権限があるか確認
-   - `chmod +x run-tests.sh` で権限付与
+   - `docker compose --profile test run --rm cypress sh -c "ls /e2e"` でファイル確認
 
 ### デバッグ
 ```bash
@@ -192,12 +198,27 @@ npx cypress run --browser chrome --headed
 # テスト失敗時に自動でスクリーンショット保存される
 ```
 
-### CI/CD連携
-このCypress設定はヘッドレス実行対応のため、CI/CDパイプラインで使用可能：
+### CI/CD連携（Cypress公式推奨パターン）
+```yaml
+# GitHub Actions 例
+- name: Run E2E Tests
+  run: |
+    docker compose up -d frontend backend db
+    docker compose --profile test run --rm cypress --config video=false
+    docker compose down
+```
+
+対応CI/CDツール：
 - GitHub Actions
 - GitLab CI
 - Jenkins
 - その他のCI/CDツール
+
+### プロファイル使用のメリット
+- **公式推奨**: Cypressの run-and-exit 哲学に準拠
+- **効率的**: テスト時のみリソース使用
+- **明確**: テスト実行意図が明確
+- **自動化対応**: CI/CDパイプラインに最適
 
 ### パフォーマンス最適化
 - ビデオ録画無効で高速化

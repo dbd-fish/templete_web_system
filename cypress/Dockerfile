@@ -1,5 +1,5 @@
 # Dockerfile for E2E Testing (Cypress)
-# アプリ直下配置版
+# Cypress公式推奨構成: run-and-exitパターン
 
 # ベースイメージとして cypress/included を使用
 FROM cypress/included:13.17.0
@@ -12,5 +12,6 @@ WORKDIR /e2e
 # E2Eテストコードをコピー
 COPY . ./
 
-# コンテナを継続起動させるための設定
-CMD ["sh", "-c", "while true; do sleep 3600; done"]
+# Cypress公式推奨: デフォルトでテスト実行（run-and-exit）
+# 設定ファイルをチェックしてからテスト実行
+ENTRYPOINT ["npx", "cypress", "run"]
