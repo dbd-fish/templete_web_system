@@ -1,28 +1,42 @@
 """
-API共通の依存性注入
+API共通の依存性注入（段階的移行版）
 """
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Annotated
 from fastapi import Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.database import AsyncSessionLocal, engine
-from app.features.feature_auth.security import verify_token
-from app.features.feature_auth.auth_repository import AuthRepository
-from app.schemas.user import UserResponse
+# 段階的移行: 既存のデータベース設定を継続使用
+from app.api.v1.common.database import get_db as legacy_get_db
+from app.api.v1.features.feature_auth.security import verify_token
+from app.api.v1.features.feature_auth.auth_repository import AuthRepository
+
+# 将来的にこれらに移行予定
+# from app.api.v1.core.db import get_db as get_db_session
+# from app.api.v1.models import User  # SQLModel統合後
+
+# 既存スキーマ使用（段階的移行）
+from app.api.v1.features.feature_auth.schemas.user import UserResponse
 
 
-async def get_db() -> AsyncGenerator:
-    """データベースセッションの依存性注入"""
-    async with AsyncSessionLocal(bind=engine) as session:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """データベースセッションの依存性注入（段階的移行版）"""
+    async for session in legacy_get_db():
         yield session
+
+
+# 型安全な依存性注入のエイリアス（FastAPI公式パターン準拠）
+SessionDep = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def get_current_user(
     request: Request, 
-    db: AsyncSession = Depends(get_db)
-) -> UserResponse:
+    session: SessionDep
+) -> "User":
     """現在のユーザー情報を取得（JWT認証）"""
+    from app.api.v1.models import User
+    from app.api.v1 import crud
+    
     token = request.headers.get("Authorization")
     if not token:
         raise HTTPException(
@@ -46,8 +60,8 @@ async def get_current_user(
         )
     
     # ユーザー情報をデータベースから取得
-    auth_repo = AuthRepository(db)
-    user = await auth_repo.get_user_by_id(user_id)
+    import uuid
+    user = await crud.get_user_by_id(session=session, user_id=uuid.UUID(user_id))
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -55,4 +69,4 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    return UserResponse.model_validate(user)
+    return user

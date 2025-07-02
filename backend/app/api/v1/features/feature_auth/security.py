@@ -8,9 +8,9 @@ from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.future import select
 
-from app.common.database import AsyncSession
-from app.common.setting import setting
-from app.models.user import User
+from app.api.v1.common.database import AsyncSession
+from app.api.v1.common.setting import setting
+from app.api.v1.models_legacy.user import User
 
 # ログの設定
 logger = structlog.get_logger()

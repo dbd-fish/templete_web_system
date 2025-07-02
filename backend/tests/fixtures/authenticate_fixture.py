@@ -4,9 +4,9 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from passlib.context import CryptContext
 
-from app.common.test_data import TestData
-from app.features.feature_auth.auth_service import get_current_user
-from app.models.user import User
+from app.api.v1.common.test_data import TestData
+from app.api.v1.features.feature_auth.auth_service import get_current_user
+from app.api.v1.models_legacy.user import User
 from main import app
 
 

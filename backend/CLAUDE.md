@@ -13,7 +13,7 @@ FastAPI + PostgreSQLを使用したRESTful APIバックエンド環境です。
 - **依存関係管理**: Poetry
 - **開発ポート**: 8000
 
-## ディレクトリ構成
+## ディレクトリ構成（段階的移行中）
 
 ```
 backend/
@@ -25,21 +25,30 @@ backend/
 ├── alembic/                     # データベースマイグレーション
 ├── app/                         # メインアプリケーション
 │   ├── api/                     # APIバージョニング
-│   │   ├── deps.py              # 共通の依存性注入
+│   │   ├── deps.py              # 共通の依存性注入（段階的移行版）
 │   │   └── v1/                  # API v1
 │   │       ├── routes.py        # v1ルーター統合
-│   │       └── endpoints/       # v1エンドポイント
-│   │           ├── auth.py      # 認証API
-│   │           └── dev.py       # 開発API
-│   ├── common/                  # 共通機能
+│   │       ├── routes/          # v1エンドポイント（FastAPI公式準拠）
+│   │       │   ├── auth.py      # 認証API
+│   │       │   ├── users.py     # ユーザー管理API
+│   │       │   ├── dev.py       # 開発API
+│   │       │   └── health.py    # ヘルスチェックAPI
+│   │       └── features/        # フィーチャー機能（移動済み）
+│   │           ├── feature_auth/ # 認証機能
+│   │           └── feature_dev/ # 開発用機能
+│   ├── core/                    # 【NEW】FastAPI公式パターン準拠
+│   │   ├── config.py            # 統一設定管理（Pydantic BaseSettings）
+│   │   ├── db.py                # データベース設定（将来使用予定）
+│   │   ├── security.py          # セキュリティ機能集約
+│   │   └── compat.py            # 既存コードとの互換性維持
+│   ├── common/                  # 【LEGACY】段階的に移行予定
 │   │   ├── core/                # コア機能（ログ、エラーハンドリング）
 │   │   ├── middleware/          # カスタムミドルウェア
-│   │   ├── database.py          # データベース設定
-│   │   └── setting.py           # 設定管理
-│   ├── features/                # 機能別モジュール（フィーチャードリブン）
-│   │   ├── feature_auth/        # 認証機能
-│   │   └── feature_dev/         # 開発用機能
-│   ├── models/                  # SQLAlchemyモデル
+│   │   ├── database.py          # データベース設定（現在使用中）
+│   │   └── setting.py           # 設定管理（core/compatを使用）
+│   ├── models.py                # 【NEW】SQLModel統合モデル
+│   ├── crud.py                  # 【NEW】CRUD操作集約
+│   ├── models/                  # SQLAlchemyモデル（将来SQLModelに移行）
 │   └── routes.py                # 旧ルーティング（後方互換）
 ├── tests/                       # テストファイル
 ├── logs/                        # ログファイル
@@ -142,8 +151,7 @@ FastAPIの自動生成ドキュメント：
 
 ### API エンドポイント
 
-#### 認証API（v1）
-- `POST /api/v1/auth/me` - 現在のユーザー情報取得
+#### 認証API（v1） 🟢 推奨
 - `POST /api/v1/auth/signup` - ユーザー登録（トークン認証）
 - `POST /api/v1/auth/send-verify-email` - 仮登録メール送信
 - `POST /api/v1/auth/login` - ログイン処理
@@ -151,13 +159,55 @@ FastAPIの自動生成ドキュメント：
 - `POST /api/v1/auth/send-password-reset-email` - パスワードリセットメール送信
 - `POST /api/v1/auth/reset-password` - パスワードリセット
 
-#### 開発API（v1・開発環境のみ）
+#### ユーザー管理API（v1） 🆕 NEW
+- `GET /api/v1/users/me` - 現在のユーザー情報取得
+- `PATCH /api/v1/users/me` - ユーザー情報更新
+- `DELETE /api/v1/users/me` - ユーザーアカウント削除
+
+#### ヘルスチェックAPI（v1） 🆕 NEW
+- `GET /api/v1/health/` - 基本ヘルスチェック
+- `GET /api/v1/health/db` - データベース接続確認
+
+#### 開発API（v1・開発環境のみ） 🟢 推奨
 - `POST /api/v1/dev/clear_data` - 全テーブル削除・再作成
 - `POST /api/v1/dev/seed_data` - テストデータ挿入
 
-#### 後方互換API（非推奨）
-- `/api/auth/*` - v1移行により非推奨
-- `/api/dev/*` - v1移行により非推奨
+#### 後方互換API 🚨 非推奨
+- `/api/auth/*` - v1移行により非推奨（段階的削除予定）
+- `/api/dev/*` - v1移行により非推奨（段階的削除予定）
+
+## アーキテクチャ移行状況
+
+### 🟢 完了済み（Phase 1-4）
+- **APIバージョニング**: `/api/v1/` 構造の導入
+- **コア設定の統一**: `app/core/config.py` でPydantic BaseSettings使用
+- **SQLModel導入**: `app/models.py` でSQLAlchemy + Pydantic統合
+- **CRUD層集約**: `app/crud.py` で関数ベースのCRUD操作
+- **API構造最適化**: 機能別ルート分離（auth, users, dev, health）
+- **後方互換性**: 既存コードの動作を維持しながら段階的移行
+
+### 🟡 進行中（Phase 5）
+- **Legacy code整理**: 非推奨マーキングと段階的削除
+- **型安全な依存性注入**: `SessionDep`, `CurrentUser`エイリアス使用
+
+### 🔴 将来の予定
+- **完全なLegacy削除**: 移行期間完了後
+- **パフォーマンス最適化**: データベースクエリとキャッシング
+- **テストカバレッジ拡張**: SQLModelベースのテスト
+
+### 新しいAPI構造
+```
+/api/v1/auth/*     # 認証API（推奨）
+/api/v1/users/*    # ユーザー管理API（NEW）
+/api/v1/health/*   # ヘルスチェックAPI（NEW）
+/api/v1/dev/*      # 開発用API（推奨）
+
+/api/auth/*        # 🚨 非推奨（後方互換）
+/api/dev/*         # 🚨 非推奨（後方互換）
+```
+
+### 移行方針
+FastAPI公式テンプレートに準拠した段階的移行を**完了**。既存のフィーチャードリブン設計と公式推奨パターンのハイブリッド構成を実現。
 
 ## 開発時の注意点
 

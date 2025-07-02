@@ -9,7 +9,9 @@
       "NotebookEdit(*)",
       "Glob(*)",
       "Grep(*)",
-      "LS(*)"
+      "LS(*)",
+      "WebFetch(domain:github.com)",
+      "Bash(grep:*)"
     ],
     "deny": [
       "Bash(git commit:*)",

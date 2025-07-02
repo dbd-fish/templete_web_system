@@ -5,14 +5,14 @@ import structlog
 from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.database import get_db
-from app.common.setting import setting
-from app.features.feature_auth.auth_repository import UserRepository
-from app.features.feature_auth.schemas.user import UserCreate, UserResponse
-from app.features.feature_auth.security import create_access_token, decode_access_token, hash_password
-from app.features.feature_auth.send_reset_password_email import send_reset_password_email
-from app.features.feature_auth.send_verification_email import send_verification_email
-from app.models.user import User
+from app.api.v1.common.database import get_db
+from app.api.v1.common.setting import setting
+from app.api.v1.features.feature_auth.auth_repository import UserRepository
+from app.api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse
+from app.api.v1.features.feature_auth.security import create_access_token, decode_access_token, hash_password
+from app.api.v1.features.feature_auth.send_reset_password_email import send_reset_password_email
+from app.api.v1.features.feature_auth.send_verification_email import send_verification_email
+from app.api.v1.models_legacy.user import User
 
 logger = structlog.get_logger()
 

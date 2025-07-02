@@ -3,14 +3,14 @@ from datetime import datetime, timedelta
 import pytest
 from jose import JWTError
 
-from app.features.feature_auth.security import (
+from app.api.v1.features.feature_auth.security import (
     authenticate_user,
     create_access_token,
     decode_access_token,
     hash_password,
     verify_password,
 )
-from app.models.user import User
+from app.api.v1.models_legacy.user import User
 
 
 @pytest.mark.asyncio

@@ -6,9 +6,9 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
-from app.common.test_data import TestData
-from app.features.feature_auth.security import create_access_token, verify_password
-from app.models.user import User
+from app.api.v1.common.test_data import TestData
+from app.api.v1.features.feature_auth.security import create_access_token, verify_password
+from app.api.v1.models_legacy.user import User
 from main import app
 
 # NOTE: setup_test_dbはfixture(scope="function", autouse=True)だが、戻り値を利用する場合はテスト関数の引数として実装する必要あり。

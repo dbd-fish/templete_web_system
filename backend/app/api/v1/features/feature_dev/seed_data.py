@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.sql import text
 
 from app.common.database import AsyncSessionLocal, Base
-from app.features.feature_dev.seed_user import seed_user
+from app.api.v1.features.feature_dev.seed_user import seed_user
 
 
 async def clear_data(db: AsyncSession):

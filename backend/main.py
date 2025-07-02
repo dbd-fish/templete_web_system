@@ -5,13 +5,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
-from app.common.core.http_exception_handler import http_exception_handler
-from app.common.core.log_config import logger
-from app.common.core.request_validation_error import validation_exception_handler
-from app.common.database import database
-from app.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
-from app.common.setting import setting
-from app.routes import router
+from app.api.v1.common.core.http_exception_handler import http_exception_handler
+from app.api.v1.common.core.log_config import logger
+from app.api.v1.common.core.request_validation_error import validation_exception_handler
+from app.api.v1.common.database import database
+from app.api.v1.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
+from app.api.v1.core.config import settings
 from app.api.v1.routes import router as api_v1_router
 
 # タイムゾーンをJST（日本標準時）に設定
@@ -34,11 +33,20 @@ async def lifespan(app: FastAPI):
     await database.disconnect()
 
 # FastAPIアプリケーションのインスタンスを作成し、lifespanを設定
-if setting.DEV_MODE:
-    app = FastAPI(lifespan=lifespan)
+if settings.DEV_MODE:
+    app = FastAPI(
+        title=settings.PROJECT_NAME,
+        lifespan=lifespan
+    )
 else:
     # 本番環境ではOpenAPIなどを無効化
-    app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(
+        title=settings.PROJECT_NAME,
+        lifespan=lifespan, 
+        docs_url=None, 
+        redoc_url=None, 
+        openapi_url=None
+    )
 
 # ミドルウェアの追加 (ユーザーIP記録とエラーハンドリング)
 # NOTE: ミドルウェアを別ファイルにする場合、@app.middleware()が機能しないっぽい。
@@ -54,7 +62,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler) 
 app.add_exception_handler(HTTPException, http_exception_handler) # type: ignore
 
 # ルーターをアプリケーションに追加
-app.include_router(router)  # 既存ルーター（後方互換性のため）
+# レガシールーターは削除済み（v1移行完了）
 app.include_router(api_v1_router, prefix="/api/v1")  # API v1
 
 # このスクリプトが直接実行された場合、Uvicornサーバーを起動

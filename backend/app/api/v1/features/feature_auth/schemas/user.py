@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models.user import User
+from app.api.v1.models_legacy.user import User
 
 
 class UserCreate(BaseModel):
