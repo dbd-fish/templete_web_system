@@ -5,13 +5,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
-from app.api.v1.common.core.http_exception_handler import http_exception_handler
-from app.api.v1.common.core.log_config import logger
-from app.api.v1.common.core.request_validation_error import validation_exception_handler
-from app.api.v1.common.database import database
-from app.api.v1.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
-from app.api.v1.core.config import settings
-from app.api.v1.routes import router as api_v1_router
+from api.v1.common.core.http_exception_handler import http_exception_handler
+from api.v1.common.core.log_config import logger
+from api.v1.common.core.request_validation_error import validation_exception_handler
+from api.v1.common.database import database
+from api.v1.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
+from api.v1.common.setting import setting
+from api.v1.features.feature_auth.auth_controller import router as auth_router
+from api.v1.features.feature_dev.dev_controller import router as dev_router
 
 # タイムゾーンをJST（日本標準時）に設定
 os.environ["TZ"] = "Asia/Tokyo"
@@ -33,15 +34,15 @@ async def lifespan(app: FastAPI):
     await database.disconnect()
 
 # FastAPIアプリケーションのインスタンスを作成し、lifespanを設定
-if settings.DEV_MODE:
+if setting.DEV_MODE:
     app = FastAPI(
-        title=settings.PROJECT_NAME,
+        title="Template Web System API",
         lifespan=lifespan
     )
 else:
     # 本番環境ではOpenAPIなどを無効化
     app = FastAPI(
-        title=settings.PROJECT_NAME,
+        title="Template Web System API",
         lifespan=lifespan, 
         docs_url=None, 
         redoc_url=None, 
@@ -62,8 +63,12 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler) 
 app.add_exception_handler(HTTPException, http_exception_handler) # type: ignore
 
 # ルーターをアプリケーションに追加
-# レガシールーターは削除済み（v1移行完了）
-app.include_router(api_v1_router, prefix="/api/v1")  # API v1
+if setting.DEV_MODE:
+    # 開発用のルーター定義
+    app.include_router(dev_router, prefix="/api/v1/dev", tags=["dev"])
+
+# 認証用のルーター
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 
 # このスクリプトが直接実行された場合、Uvicornサーバーを起動
 if __name__ == "__main__":
