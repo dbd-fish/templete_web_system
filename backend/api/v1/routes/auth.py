@@ -23,6 +23,12 @@ from api.v1.features.feature_auth.auth_service import (
 )
 from api.v1.features.feature_auth.security import authenticate_user
 from api.v1.features.feature_auth.auth_repository import UserRepository
+from ..common.response_schemas import (
+    create_success_response,
+    SuccessResponse,
+    ErrorCodes
+)
+from ..common.exception_handlers import BusinessLogicError
 
 # ログの設定
 logger = structlog.get_logger()
@@ -30,7 +36,7 @@ logger = structlog.get_logger()
 router = APIRouter()
 
 
-@router.post("/signup", response_model=dict)
+@router.post("/signup", response_model=SuccessResponse[dict])
 async def register_user(
     token_data: TokenData,
     session: AsyncSession = Depends(get_db)
@@ -54,21 +60,24 @@ async def register_user(
         # メール重複チェック
         existing_user = await UserRepository.get_user_by_email(session, user_info.email)
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+            raise BusinessLogicError(
+                message="このメールアドレスは既に登録されています",
+                error_code=ErrorCodes.RESOURCE_ALREADY_EXISTS
             )
         
         # ユーザー作成
         new_user = await create_user(user_info.email, user_info.username, user_info.password, session)
         logger.info("register_user - success", user_id=new_user.user_id)
         
-        return {"msg": "User created successfully", "user_id": str(new_user.user_id)}
+        return create_success_response(
+            message="ユーザー登録が正常に完了しました",
+            data={"user_id": str(new_user.user_id)}
+        )
     finally:
         logger.info("register_user - end")
 
 
-@router.post("/send-verify-email", response_model=dict)
+@router.post("/send-verify-email", response_model=SuccessResponse[None])
 async def send_verify_email(
     user: UserCreate,
     background_tasks: BackgroundTasks,
@@ -90,21 +99,23 @@ async def send_verify_email(
         # メール重複チェック
         existing_user = await UserRepository.get_user_by_email(session, user.email)
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+            raise BusinessLogicError(
+                message="このメールアドレスは既に登録されています",
+                error_code=ErrorCodes.RESOURCE_ALREADY_EXISTS
             )
         
         # 段階的移行: 既存の仮登録機能を使用
         await temporary_create_user(user=user, background_tasks=background_tasks, db=session)
         logger.info("send_verify_email - success")
         
-        return {"msg": "Verification email sent successfully"}
+        return create_success_response(
+            message="認証用メールを送信しました"
+        )
     finally:
         logger.info("send_verify_email - end")
 
 
-@router.post("/login", response_model=dict)
+@router.post("/login", response_model=SuccessResponse[None])
 async def login(
     request: Request,
     response: Response,
@@ -134,10 +145,9 @@ async def login(
         
         if not user:
             logger.info("login - authentication failed", username=form_data.username)
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
+            raise BusinessLogicError(
+                message="ユーザー名またはパスワードが正しくありません",
+                error_code=ErrorCodes.AUTHENTICATION_FAILED
             )
         
         # クライアントIP取得
@@ -160,12 +170,14 @@ async def login(
             samesite="lax"
         )
         
-        return {"message": "Login successful"}
+        return create_success_response(
+            message="ログインが正常に完了しました"
+        )
     finally:
         logger.info("login - end")
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=SuccessResponse[None])
 async def logout() -> dict:
     """
     ログアウト処理
@@ -177,12 +189,14 @@ async def logout() -> dict:
     try:
         # クライアント側でトークンを削除するシンプルな処理
         logger.info("logout - success")
-        return {"msg": "Logged out successfully"}
+        return create_success_response(
+            message="ログアウトが正常に完了しました"
+        )
     finally:
         logger.info("logout - end")
 
 
-@router.post("/send-password-reset-email", response_model=dict)
+@router.post("/send-password-reset-email", response_model=SuccessResponse[None])
 async def send_reset_password_email(
     data: SendPasswordResetEmailData,
     background_tasks: BackgroundTasks,
@@ -209,12 +223,14 @@ async def send_reset_password_email(
         )
         logger.info("send_reset_password_email - success", email=data.email)
         
-        return {"msg": "Password reset email sent successfully"}
+        return create_success_response(
+            message="パスワードリセット用メールを送信しました"
+        )
     finally:
         logger.info("send_reset_password_email - end")
 
 
-@router.post("/reset-password", response_model=dict)
+@router.post("/reset-password", response_model=SuccessResponse[None])
 async def reset_password(
     reset_data: PasswordResetData,
     session: AsyncSession = Depends(get_db)
@@ -238,6 +254,8 @@ async def reset_password(
         await reset_password(email, reset_data.new_password, session)
         
         logger.info("reset_password - success")
-        return {"msg": "Password reset successfully"}
+        return create_success_response(
+            message="パスワードのリセットが正常に完了しました"
+        )
     finally:
         logger.info("reset_password - end")

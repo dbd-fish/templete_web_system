@@ -8,11 +8,17 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 from api.v1.common.database import get_db
+from ..common.response_schemas import (
+    create_success_response,
+    create_error_response,
+    SuccessResponse,
+    ErrorCodes
+)
 
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/", response_model=SuccessResponse[dict])
 async def health_check() -> dict:
     """
     基本的なヘルスチェック
@@ -20,10 +26,13 @@ async def health_check() -> dict:
     Returns:
         dict: ステータス情報
     """
-    return {"status": "healthy", "message": "API is running"}
+    return create_success_response(
+        message="APIが正常に動作しています",
+        data={"status": "healthy"}
+    )
 
 
-@router.get("/db")
+@router.get("/db", response_model=SuccessResponse[dict])
 async def health_check_db(session: AsyncSession = Depends(get_db)) -> dict:
     """
     データベース接続ヘルスチェック
@@ -38,6 +47,13 @@ async def health_check_db(session: AsyncSession = Depends(get_db)) -> dict:
         # シンプルなクエリでDB接続確認
         result = await session.execute(text("SELECT 1"))
         result.scalar()
-        return {"status": "healthy", "database": "connected"}
+        return create_success_response(
+            message="データベースに正常に接続しています",
+            data={"status": "healthy", "database": "connected"}
+        )
     except Exception as e:
-        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
+        return create_error_response(
+            message="データベース接続に失敗しました",
+            error_code=ErrorCodes.DATABASE_ERROR,
+            details={"database": "disconnected", "error": str(e)}
+        )

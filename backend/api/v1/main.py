@@ -5,9 +5,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
-from .common.core.http_exception_handler import http_exception_handler
 from .common.core.log_config import logger
-from .common.core.request_validation_error import validation_exception_handler
+from .common.exception_handlers import (
+    http_exception_handler,
+    validation_exception_handler,
+    sqlalchemy_exception_handler,
+    general_exception_handler,
+    business_logic_exception_handler,
+    BusinessLogicError
+)
+from sqlalchemy.exc import SQLAlchemyError
 from .common.database import database
 from .common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
 from .common.setting import setting
@@ -55,12 +62,12 @@ else:
 app.add_middleware(AddUserIPMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 
-# 例外ハンドラの登録
-# NOTE: 例外ハンドラを別ファイルにする場合、@app.exception_handler()が機能しないっぽい。
-#       そのため、add_exception_handlerでハンドラを登録する方法にするが、mypyエラーが発生する。
-#       とりあえず、type: ignoreで妥協する。
-app.add_exception_handler(RequestValidationError, validation_exception_handler) # type: ignore
+# 統一例外ハンドラの登録
 app.add_exception_handler(HTTPException, http_exception_handler) # type: ignore
+app.add_exception_handler(RequestValidationError, validation_exception_handler) # type: ignore
+app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler) # type: ignore
+app.add_exception_handler(BusinessLogicError, business_logic_exception_handler) # type: ignore
+app.add_exception_handler(Exception, general_exception_handler) # type: ignore
 
 # ルーターをアプリケーションに追加
 if setting.DEV_MODE:
