@@ -1,0 +1,87 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/frontend.Dockerfile
+    container_name: frontend_container
+    image: frontend_container
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    volumes:
+      - ./apps/frontend:/app/frontend
+    working_dir: /app/frontend
+    ports:
+      - "3000:3000" # 本番用
+      - "5173:5173" # 開発用
+    tty: true
+    stdin_open: true
+    networks:
+      - frontend-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    container_name: backend_container
+    image: backend_container
+    volumes:
+      - ./apps/backend:/app/backend
+    working_dir: /app/backend
+    ports:
+      - "8000:8000"
+    tty: true
+    stdin_open: true
+    depends_on:
+      - db
+    networks:
+      - frontend-network
+      - backend-network
+    environment:
+      - DATABASE_URL=postgresql://template_user:template_password@db:5432/template_db
+
+  db:
+    image: postgres:13
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: template_db
+      POSTGRES_USER: template_user
+      POSTGRES_PASSWORD: template_password
+      TZ: Asia/Tokyo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # テスト用のDB構築スクリプト
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - backend-network # バックエンド専用のネットワーク
+
+  e2e:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/e2e.Dockerfile
+    container_name: e2e_container
+    image: e2e_container
+    volumes:
+      - ./apps/e2e:/e2e
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - frontend-network
+    tty: true
+    stdin_open: true
+    environment:
+      - CYPRESS_baseUrl=http://frontend:5173
+
+networks:
+  frontend-network:
+    driver: bridge # フロントエンドとバックエンドが通信するためのネットワーク
+  backend-network:
+    driver: bridge # バックエンドとデータベースが通信するためのネットワーク
+
+volumes:
+  postgres_data:

@@ -1,0 +1,40 @@
+name: Lint and Format Check
+
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint_and_format:
+    name: ESLintとPrettierの実行
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: 必要な依存関係をインストール
+        run: |
+          cd template_frontend_container/template_react-router
+          npm install
+
+      - name: ESLintを実行
+        run: |
+          cd template_frontend_container/template_react-router
+          npm run lint
+
+      - name: Prettierのフォーマット確認
+        run: |
+          cd template_frontend_container/template_react-router
+          npm run format:check
+
+      - name: TypeScript型チェックを実行
+        run: |
+          cd template_frontend_container/template_react-router
+          npm run typecheck

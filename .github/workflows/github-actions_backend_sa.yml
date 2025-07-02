@@ -1,0 +1,50 @@
+name: mypy, ruff
+
+on:
+  pull_request:
+  # プルリクエストにプッシュするたびに実行したい場合はtypesをコメントにする
+    # types: 
+    #   - closed
+    # プルリクエストがマージされるときにこのワークフローをトリガーします。
+  workflow_dispatch:
+    # 手動でこのワークフローをトリガーします。
+
+
+jobs:
+  lint_and_type_check:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    # ジョブをUbuntu最新環境で実行します。
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        # リポジトリのコードをチェックアウトします。
+        # 後続のステップでコードベースにアクセスするための準備です。
+
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+        # Docker Composeをインストール
+
+      - name: Set up Backend Container
+        run: |
+          docker-compose up -d backend
+        # docker-compose.ymlを使用して、backendコンテナのみ立ち上げる
+
+      - name: Check Backend Container
+        run: |
+          docker ps
+        # 起動中のDockerコンテナを一覧表示します。
+        # backendコンテナが正しく起動しているかを確認
+
+      - name: Run Ruff in Backend Container
+        run: |
+          docker exec template_backend_container poetry run ruff check
+        # backendコンテナ内でruffを実行
+
+      - name: Run Mypy in Backend Container
+        run: |
+          docker exec template_backend_container poetry run mypy .
+        # backendコンテナ内でmypyを実行
