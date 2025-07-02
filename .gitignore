@@ -181,3 +181,5 @@ local_settings.py
 
 # Claude Code settings
 .claude/settings.local.json
+frontend/certs/cert.pem
+frontend/certs/key.pem
