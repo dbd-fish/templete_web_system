@@ -1,15 +1,44 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mv:*)",
-      "Bash(docker compose:*)",
-      "Bash(docker run:*)",
-      "Bash(chmod:*)",
-      "Bash(ls:*)",
-      "Bash(mkdir:*)",
-      "Bash(cp:*)",
-      "Bash(rm:*)"
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "MultiEdit(*)",
+      "NotebookRead(*)",
+      "NotebookEdit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "LS(*)"
     ],
-    "deny": []
+    "deny": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(git tag:*)",
+      "Bash(git clone:*)",
+      "Bash(git remote:*)",
+      "Bash(rm -rf /*)",
+      "Bash(sudo:*)",
+      "Bash(chmod 777:*)"
+    ]
+  },
+  "fileOperations": {
+    "autoApproveFileOperations": true,
+    "requireConfirmationForFileChanges": false
+  },
+  "security": {
+    "requireUserConfirmationForFileOperations": false,
+    "requireUserConfirmationForBashOperations": true,
+    "preventAutomaticGitActions": true
+  },
+  "ui": {
+    "suppressFileChangeConfirmations": true,
+    "autoApproveEdits": true
   }
 }
