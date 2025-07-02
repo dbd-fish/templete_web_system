@@ -16,7 +16,7 @@ def create_log_directory(directory: str) -> None:
         directory (str): 作成するログディレクトリのパス。
 
     """
-    print(f"Creating log directory at: {directory}")
+    print(f"Creating log directory: {directory}")
     os.makedirs(directory, exist_ok=True)
 
 
@@ -73,7 +73,7 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
     app_logger.handlers = []
     app_logger.setLevel(logging.INFO)
     app_logger.addHandler(app_file_handler)
-    print("App logger configured.")
+    print("Application logger configuration completed.")
 
     # SQLAlchemyログの設定
     configure_sqlalchemy_logging(test_env)
@@ -99,7 +99,7 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    print("Structlog configured.")
+    print("Structlog configuration completed.")
     return structlog.get_logger()
 
 
@@ -139,7 +139,7 @@ def configure_sqlalchemy_logging(test_env: int = 0) -> None:
         sub_logger.addHandler(sqlalchemy_file_handler)  # ハンドラを追加
         sub_logger.propagate = False  # 親ロガーへの伝播を防ぐ
 
-    print("SQLAlchemy logging configured.")
+    print("SQLAlchemy logging configuration completed.")
 
 # ロガー作成
 logger = configure_logging()

@@ -85,7 +85,7 @@ async def validation_exception_handler(
         method=request.method
     )
     
-    # バリデーションエラーの詳細を整理
+    # Format validation error details
     validation_errors = []
     for error in exc.errors():
         validation_errors.append({
@@ -138,7 +138,7 @@ async def sqlalchemy_exception_handler(
         details={
             "path": request.url.path,
             "method": request.method,
-            # 本番環境では詳細なエラー情報は含めない
+            # Don't include detailed error info in production
             "error_detail": str(exc) if logger.level == "DEBUG" else None
         }
     )
@@ -175,7 +175,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         details={
             "path": request.url.path,
             "method": request.method,
-            # 本番環境では詳細なエラー情報は含めない
+            # Don't include detailed error info in production
             "error_type": type(exc).__name__ if logger.level == "DEBUG" else None
         }
     )

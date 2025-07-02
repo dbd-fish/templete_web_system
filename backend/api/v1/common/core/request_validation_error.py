@@ -3,7 +3,7 @@ from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-# ロガーの設定
+# ログ設定
 logger = structlog.get_logger()
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

@@ -21,7 +21,7 @@ class AddUserIPMiddleware(BaseHTTPMiddleware):
         """
         user_ip = request.client.host if request.client else "unknown"  # クライアントのIPアドレスを取得
         structlog.contextvars.bind_contextvars(user_ip=user_ip)  # ログコンテキストにIPアドレスをバインド
-        logger.info("User IP added to log context", user_ip=user_ip)  # IPアドレスをログに記録
+        logger.info("Added user IP to log context", user_ip=user_ip)  # IPアドレスをログに記録
         try:
             response = await call_next(request)  # 次の処理を実行
         finally:

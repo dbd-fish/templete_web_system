@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-# ログの設定
+# ログ設定
 logger = structlog.get_logger()
 
 
@@ -31,10 +31,10 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)  # 次の処理を実行
             return response
         except HTTPException as http_exc:
-            # HTTPExceptionが発生した場合の処理
-            error_trace = traceback.format_exc()  # スタックトレースを取得
+            # Handle HTTPException
+            error_trace = traceback.format_exc()  # Get stack trace
             logger.warning(
-                "HTTPException occurred",
+                "HTTP exception occurred",
                 detail=http_exc.detail,
                 status_code=http_exc.status_code,
                 # user_ip=request.client.host,
@@ -48,10 +48,10 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 headers=http_exc.headers,
             )
         except ValidationError as val_exc:
-            # ValidationErrorが発生した場合の処理
-            error_trace = traceback.format_exc()  # スタックトレースを取得
+            # Handle ValidationError
+            error_trace = traceback.format_exc()  # Get stack trace
             logger.error(
-                "ValidationError occurred",
+                "Validation error occurred",
                 errors=val_exc.errors(),
                 # user_ip=request.client.host,
                 path=request.url.path,
@@ -60,13 +60,13 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             )
             return JSONResponse(
                 status_code=422,
-                content={"message": "Validation error", "errors": val_exc.errors()},
+                content={"message": "バリデーションエラー", "errors": val_exc.errors()},
             )
         except SQLAlchemyError as db_exc:
-            # SQLAlchemyErrorが発生した場合の処理
-            error_trace = traceback.format_exc()  # スタックトレースを取得
+            # Handle SQLAlchemyError
+            error_trace = traceback.format_exc()  # Get stack trace
             logger.error(
-                "SQLAlchemyError occurred",
+                "SQLAlchemy error occurred",
                 error=str(db_exc),
                 # user_ip=request.client.host,
                 path=request.url.path,
@@ -75,14 +75,14 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             )
             return JSONResponse(
                 status_code=500,
-                content={"message": "Database error occurred"},
+                content={"message": "データベースエラーが発生しました"},
             )
 
         except JWTError as jwt_exc:
-            # JWTError が発生した場合の処理
-            error_trace = traceback.format_exc()  # スタックトレースを取得
+            # Handle JWTError
+            error_trace = traceback.format_exc()  # Get stack trace
             logger.error(
-                "JWTError occurred",
+                "JWT error occurred",
                 error=str(jwt_exc),
                 path=request.url.path,
                 method=request.method,
@@ -90,12 +90,12 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             )
             return JSONResponse(
                 status_code=401,
-                content={"message": "Invalid or expired token"},
+                content={"message": "無効または期限切れのトークンです"},
             )
 
         except Exception as exc:
-            # その他の予期しない例外が発生した場合の処理
-            error_trace = traceback.format_exc()  # スタックトレースを取得
+            # Handle other unexpected exceptions
+            error_trace = traceback.format_exc()  # Get stack trace
             logger.error(
                 "Unhandled exception occurred",
                 error=str(exc),
@@ -106,5 +106,5 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             )
             return JSONResponse(
                 status_code=500,
-                content={"message": "Internal Server Error"},
+                content={"message": "内部サーバーエラー"},
             )

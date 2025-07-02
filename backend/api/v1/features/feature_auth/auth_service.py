@@ -47,7 +47,7 @@ async def get_current_user(
         if not cookie_header:
             logger.warning("get_me - no cookie found")
             raise HTTPException(
-                status_code=401, detail="Authentication credentials were not provided"
+                status_code=401, detail="認証情報が提供されていません"
             )
 
         # Cookieから`authToken`を抽出
@@ -59,7 +59,7 @@ async def get_current_user(
         if not token:
             logger.warning("get_me - authToken not found in cookies")
             raise HTTPException(
-                status_code=401, detail="Authentication credentials were not provided"
+                status_code=401, detail="認証情報が提供されていません"
             )
 
 
@@ -70,7 +70,7 @@ async def get_current_user(
             logger.warning("get_current_user - token missing 'sub'", token=token)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
+                detail="無効なトークンです",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -83,7 +83,7 @@ async def get_current_user(
         if user is None:
             logger.warning("get_current_user - user not found", email=email)
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found",
+                status_code=status.HTTP_404_NOT_FOUND, detail="ユーザーが見つかりません",
             )
 
         logger.info("get_current_user - success", user_id=user.user_id)
@@ -140,7 +140,7 @@ async def create_user(
             logger.warning("create_user - user already exists", email=email)
             raise HTTPException(
                 status_code=400,
-                detail="User already exists",
+                detail="ユーザーは既に存在します",
             )
 
         # データベースにユーザーを保存
@@ -167,7 +167,7 @@ async def temporary_create_user(user: UserCreate, background_tasks: BackgroundTa
             logger.warning("temporary_create_user - user already exists", email=user.email)
             raise HTTPException(
                 status_code=400,
-                detail="User already exists",
+                detail="ユーザーは既に存在します",
             )
 
         # 仮登録用JWTトークンを生成
@@ -205,7 +205,7 @@ async def reset_password_email(email: str, background_tasks: BackgroundTasks, db
             logger.warning("reset_password_email - user does not exist", email=email)
             raise HTTPException(
                 status_code=400,
-                detail="User does not exist",
+                detail="ユーザーが存在しません",
             )
 
         # 仮登録用JWTトークンを生成
@@ -247,7 +247,7 @@ async def reset_password(email: str, new_password: str, db: AsyncSession):
         logger.info("reset_password - user not found", email=email)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
+            detail="ユーザーが見つかりません",
         )
 
     hashed_password = hash_password(new_password)
@@ -288,7 +288,7 @@ async def verify_email_token(token: str) -> UserCreate:
             logger.warning("verify_email_token - token missing", email=email, password=password, username=username)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
+                detail="無効なトークンです",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -322,7 +322,7 @@ async def decode_password_reset_token(token: str) -> str:
             logger.warning("decode_password_reset_token - token missing", email=email)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
+                detail="無効なトークンです",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 

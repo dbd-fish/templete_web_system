@@ -137,14 +137,14 @@ async def authenticate_user(email: str, password: str, db: AsyncSession) -> User
         logger.info("authenticate_user - user not found", email=email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="メールアドレスまたはパスワードが無効です",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if not verify_password(password, user.hashed_password):
         logger.info("authenticate_user - incorrect password", email=email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="メールアドレスまたはパスワードが無効です",
             headers={"WWW-Authenticate": "Bearer"},
         )
     logger.info("authenticate_user - success", user_id=user.user_id)
