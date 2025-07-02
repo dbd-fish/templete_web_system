@@ -12,6 +12,7 @@ from app.common.database import database
 from app.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
 from app.common.setting import setting
 from app.routes import router
+from app.api.v1.routes import router as api_v1_router
 
 # タイムゾーンをJST（日本標準時）に設定
 os.environ["TZ"] = "Asia/Tokyo"
@@ -53,7 +54,8 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler) 
 app.add_exception_handler(HTTPException, http_exception_handler) # type: ignore
 
 # ルーターをアプリケーションに追加
-app.include_router(router)
+app.include_router(router)  # 既存ルーター（後方互換性のため）
+app.include_router(api_v1_router, prefix="/api/v1")  # API v1
 
 # このスクリプトが直接実行された場合、Uvicornサーバーを起動
 if __name__ == "__main__":

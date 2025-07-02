@@ -24,7 +24,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = setting.ACCESS_TOKEN_EXPIRE_MINUTES  # アクセ�
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # トークンのエンドポイント（FastAPIのOAuth2PasswordBearerを使用）
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
 def hash_password(password: str) -> str:
     """パスワードをハッシュ化する。

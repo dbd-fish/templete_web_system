@@ -24,13 +24,23 @@ backend/
 ├── alembic.ini                  # Alembicマイグレーション設定
 ├── alembic/                     # データベースマイグレーション
 ├── app/                         # メインアプリケーション
-│   ├── core/                    # コア機能（設定、セキュリティ等）
+│   ├── api/                     # APIバージョニング
+│   │   ├── deps.py              # 共通の依存性注入
+│   │   └── v1/                  # API v1
+│   │       ├── routes.py        # v1ルーター統合
+│   │       └── endpoints/       # v1エンドポイント
+│   │           ├── auth.py      # 認証API
+│   │           └── dev.py       # 開発API
+│   ├── common/                  # 共通機能
+│   │   ├── core/                # コア機能（ログ、エラーハンドリング）
+│   │   ├── middleware/          # カスタムミドルウェア
+│   │   ├── database.py          # データベース設定
+│   │   └── setting.py           # 設定管理
+│   ├── features/                # 機能別モジュール（フィーチャードリブン）
+│   │   ├── feature_auth/        # 認証機能
+│   │   └── feature_dev/         # 開発用機能
 │   ├── models/                  # SQLAlchemyモデル
-│   ├── schemas/                 # Pydanticスキーマ
-│   ├── api/                     # APIエンドポイント
-│   ├── crud/                    # CRUD操作
-│   ├── services/                # ビジネスロジック
-│   └── utils/                   # ユーティリティ関数
+│   └── routes.py                # 旧ルーティング（後方互換）
 ├── tests/                       # テストファイル
 ├── logs/                        # ログファイル
 └── CLAUDE.md                    # このファイル
@@ -129,6 +139,25 @@ FastAPIの自動生成ドキュメント：
 - **Swagger UI**: `http://localhost:8000/docs`
 - **ReDoc**: `http://localhost:8000/redoc`
 - **OpenAPI JSON**: `http://localhost:8000/openapi.json`
+
+### API エンドポイント
+
+#### 認証API（v1）
+- `POST /api/v1/auth/me` - 現在のユーザー情報取得
+- `POST /api/v1/auth/signup` - ユーザー登録（トークン認証）
+- `POST /api/v1/auth/send-verify-email` - 仮登録メール送信
+- `POST /api/v1/auth/login` - ログイン処理
+- `POST /api/v1/auth/logout` - ログアウト処理
+- `POST /api/v1/auth/send-password-reset-email` - パスワードリセットメール送信
+- `POST /api/v1/auth/reset-password` - パスワードリセット
+
+#### 開発API（v1・開発環境のみ）
+- `POST /api/v1/dev/clear_data` - 全テーブル削除・再作成
+- `POST /api/v1/dev/seed_data` - テストデータ挿入
+
+#### 後方互換API（非推奨）
+- `/api/auth/*` - v1移行により非推奨
+- `/api/dev/*` - v1移行により非推奨
 
 ## 開発時の注意点
 
