@@ -1,12 +1,12 @@
 # ruff: noqa: I001, F401
 from logging.config import fileConfig
-import app.models # Almbericでモデルを読み込ために必要
+import api.v1.models # Almbericでモデルを読み込ために必要
 
 from sqlalchemy import create_engine, pool
 from sqlalchemy.engine import Engine
 
 from alembic import context
-from api.common.database import Base  # Baseをインポート
+from api.v1.common.database import Base  # Baseをインポート
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -11,7 +11,7 @@ from fastapi import Depends
 from api.v1.common.database import get_db
 from api.v1.features.feature_auth.auth_service import get_current_user
 from api.v1.features.feature_auth.schemas.user import UserResponse, UserUpdate
-from api.v1.models_legacy.user import User
+from api.v1.models.user import User
 
 # ログの設定
 logger = structlog.get_logger()

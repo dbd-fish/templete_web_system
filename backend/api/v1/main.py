@@ -5,14 +5,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
-from api.v1.common.core.http_exception_handler import http_exception_handler
-from api.v1.common.core.log_config import logger
-from api.v1.common.core.request_validation_error import validation_exception_handler
-from api.v1.common.database import database
-from api.v1.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
-from api.v1.common.setting import setting
-from api.v1.features.feature_auth.auth_controller import router as auth_router
-from api.v1.features.feature_dev.dev_controller import router as dev_router
+from .common.core.http_exception_handler import http_exception_handler
+from .common.core.log_config import logger
+from .common.core.request_validation_error import validation_exception_handler
+from .common.database import database
+from .common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
+from .common.setting import setting
+from .features.feature_auth.auth_controller import router as auth_router
+from .features.feature_dev.dev_controller import router as dev_router
 
 # タイムゾーンをJST（日本標準時）に設定
 os.environ["TZ"] = "Asia/Tokyo"
@@ -73,4 +73,4 @@ app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 # このスクリプトが直接実行された場合、Uvicornサーバーを起動
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api.v1.main:app", host="0.0.0.0", port=8000, reload=True)

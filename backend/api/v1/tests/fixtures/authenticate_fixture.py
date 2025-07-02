@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 
 from api.v1.common.test_data import TestData
 from api.v1.features.feature_auth.auth_service import get_current_user
-from api.v1.models_legacy.user import User
+from api.v1.models.user import User
 from main import app
 
 

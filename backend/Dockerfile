@@ -33,4 +33,4 @@ ENV PYTHONPATH="/app/backend"
 EXPOSE 8000
 
 # FastAPIアプリケーションを起動
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "api.v1.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

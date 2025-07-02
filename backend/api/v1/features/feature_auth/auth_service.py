@@ -12,7 +12,7 @@ from api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse
 from api.v1.features.feature_auth.security import create_access_token, decode_access_token, hash_password
 from api.v1.features.feature_auth.send_reset_password_email import send_reset_password_email
 from api.v1.features.feature_auth.send_verification_email import send_verification_email
-from api.v1.models_legacy.user import User
+from api.v1.models.user import User
 
 logger = structlog.get_logger()
 
