@@ -1,17 +1,18 @@
 
 
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
-# NOTE: template_backend_container\.envから下記を読み取る
+# NOTE: .envファイルから必須設定を読み取る
 class Setting(BaseSettings):
     # アプリケーション基本設定
     APP_NAME: str = "MyApp"
     DEV_MODE: bool = True
     APP_URL: str = "https://localhost:5173"
 
-    # セキュリティ設定
-    SECRET_KEY: str = "default_secret_key"
+    # セキュリティ設定（必須）
+    SECRET_KEY: str = Field(..., description="JWT署名用の秘密鍵（必須）")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 240
 
@@ -21,11 +22,11 @@ class Setting(BaseSettings):
     PYTEST_APP_LOG_DIRECTORY: str = "logs/Pytest/app"
     PYTEST_SQL_LOG_DIRECTORY: str = "logs/Pytest/sql"
 
-    # メールサーバー設定
-    SMTP_SERVER: str = "smtp.example.com"
+    # メールサーバー設定（必須）
+    SMTP_SERVER: str = Field(..., description="SMTPサーバーアドレス（必須）")
     SMTP_PORT: int = 587
-    SMTP_PASSWORD: str = "default_password"
-    SMTP_USERNAME: str = "user@example.com"
+    SMTP_PASSWORD: str = Field(..., description="SMTPパスワード（必須）")
+    SMTP_USERNAME: str = Field(..., description="SMTPユーザー名（必須）")
 
     class Config:
         env_file = ".env"  # .env ファイルを指定
