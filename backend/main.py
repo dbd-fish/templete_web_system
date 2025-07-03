@@ -20,7 +20,6 @@ from api.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
 from api.common.setting import setting
 from api.v1.features.feature_auth.route import router as auth_router
 from api.v1.features.feature_dev.dev_controller import router as dev_router
-from api.v1.routes.health import router as health_router
 
 # タイムゾーンをJST（日本標準時）に設定
 os.environ["TZ"] = "Asia/Tokyo"
@@ -119,14 +118,11 @@ app.add_exception_handler(Exception, general_exception_handler) # type: ignore
 
 # ルーターをアプリケーションに追加
 if setting.DEV_MODE:
-    # 開発環境用のルーター定義
+    # 開発環境用のルーター定義（ヘルスチェック機能も含む）
     app.include_router(dev_router, prefix="/api/v1/dev", tags=["開発ツール"])
 
 # 認証関連のルーター（ユーザー管理機能も含む）
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["認証"])
-
-# ヘルスチェック関連のルーター
-app.include_router(health_router, prefix="/api/v1/health", tags=["ヘルスチェック"])
 
 # スクリプトが直接実行された場合のUvicornサーバー起動設定
 if __name__ == "__main__":
