@@ -62,17 +62,50 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
             formatted_time = dt.strftime(datefmt) if datefmt else dt.isoformat()
             return formatted_time
 
-    # アプリケーションログのファイルハンドラ設定
+    # structlog用のProcessorFormatterを設定
+    file_formatter = structlog.stdlib.ProcessorFormatter(
+        processor=structlog.processors.JSONRenderer(indent=4, sort_keys=True),
+        foreign_pre_chain=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.TimeStamper(fmt="iso", utc=False),
+            structlog.processors.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.processors.format_exc_info,
+            structlog.processors.CallsiteParameterAdder([
+                CallsiteParameter.PATHNAME,
+                CallsiteParameter.FUNC_NAME,
+                CallsiteParameter.LINENO,
+            ]),
+        ],
+    )
+    
+    console_formatter = structlog.stdlib.ProcessorFormatter(
+        processor=structlog.dev.ConsoleRenderer(colors=True),
+        foreign_pre_chain=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.TimeStamper(fmt="iso", utc=False),
+            structlog.processors.add_log_level,
+            structlog.stdlib.add_logger_name,
+        ],
+    )
+
+    # ファイルハンドラ設定
     app_file_handler = logging.FileHandler(app_log_file_path, encoding="utf-8")
     app_file_handler.setLevel(logging.INFO)
-    app_formatter = JSTFormatter("[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-    app_file_handler.setFormatter(app_formatter)
+    app_file_handler.setFormatter(file_formatter)
 
-# アプリケーション用のロガー設定
-    app_logger = logging.getLogger("app")
-    app_logger.handlers = []
-    app_logger.setLevel(logging.INFO)
-    app_logger.addHandler(app_file_handler)
+    # コンソールハンドラ設定
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(console_formatter)
+
+    # ルートロガー設定
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()  # 既存ハンドラをクリア
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(app_file_handler)
+    root_logger.addHandler(console_handler)
+    
     print("Application logger configuration completed.")
 
     # SQLAlchemyログの設定
@@ -81,22 +114,19 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
     # structlogの設定
     structlog.configure(
         processors=[
+            structlog.stdlib.filter_by_level,  # ログレベルでフィルタリング
             structlog.contextvars.merge_contextvars,  # リクエストスコープでの変数をログに統合
-            structlog.processors.TimeStamper(fmt="iso", utc=False),  # ISOフォーマットのタイムスタンプを追加
-            structlog.processors.add_log_level,  # ログレベルを追加
+             structlog.processors.TimeStamper(fmt="iso", utc=False),  # ISOフォーマットのタイムスタンプを追加
             structlog.stdlib.add_logger_name,  # ロガー名を追加
+            structlog.stdlib.add_log_level,  # ログレベルを追加
+            structlog.stdlib.PositionalArgumentsFormatter(),  # 位置引数をフォーマット
+            structlog.processors.StackInfoRenderer(),  # スタック情報をレンダリング
             structlog.processors.format_exc_info,  # 例外情報をフォーマット
-            structlog.processors.CallsiteParameterAdder(  # ログ発生箇所の情報を追加
-                [
-                    CallsiteParameter.PATHNAME,  # ファイルのパス
-                    # CallsiteParameter.MODULE,  # モジュール名
-                    CallsiteParameter.FUNC_NAME,  # 関数名
-                    CallsiteParameter.LINENO,  # 行番号
-                ],
-            ),
-            structlog.processors.JSONRenderer(indent=4, sort_keys=True),  # JSON形式で出力
+            structlog.processors.UnicodeDecoder(),  # Unicode文字をデコード
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,  # stdlibハンドラで使用可能にする
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
     print("Structlog configuration completed.")
@@ -123,8 +153,11 @@ def configure_sqlalchemy_logging(test_env: int = 0) -> None:
 
     sqlalchemy_file_handler = logging.FileHandler(sqlalchemy_log_file_path, encoding="utf-8")
     sqlalchemy_file_handler.setLevel(logging.WARNING)  # ハンドラのレベルもWARNINGに設定
-    sqlalchemy_formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
+    
+    # ISO形式でマイクロ秒まで含むSQLAlchemy用フォーマッタ
+    sqlalchemy_formatter = JSTFormatter(
+        "[%(asctime)s] [%(levelname)s] %(message)s", 
+        datefmt="%Y-%m-%dT%H:%M:%S.%f"  # ISO形式（マイクロ秒含む）
     )
     sqlalchemy_file_handler.setFormatter(sqlalchemy_formatter)
 
