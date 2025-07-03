@@ -62,31 +62,23 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
             formatted_time = dt.strftime(datefmt) if datefmt else dt.isoformat()
             return formatted_time
 
-    # structlog用のProcessorFormatterを設定
+    # structlog用のProcessorFormatterを設定（ファイル出力用）
     file_formatter = structlog.stdlib.ProcessorFormatter(
         processor=structlog.processors.JSONRenderer(indent=4, sort_keys=True),
         foreign_pre_chain=[
             structlog.contextvars.merge_contextvars,
-            structlog.processors.TimeStamper(fmt="iso", utc=False),
+            structlog.processors.TimeStamper(fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False),
             structlog.processors.add_log_level,
             structlog.stdlib.add_logger_name,
             structlog.processors.format_exc_info,
-            structlog.processors.CallsiteParameterAdder([
-                CallsiteParameter.PATHNAME,
-                CallsiteParameter.FUNC_NAME,
-                CallsiteParameter.LINENO,
-            ]),
+            structlog.processors.CallsiteParameterAdder([CallsiteParameter.PATHNAME, CallsiteParameter.FUNC_NAME, CallsiteParameter.LINENO]),
         ],
     )
     
+    # コンソール出力用フォーマッタ
     console_formatter = structlog.stdlib.ProcessorFormatter(
         processor=structlog.dev.ConsoleRenderer(colors=True),
-        foreign_pre_chain=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.TimeStamper(fmt="iso", utc=False),
-            structlog.processors.add_log_level,
-            structlog.stdlib.add_logger_name,
-        ],
+        foreign_pre_chain=[structlog.contextvars.merge_contextvars, structlog.processors.TimeStamper(fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False), structlog.processors.add_log_level, structlog.stdlib.add_logger_name],
     )
 
     # ファイルハンドラ設定
@@ -155,10 +147,7 @@ def configure_sqlalchemy_logging(test_env: int = 0) -> None:
     sqlalchemy_file_handler.setLevel(logging.WARNING)  # ハンドラのレベルもWARNINGに設定
     
     # ISO形式でマイクロ秒まで含むSQLAlchemy用フォーマッタ
-    sqlalchemy_formatter = JSTFormatter(
-        "[%(asctime)s] [%(levelname)s] %(message)s", 
-        datefmt="%Y-%m-%dT%H:%M:%S.%f"  # ISO形式（マイクロ秒含む）
-    )
+    sqlalchemy_formatter = JSTFormatter("[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%dT%H:%M:%S.%f")  # ISO形式（マイクロ秒含む）
     sqlalchemy_file_handler.setFormatter(sqlalchemy_formatter)
 
     sqlalchemy_logger.addHandler(sqlalchemy_file_handler)
