@@ -19,7 +19,13 @@ from main import app
 async def test_login_user() -> None:
     """ログイン処理のテスト（既存シードデータ使用）。
     """
+    # まず、テストデータをシードしてからログインテストを実行
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000/") as client:
+        # シードデータの投入
+        await client.post("/api/v1/dev/clear_data")
+        await client.post("/api/v1/dev/seed_data")
+        
+        # ログインテストの実行
         response = await client.post(
             "/api/v1/auth/login",
             data={"username": TestData.TEST_USER_EMAIL_1, "password": TestData.TEST_USER_PASSWORD},
@@ -99,25 +105,31 @@ async def test_reset_password(authenticated_client: AsyncClient) -> None:
     assert response_json["success"] is True
     assert "message" in response_json
 
-@pytest.mark.asyncio(loop_scope="session")
-async def test_send_verify_email() -> None:
-    """仮登録用メール送信のテスト"""
+@pytest.mark.asyncio(loop_scope="session")  
+async def test_send_verify_email(disable_email_sending) -> None:
+    """仮登録用メール送信のテスト（メール送信無効化）"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         response = await client.post(
             "/api/v1/auth/send-verify-email",
             json={"email": "newuser@example.com", "username": "newuser", "password": "Test1234!"},
         )
+        # メール送信が無効化されているため、APIレスポンスは成功する
         assert response.status_code == 200
         assert "認証メールを送信しました。メールをご確認ください" == response.json()["message"]
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_send_reset_password_email() -> None:
-    """パスワードリセットメール送信のテスト"""
+async def test_send_reset_password_email(disable_email_sending) -> None:
+    """パスワードリセットメール送信のテスト（メール送信無効化）"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+        # シードデータの投入（ユーザーが存在する必要がある）
+        await client.post("/api/v1/dev/clear_data")
+        await client.post("/api/v1/dev/seed_data")
+        
         response = await client.post(
             "/api/v1/auth/send-password-reset-email",
             json={"email": TestData.TEST_USER_EMAIL_1},
         )
+        # メール送信が無効化されているため、APIレスポンスは成功する
         assert response.status_code == 200
         assert "パスワードリセットメールを送信しました" == response.json()["message"]
 

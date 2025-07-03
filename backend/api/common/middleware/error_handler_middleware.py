@@ -2,7 +2,7 @@ import traceback
 
 import structlog
 from fastapi import HTTPException, Request
-from jose import JWTError
+from jwt.exceptions import InvalidTokenError as JWTError
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.base import BaseHTTPMiddleware

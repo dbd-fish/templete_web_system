@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import structlog
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
+import jwt
 from passlib.context import CryptContext
 from sqlalchemy.future import select
 
@@ -107,6 +107,20 @@ def decode_access_token(token: str) -> dict:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])  # トークンをデコード
         logger.info("decode_access_token - success", payload=payload)
         return payload
+    except jwt.ExpiredSignatureError:
+        logger.error("Token has expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="トークンが期限切れです",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except jwt.InvalidTokenError:
+        logger.error("Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="無効なトークンです",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     finally:
         logger.info("decode_access_token - end")
 

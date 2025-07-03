@@ -22,6 +22,12 @@ async def send_verification_email(email: str, verification_url: str):
         None
     """
     logger.info("send_verification_email - start", email=email)
+    
+    # テスト環境でメール送信が無効化されている場合はスキップ
+    if not setting.ENABLE_EMAIL_SENDING or setting.PYTEST_MODE:
+        logger.info("Email sending disabled in test environment", email=email)
+        return
+    
     try:
         # メールの内容
         subject = "メールアドレス認証のお願い"
@@ -37,21 +43,35 @@ async def send_verification_email(email: str, verification_url: str):
 
         # MIME形式でメールを作成
         msg = MIMEMultipart()
-        msg["From"] = setting.SMTP_USERNAME
+        msg["From"] = setting.SMTP_USERNAME or "test@example.com"
         msg["To"] = email
         msg["Subject"] = str(Header(subject, "utf-8"))
 
         # メール本文を設定
         msg.attach(MIMEText(body, "plain", "utf-8"))
 
+        # テスト環境の場合は異なるSMTP設定を使用
+        if setting.PYTEST_MODE:
+            smtp_server = setting.TEST_SMTP_SERVER
+            smtp_port = setting.TEST_SMTP_PORT
+            use_tls = False
+            use_auth = False
+        else:
+            smtp_server = setting.SMTP_SERVER
+            smtp_port = setting.SMTP_PORT
+            use_tls = True
+            use_auth = bool(setting.SMTP_USERNAME and setting.SMTP_PASSWORD)
+
         # SMTPサーバーに接続
-        with smtplib.SMTP(setting.SMTP_SERVER, setting.SMTP_PORT) as server:
-            server.starttls()  # TLSで暗号化
-            server.login(setting.SMTP_USERNAME, setting.SMTP_PASSWORD)  # ログイン
-            server.sendmail(setting.SMTP_USERNAME, email, msg.as_string())  # メール送信
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            if use_tls:
+                server.starttls()  # TLSで暗号化
+            if use_auth:
+                server.login(setting.SMTP_USERNAME, setting.SMTP_PASSWORD)  # ログイン
+            server.sendmail(msg["From"], email, msg.as_string())  # メール送信
         logger.info("Verification email sent", email=email)
     except Exception as e:
-        logger.info("Failed to send verification email",email=email)
+        logger.info("Failed to send verification email", email=email, error=str(e))
         raise e
     finally:
         logger.info("send_verification_email - end")

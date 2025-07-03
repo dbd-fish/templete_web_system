@@ -1,4 +1,5 @@
 import os
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -38,6 +39,12 @@ class Setting(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
+    
+    # テスト環境でのメール送信設定
+    ENABLE_EMAIL_SENDING: bool = True
+    TEST_SMTP_SERVER: str = "localhost"
+    TEST_SMTP_PORT: int = 1025
+    PYTEST_MODE: bool = False
 
     # その他の設定
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://frontend:5173"
@@ -47,10 +54,11 @@ class Setting(BaseSettings):
     # ログ出力設定
     ENABLE_CONSOLE_LOG: bool = False
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True
+    )
 
 # 設定インスタンス作成
 setting = Setting()
