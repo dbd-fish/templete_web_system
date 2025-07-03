@@ -110,11 +110,11 @@ def decode_access_token(token: str) -> dict:
     finally:
         logger.info("decode_access_token - end")
 
-async def authenticate_user(email: str, password: str, db: AsyncSession) -> User:
-    """メールアドレスとパスワードを使用してユーザー認証を行う。
+async def authenticate_user(username_or_email: str, password: str, db: AsyncSession) -> User:
+    """ユーザー名またはメールアドレスとパスワードを使用してユーザー認証を行う。
 
     Args:
-        email (str): ユーザーのメールアドレス。
+        username_or_email (str): ユーザー名またはメールアドレス。
         password (str): プレーンパスワード。
         db (AsyncSession): データベースセッション。
 
@@ -125,23 +125,23 @@ async def authenticate_user(email: str, password: str, db: AsyncSession) -> User
         HTTPException: 認証に失敗した場合。
 
     """
-    logger.info("authenticate_user - start", email=email)
+    logger.info("authenticate_user - start", username_or_email=username_or_email)
     query = select(User).where(
-        User.email == email,
+        (User.email == username_or_email) | (User.username == username_or_email),
         User.user_status == User.STATUS_ACTIVE,
         User.deleted_at.is_(None),
     )
     result = await db.execute(query)
     user = result.scalars().first()  # 検索結果を取得
     if not user:
-        logger.info("authenticate_user - user not found", email=email)
+        logger.info("authenticate_user - user not found", username_or_email=username_or_email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="メールアドレスまたはパスワードが無効です",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if not verify_password(password, user.hashed_password):
-        logger.info("authenticate_user - incorrect password", email=email)
+        logger.info("authenticate_user - incorrect password", username_or_email=username_or_email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="メールアドレスまたはパスワードが無効です",

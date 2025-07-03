@@ -78,8 +78,73 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
     finally:
         logger.info("temporary_register_user - end")
 
-@router.post("/login", response_model=dict)
-async def login(request: Request,response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+@router.post(
+    "/login", 
+    response_model=dict,
+    summary="ユーザーログイン",
+    description="""ユーザー名（またはメールアドレス）とパスワードでログインします。
+    
+    **テスト用アカウント:**
+    - ユーザー名: `testuser`
+    - パスワード: `Password123456+-`
+    
+    **レスポンス:**
+    - 成功時：HttpOnlyクッキーにJWTトークンを設定
+    - 失敗時：401エラー（認証失敗）
+    """,
+    responses={
+        200: {
+            "description": "ログイン成功",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Login successful"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "認証失敗",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Incorrect username or password"
+                    }
+                }
+            }
+        }
+    },
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "application/x-www-form-urlencoded": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "username": {
+                                "type": "string",
+                                "title": "Username",
+                                "description": "ユーザー名またはメールアドレス",
+                                "default": "testuser",
+                                "example": "testuser"
+                            },
+                            "password": {
+                                "type": "string",
+                                "title": "Password",
+                                "description": "パスワード",
+                                "default": "Password123456+-",
+                                "example": "Password123456+-"
+                            }
+                        },
+                        "required": ["username", "password"]
+                    }
+                }
+            }
+        }
+    },
+    tags=["認証"]
+)
+async def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     """ログイン処理を行うエンドポイント。
 
     Args:

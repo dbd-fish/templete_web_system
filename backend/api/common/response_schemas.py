@@ -100,7 +100,7 @@ def create_success_response(
     return {
         "success": True,
         "message": message,
-        "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")),
+        "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(),
         "data": data
     }
 
@@ -125,7 +125,7 @@ def create_error_response(
         "success": False,
         "message": message,
         "error_code": error_code,
-        "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")),
+        "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(),
         "details": details
     }
 
@@ -155,7 +155,7 @@ def create_paginated_response(
     return {
         "success": True,
         "message": message,
-        "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")),
+        "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(),
         "data": data,
         "pagination": {
             "current_page": current_page,
