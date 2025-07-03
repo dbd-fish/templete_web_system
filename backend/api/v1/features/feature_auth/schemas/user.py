@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from api.v1.models.user import User
+from api.v1.features.feature_auth.models.user import User
 
 
 class UserCreate(BaseModel):

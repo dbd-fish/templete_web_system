@@ -10,7 +10,7 @@ from api.v1.features.feature_auth.security import (
     hash_password,
     verify_password,
 )
-from api.v1.models.user import User
+from api.v1.features.feature_auth.models.user import User
 
 
 @pytest.mark.asyncio

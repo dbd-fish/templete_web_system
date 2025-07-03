@@ -7,7 +7,7 @@ from api.common.database import get_db
 from api.v1.features.feature_auth.crud import create_user_service, decode_password_reset_token, get_current_user, reset_password, reset_password_email, temporary_create_user, verify_email_token, update_user_with_schema, delete_user
 from api.v1.features.feature_auth.schemas.user import PasswordResetData, SendPasswordResetEmailData, TokenData, UserCreate, UserResponse, UserUpdate
 from api.v1.features.feature_auth.security import authenticate_user, create_access_token
-from api.v1.models.user import User
+from api.v1.features.feature_auth.models.user import User
 from api.common.response_schemas import SuccessResponse, MessageResponse, EmptyData, create_success_response, create_message_response, ErrorCodes
 from api.common.exception_handlers import BusinessLogicError
 

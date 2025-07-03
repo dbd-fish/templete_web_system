@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql import text
 
-from api.v1.models.user import User
+from api.v1.features.feature_auth.models.user import User
 from api.common.common import datetime_now
 from api.common.database import AsyncSessionLocal, Base
 from api.common.test_data import TestData

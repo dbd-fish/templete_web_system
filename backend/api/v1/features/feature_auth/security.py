@@ -10,7 +10,7 @@ from sqlalchemy.future import select
 
 from api.common.database import AsyncSession
 from api.common.setting import setting
-from api.v1.models.user import User
+from api.v1.features.feature_auth.models.user import User
 
 # ログの設定
 logger = structlog.get_logger()
