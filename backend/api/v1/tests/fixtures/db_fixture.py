@@ -5,7 +5,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from api.common.database import Base, configure_database, get_db
-from main import app
+from backend.main import app
 
 
 @pytest_asyncio.fixture(scope="function", autouse=True)

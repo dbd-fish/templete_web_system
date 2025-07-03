@@ -5,8 +5,8 @@ import structlog
 from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.v1.common.database import get_db
-from api.v1.common.setting import setting
+from api.common.database import get_db
+from api.common.setting import setting
 from api.v1.features.feature_auth.auth_repository import UserRepository
 from api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse
 from api.v1.features.feature_auth.security import create_access_token, decode_access_token, hash_password

@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, pool
 from sqlalchemy.engine import Engine
 
 from alembic import context
-from api.v1.common.database import Base  # Baseをインポート
+from api.common.database import Base  # Baseをインポート
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

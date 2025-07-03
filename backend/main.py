@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
-from .common.core.log_config import logger
-from .common.exception_handlers import (
+from api.common.core.log_config import logger
+from api.common.exception_handlers import (
     http_exception_handler,
     validation_exception_handler,
     sqlalchemy_exception_handler,
@@ -15,13 +15,13 @@ from .common.exception_handlers import (
     BusinessLogicError
 )
 from sqlalchemy.exc import SQLAlchemyError
-from .common.database import database
-from .common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
-from .common.setting import setting
-from .features.feature_auth.auth_controller import router as auth_router
-from .features.feature_dev.dev_controller import router as dev_router
-from .routes.users import router as users_router
-from .routes.health import router as health_router
+from api.common.database import database
+from api.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
+from api.common.setting import setting
+from api.v1.features.feature_auth.auth_controller import router as auth_router
+from api.v1.features.feature_dev.dev_controller import router as dev_router
+from api.v1.routes.users import router as users_router
+from api.v1.routes.health import router as health_router
 
 # タイムゾーンをJST（日本標準時）に設定
 os.environ["TZ"] = "Asia/Tokyo"

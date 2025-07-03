@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
-from api.v1.common.database import get_db
+from api.common.database import get_db
 from api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse, Token, TokenData, SendPasswordResetEmailData, PasswordResetData
 from api.v1.features.feature_auth.security import create_access_token
 

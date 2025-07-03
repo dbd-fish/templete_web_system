@@ -8,7 +8,7 @@ from fastapi import APIRouter
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
-from api.v1.common.database import get_db
+from api.common.database import get_db
 
 # 段階的移行: 既存の開発機能を継続使用
 from api.v1.features.feature_dev.seed_data import clear_data, seed_data

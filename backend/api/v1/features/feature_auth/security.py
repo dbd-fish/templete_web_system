@@ -8,8 +8,8 @@ from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.future import select
 
-from api.v1.common.database import AsyncSession
-from api.v1.common.setting import setting
+from api.common.database import AsyncSession
+from api.common.setting import setting
 from api.v1.models.user import User
 
 # ログの設定

@@ -4,10 +4,10 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from passlib.context import CryptContext
 
-from api.v1.common.test_data import TestData
+from api.common.test_data import TestData
 from api.v1.features.feature_auth.auth_service import get_current_user
 from api.v1.models.user import User
-from main import app
+from backend.main import app
 
 
 @pytest_asyncio.fixture(scope="function")
