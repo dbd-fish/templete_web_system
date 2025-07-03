@@ -147,7 +147,13 @@ def configure_sqlalchemy_logging(test_env: int = 0) -> None:
     sqlalchemy_file_handler.setLevel(logging.WARNING)  # ハンドラのレベルもWARNINGに設定
     
     # ISO形式でマイクロ秒まで含むSQLAlchemy用フォーマッタ
-    sqlalchemy_formatter = JSTFormatter("[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%dT%H:%M:%S.%f")  # ISO形式（マイクロ秒含む）
+    class SQLAlchemyJSTFormatter(logging.Formatter):
+        """SQLAlchemy用のJST時間フォーマッタ"""
+        def formatTime(self, record, datefmt=None):
+            dt = datetime.fromtimestamp(record.created, ZoneInfo("Asia/Tokyo"))
+            return dt.strftime(datefmt) if datefmt else dt.isoformat()
+    
+    sqlalchemy_formatter = SQLAlchemyJSTFormatter("[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%dT%H:%M:%S.%f")
     sqlalchemy_file_handler.setFormatter(sqlalchemy_formatter)
 
     sqlalchemy_logger.addHandler(sqlalchemy_file_handler)
