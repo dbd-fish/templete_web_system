@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.common.database import get_db
 from api.common.setting import setting
-from api.v1.features.feature_auth.auth_repository import UserRepository
+from api.v1.features.feature_auth.repository import UserRepository
 from api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse
 from api.v1.features.feature_auth.security import create_access_token, decode_access_token, hash_password
 from api.v1.features.feature_auth.send_reset_password_email import send_reset_password_email
