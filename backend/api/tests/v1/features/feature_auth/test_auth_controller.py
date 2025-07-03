@@ -6,10 +6,10 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
-from api.common.test_data import TestData
+from api.v1.common.test_data import TestData
 from api.v1.features.feature_auth.security import create_access_token, verify_password
 from api.v1.features.feature_auth.models.user import User
-from backend.main import app
+from main import app
 
 # NOTE: setup_test_dbはfixture(scope="function", autouse=True)だが、戻り値を利用する場合はテスト関数の引数として実装する必要あり。
 
@@ -20,14 +20,14 @@ async def test_login_user() -> None:
     """
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000/") as client:
         response = await client.post(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             data={"username": TestData.TEST_USER_EMAIL_1, "password": TestData.TEST_USER_PASSWORD},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 200
         response_json = response.json()
         message = response_json.get("message", "")
-        assert "successful" in message
+        assert "ログインに成功しました" == response_json.get("message", "")
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_login_with_invalid_credentials() -> None:
@@ -35,12 +35,12 @@ async def test_login_with_invalid_credentials() -> None:
     """
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000/") as client:
         response = await client.post(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             data={"username": "wronguser@example.com", "password": "wrongpassword"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 401
-        assert "Invalid email or password" in response.json()["detail"]
+        assert "Incorrect username or password" in response.json()["detail"]
 
 
 
@@ -69,7 +69,7 @@ async def test_register_user(setup_test_db) -> None:
 
         # **トークンを `/api/auth/signup` に送信**
         response = await client.post(
-            "/api/auth/signup",
+            "/api/v1/auth/signup",
             json={"token": token},
             headers={"Content-Type": "application/json"},
         )
@@ -106,7 +106,7 @@ async def test_reset_password(authenticated_client: AsyncClient, setup_test_db) 
 
     # 取得したトークンを使ってパスワードを変更
     response = await authenticated_client.post(
-        "/api/auth/reset-password",
+        "/api/v1/auth/reset-password",
         json={"token": token, "new_password": new_password},
         headers={"Content-Type": "application/json"},
     )
@@ -130,22 +130,22 @@ async def test_send_verify_email() -> None:
     """仮登録用メール送信のテスト"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         response = await client.post(
-            "/api/auth/send-verify-email",
+            "/api/v1/auth/send-verify-email",
             json={"email": "newuser@example.com", "username": "newuser", "password": "Test1234!"},
         )
         assert response.status_code == 200
-        assert "User created successfully" in response.json()["msg"]
+        assert "認証メールを送信しました。メールをご確認ください" == response.json()["message"]
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_send_reset_password_email() -> None:
     """パスワードリセットメール送信のテスト"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         response = await client.post(
-            "/api/auth/send-password-reset-email",
+            "/api/v1/auth/send-password-reset-email",
             json={"email": TestData.TEST_USER_EMAIL_1},
         )
         assert response.status_code == 200
-        assert "Password reset email send successful" in response.json()["msg"]
+        assert "パスワードリセットメールを送信しました" == response.json()["message"]
 
 # NOTE: ログイン中のAPIのテストを実施する場合はauthenticated_clientを引数に追加して、authenticated_clientからAPIを呼び出す
 @pytest.mark.asyncio(loop_scope="session")
@@ -153,12 +153,12 @@ async def test_logout_user(authenticated_client: AsyncClient) -> None:
     """ログアウト処理のテスト"""
 
     response = await authenticated_client.post(
-        "/api/auth/logout",
+        "/api/v1/auth/logout",
         json={"email": TestData.TEST_USER_EMAIL_1},
     )
 
     assert response.status_code == 200, response.text
-    assert response.json()["msg"] == "Logged out successfully"
+    assert response.json()["message"] == "ログアウトしました"
 
 
 
@@ -175,12 +175,12 @@ async def test_register_existing_user(setup_test_db) -> None:
         token = create_access_token(data=user_data, expires_delta=timedelta(minutes=60))
 
         response = await client.post(
-            "/api/auth/signup",
+            "/api/v1/auth/signup",
             json={"token": token},
             headers={"Content-Type": "application/json"},
         )
         assert response.status_code == 400, response.text
-        assert "User already exists" in response.json()["detail"]
+        assert "メールアドレスまたはユーザー名が既に使用されています" in response.json()["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -190,7 +190,7 @@ async def test_register_with_invalid_token() -> None:
         invalid_token = "invalid.jwt.token"
 
         response = await client.post(
-            "/api/auth/signup",
+            "/api/v1/auth/signup",
             json={"token": invalid_token},
             headers={"Content-Type": "application/json"},
         )
@@ -202,7 +202,7 @@ async def test_reset_password_with_invalid_email() -> None:
     """存在しないメールアドレスでパスワードリセット（異常系）"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         response = await client.post(
-            "/api/auth/send-password-reset-email",
+            "/api/v1/auth/send-password-reset-email",
             json={"email": "nonexistent@example.com"},
         )
         assert response.status_code == 400, response.text
@@ -214,7 +214,7 @@ async def test_reset_password_with_invalid_token(authenticated_client: AsyncClie
     new_password = "newpassword123!"
 
     response = await authenticated_client.post(
-        "/api/auth/reset-password",
+        "/api/v1/auth/reset-password",
         json={"token": "invalid_token", "new_password": new_password},
         headers={"Content-Type": "application/json"},
     )
@@ -226,7 +226,7 @@ async def test_logout_with_invalid_token() -> None:
     """誤ったトークンでログアウトを試みる（異常系）"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         response = await client.post(
-            "/api/auth/logout",
+            "/api/v1/auth/logout",
             headers={"Authorization": "Bearer invalid_token"},
         )
         assert response.status_code == 401, response.text
@@ -236,5 +236,5 @@ async def test_logout_with_invalid_token() -> None:
 async def test_logout_without_authentication() -> None:
     """認証なしでログアウトを試みる（異常系）"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
-        response = await client.post("/api/auth/logout")
+        response = await client.post("/api/v1/auth/logout")
         assert response.status_code == 401, response.text

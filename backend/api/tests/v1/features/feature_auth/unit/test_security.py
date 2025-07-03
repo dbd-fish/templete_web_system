@@ -124,8 +124,8 @@ async def test_authenticate_user_password_mismatch(setup_test_db):
         await db_session.refresh(user)
 
         # 間違ったパスワードを使用して認証
-        with pytest.raises(Exception, match="Invalid email or password"):
-            await authenticate_user(test_email, "wrongpassword", db_session)
+        result = await authenticate_user(test_email, "wrongpassword", db_session)
+        assert result is None
 
 
 @pytest.mark.asyncio
@@ -149,8 +149,8 @@ async def test_authenticate_user_inactive_status(setup_test_db):
         await db_session.commit()
         await db_session.refresh(user)
 
-        with pytest.raises(Exception, match="Invalid email or password"):
-            await authenticate_user(test_email, test_password, db_session)
+        result = await authenticate_user(test_email, test_password, db_session)
+        assert result is None
 
 
 @pytest.mark.asyncio
@@ -175,5 +175,5 @@ async def test_authenticate_user_deleted(setup_test_db):
         await db_session.commit()
         await db_session.refresh(user)
 
-        with pytest.raises(Exception, match="Invalid email or password"):
-            await authenticate_user(test_email, test_password, db_session)
+        result = await authenticate_user(test_email, test_password, db_session)
+        assert result is None
