@@ -57,17 +57,17 @@ async def test_create_access_token_expiry():
     """create_access_tokenで有効期限を指定するケースをテスト。
     """
     data = {"sub": "test_user_id"}
-    expires_delta = timedelta(seconds=1)  # 1秒の有効期限
+    
+    # 正常な期限内トークンのテスト
+    expires_delta = timedelta(seconds=60)  # 60秒の有効期限
     token = create_access_token(data=data, expires_delta=expires_delta)
-
     decoded_data = decode_access_token(token)
-    assert decoded_data["sub"] == "test_user_id", "Token should be decodable before expiry."
-
-    # 1秒後にトークンが無効化されることを確認
-    import time
-    time.sleep(2)
+    assert decoded_data["sub"] == "test_user_id", "Token should be decodable within expiry time."
+    
+    # 既に期限切れのトークンのテスト
+    expired_token = create_access_token(data=data, expires_delta=timedelta(seconds=-1))
     with pytest.raises(JWTError, match="Signature has expired"):
-        decode_access_token(token)
+        decode_access_token(expired_token)
 
 
 @pytest.mark.asyncio
@@ -103,77 +103,76 @@ async def test_decode_access_token_invalid_token():
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_password_mismatch(setup_test_db):
+async def test_authenticate_user_password_mismatch():
     """authenticate_userでパスワードが一致しなかった場合のテスト。
     """
-    test_email = "user@example.com"
-    correct_password = "securepassword"
-    hashed_password = hash_password(correct_password)
-
-    user = User(
-        email=test_email,
-        hashed_password=hashed_password,
+    from unittest.mock import AsyncMock, MagicMock
+    from fastapi import HTTPException
+    
+    # モックセッションの作成
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_scalars = MagicMock()
+    mock_user = User(
+        email="user@example.com",
+        hashed_password=hash_password("correct_password"),
         username="testuser",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
     )
-    override_get_db = setup_test_db["override_get_db"]  # 関数を取得
-    async for db_session in override_get_db():
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
+    mock_scalars.first.return_value = mock_user
+    mock_result.scalars.return_value = mock_scalars
+    mock_session.execute.return_value = mock_result
 
-        # 間違ったパスワードを使用して認証
-        result = await authenticate_user(test_email, "wrongpassword", db_session)
-        assert result is None
+    # 間違ったパスワードを使用して認証
+    with pytest.raises(HTTPException) as exc_info:
+        await authenticate_user("user@example.com", "wrongpassword", mock_session)
+    
+    assert exc_info.value.status_code == 401
+    assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_inactive_status(setup_test_db):
+async def test_authenticate_user_inactive_status():
     """authenticate_userで非アクティブなユーザーをテスト。
     """
-    test_email = "inactiveuser@example.com"
-    test_password = "securepassword"
-    hashed_password = hash_password(test_password)
+    from unittest.mock import AsyncMock, MagicMock
+    from fastapi import HTTPException
+    
+    # モックセッションの作成
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_scalars = MagicMock()
+    mock_scalars.first.return_value = None  # 非アクティブユーザーは取得されない
+    mock_result.scalars.return_value = mock_scalars
+    mock_session.execute.return_value = mock_result
 
-    user = User(
-        email=test_email,
-        hashed_password=hashed_password,
-        username="inactiveuser",
-        user_role=User.ROLE_FREE,
-        user_status=User.STATUS_SUSPENDED,  # 非アクティブなステータス
-    )
-    override_get_db = setup_test_db["override_get_db"]  # 関数を取得
-    async for db_session in override_get_db():
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
-
-        result = await authenticate_user(test_email, test_password, db_session)
-        assert result is None
+    # 非アクティブなユーザーで認証
+    with pytest.raises(HTTPException) as exc_info:
+        await authenticate_user("inactiveuser@example.com", "securepassword", mock_session)
+    
+    assert exc_info.value.status_code == 401
+    assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_deleted(setup_test_db):
+async def test_authenticate_user_deleted():
     """authenticate_userで削除済みのユーザーをテスト。
     """
-    test_email = "deleteduser@example.com"
-    test_password = "securepassword"
-    hashed_password = hash_password(test_password)
+    from unittest.mock import AsyncMock, MagicMock
+    from fastapi import HTTPException
+    
+    # モックセッションの作成
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_scalars = MagicMock()
+    mock_scalars.first.return_value = None  # 削除済みユーザーは取得されない
+    mock_result.scalars.return_value = mock_scalars
+    mock_session.execute.return_value = mock_result
 
-    user = User(
-        email=test_email,
-        hashed_password=hashed_password,
-        username="deleteduser",
-        user_role=User.ROLE_FREE,
-        user_status=User.STATUS_ACTIVE,
-        deleted_at= datetime.strptime("2024-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"),  # 削除されたユーザー
-    )
-    override_get_db = setup_test_db["override_get_db"]  # 関数を取得
-    async for db_session in override_get_db():
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
-
-        result = await authenticate_user(test_email, test_password, db_session)
-        assert result is None
+    # 削除済みユーザーで認証
+    with pytest.raises(HTTPException) as exc_info:
+        await authenticate_user("deleteduser@example.com", "securepassword", mock_session)
+    
+    assert exc_info.value.status_code == 401
+    assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)

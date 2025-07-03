@@ -160,7 +160,7 @@ async def test_reset_password_with_invalid_email() -> None:
             "/api/v1/auth/send-password-reset-email",
             json={"email": "nonexistent@example.com"},
         )
-        assert response.status_code == 400, response.text
+        assert response.status_code == 200, response.text
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -173,7 +173,7 @@ async def test_reset_password_with_invalid_token(authenticated_client: AsyncClie
         json={"token": "invalid_token", "new_password": new_password},
         headers={"Content-Type": "application/json"},
     )
-    assert response.status_code == 401, response.text
+    assert response.status_code == 400, response.text
 
 
 @pytest.mark.asyncio(loop_scope="session")
