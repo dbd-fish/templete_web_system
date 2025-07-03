@@ -12,7 +12,8 @@
       "LS(*)",
       "WebFetch(domain:github.com)",
       "Bash(grep:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(find:*)"
     ],
     "deny": [
       "Bash(git commit:*)",

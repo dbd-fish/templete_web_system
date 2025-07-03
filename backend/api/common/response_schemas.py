@@ -75,12 +75,25 @@ class PaginatedResponse(SuccessResponse[list[DataT]]):
     pagination: PaginationMeta = Field(..., description="ページネーション情報")
 
 
-# 便利な型エイリアス
-SuccessResponseDict = SuccessResponse[dict[str, Any]]
-SuccessResponseList = SuccessResponse[list[dict[str, Any]]]
-SuccessResponseStr = SuccessResponse[str]
-SuccessResponseInt = SuccessResponse[int]
-SuccessResponseBool = SuccessResponse[bool]
+class MessageResponse(BaseModel):
+    """
+    メッセージのみのレスポンスデータ
+    
+    データが不要で、成功メッセージのみを返す場合に使用
+    """
+    message: str = Field(..., description="操作結果メッセージ")
+
+
+class EmptyData(BaseModel):
+    """
+    空のデータ型
+    
+    Noneの代わりに使用する空のデータ型
+    データが不要で型安全性を保ちたい場合に使用
+    """
+    pass
+
+
 
 
 def create_success_response(
@@ -102,6 +115,44 @@ def create_success_response(
         "message": message,
         "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(),
         "data": data
+    }
+
+
+def create_message_response(message: str) -> dict[str, Any]:
+    """
+    メッセージのみの成功レスポンスを作成するヘルパー関数
+    
+    Args:
+        message: 成功メッセージ
+        
+    Returns:
+        dict: メッセージレスポンス辞書
+    """
+    return {
+        "success": True,
+        "message": message,
+        "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(),
+        "data": {
+            "message": message
+        }
+    }
+
+
+def create_empty_response(message: str) -> dict[str, Any]:
+    """
+    空データの成功レスポンスを作成するヘルパー関数
+    
+    Args:
+        message: 成功メッセージ
+        
+    Returns:
+        dict: 空データレスポンス辞書
+    """
+    return {
+        "success": True,
+        "message": message,
+        "timestamp": datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(),
+        "data": {}
     }
 
 
