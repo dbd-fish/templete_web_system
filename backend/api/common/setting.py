@@ -1,5 +1,5 @@
 import os
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 # NOTE: template_backend_container\.envから下記を読み取る

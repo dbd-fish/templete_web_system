@@ -12,12 +12,12 @@ from api.common.database import get_db
 from api.v1.features.feature_auth.auth_service import get_current_user
 from api.v1.features.feature_auth.schemas.user import UserResponse, UserUpdate
 from api.v1.models.user import User
-from ..common.response_schemas import (
+from api.common.response_schemas import (
     create_success_response,
     SuccessResponse,
     ErrorCodes
 )
-from ..common.exception_handlers import BusinessLogicError
+from api.common.exception_handlers import BusinessLogicError
 
 # ログ設定
 logger = structlog.get_logger()

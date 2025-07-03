@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 from api.common.database import get_db
-from ..common.response_schemas import (
+from api.common.response_schemas import (
     create_success_response,
     create_error_response,
     SuccessResponse,

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql import text
 
-from api.v1.models import user
+from api.v1.models.user import User
 from api.common.common import datetime_now
 from api.common.database import AsyncSessionLocal, Base
 from api.common.test_data import TestData
@@ -40,10 +40,10 @@ async def seed_user(session: AsyncSession):
         # 各ユーザーのデータを処理
         for user_data in users:
             result = await session.execute(
-                select(user.User).where(user.User.username == user_data["username"]),
+                select(User).where(User.username == user_data["username"]),
             )
             if not result.scalars().first():
-                new_user = user.User(
+                new_user = User(
                     user_id=user_data["user_id"],
                     username=user_data["username"],
                     email=user_data["email"],

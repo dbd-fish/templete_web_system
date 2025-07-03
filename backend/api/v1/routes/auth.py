@@ -23,12 +23,12 @@ from api.v1.features.feature_auth.auth_service import (
 )
 from api.v1.features.feature_auth.security import authenticate_user
 from api.v1.features.feature_auth.auth_repository import UserRepository
-from ..common.response_schemas import (
+from api.common.response_schemas import (
     create_success_response,
     SuccessResponse,
     ErrorCodes
 )
-from ..common.exception_handlers import BusinessLogicError
+from api.common.exception_handlers import BusinessLogicError
 
 # ログ設定
 logger = structlog.get_logger()
