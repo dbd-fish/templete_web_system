@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.common.database import get_db
-from api.v1.features.feature_auth.service import create_user, decode_password_reset_token, get_current_user, reset_password, reset_password_email, temporary_create_user, verify_email_token
+from api.v1.features.feature_auth.crud import create_user_service, decode_password_reset_token, get_current_user, reset_password, reset_password_email, temporary_create_user, verify_email_token
 from api.v1.features.feature_auth.schemas.user import PasswordResetData, SendPasswordResetEmailData, TokenData, UserCreate, UserResponse
 from api.v1.features.feature_auth.security import authenticate_user, create_access_token
 from api.v1.models.user import User
@@ -57,7 +57,7 @@ async def register_user(tokenData: TokenData, db: AsyncSession = Depends(get_db)
         user_info = await verify_email_token(tokenData.token)
         logger.info("register_user - user_info", user_info=user_info)
         # トークンから取得したユーザー情報でユーザー登録
-        new_user = await create_user(user_info.email, user_info.username, user_info.password, db)
+        new_user = await create_user_service(user_info.email, user_info.username, user_info.password, db)
         logger.info("register_user - success", user_id=new_user.user_id)
         user_data = UserResponse.model_validate(new_user)
         return create_success_response(
