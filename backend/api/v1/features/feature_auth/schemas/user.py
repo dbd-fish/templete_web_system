@@ -36,6 +36,17 @@ class PasswordResetData(BaseModel):
     new_password: str = Field(..., min_length=8, description="新しいパスワード (8文字以上)")
 
 
+class UserUpdate(BaseModel):
+    """ユーザー情報更新時のリクエストデータを表すモデル。
+    """
+    
+    email: EmailStr | None = Field(None, description="ユーザーのメールアドレス（任意）")
+    username: str | None = Field(None, max_length=50, description="ユーザー名（任意・50文字以内）")
+    contact_number: str | None = Field(None, max_length=20, description="連絡先電話番号（任意・20文字以内）")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserResponse(BaseModel):
     """ユーザー情報のレスポンスデータを表すモデル。
     """
