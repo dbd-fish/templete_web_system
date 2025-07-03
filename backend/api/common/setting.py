@@ -43,6 +43,9 @@ class Setting(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://frontend:5173"
     LOG_LEVEL: str = "INFO"
     TIMEZONE: str = "Asia/Tokyo"
+    
+    # ログ出力設定
+    ENABLE_CONSOLE_LOG: bool = False
 
     class Config:
         env_file = ".env"

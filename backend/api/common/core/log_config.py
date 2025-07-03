@@ -96,7 +96,13 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
     root_logger.handlers.clear()  # 既存ハンドラをクリア
     root_logger.setLevel(logging.INFO)
     root_logger.addHandler(app_file_handler)
-    root_logger.addHandler(console_handler)
+    
+    # コンソール出力制御（環境変数による制御）
+    if setting.ENABLE_CONSOLE_LOG:
+        root_logger.addHandler(console_handler)
+        print("Console logging enabled")
+    else:
+        print("Console logging disabled - logs will only be written to files")
     
     print("Application logger configuration completed.")
 
