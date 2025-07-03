@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -43,6 +44,7 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = Field(None, description="ユーザーのメールアドレス（任意）")
     username: str | None = Field(None, max_length=50, description="ユーザー名（任意・50文字以内）")
     contact_number: str | None = Field(None, max_length=20, description="連絡先電話番号（任意・20文字以内）")
+    date_of_birth: date | None = Field(None, description="生年月日（任意）")
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -4,11 +4,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.common.database import get_db
-from api.v1.features.feature_auth.crud import create_user_service, decode_password_reset_token, get_current_user, reset_password, reset_password_email, temporary_create_user, verify_email_token
-from api.v1.features.feature_auth.schemas.user import PasswordResetData, SendPasswordResetEmailData, TokenData, UserCreate, UserResponse
+from api.v1.features.feature_auth.crud import create_user_service, decode_password_reset_token, get_current_user, reset_password, reset_password_email, temporary_create_user, verify_email_token, update_user_with_schema, delete_user
+from api.v1.features.feature_auth.schemas.user import PasswordResetData, SendPasswordResetEmailData, TokenData, UserCreate, UserResponse, UserUpdate
 from api.v1.features.feature_auth.security import authenticate_user, create_access_token
 from api.v1.models.user import User
-from api.common.response_schemas import SuccessResponse, MessageResponse, EmptyData, create_success_response, create_message_response
+from api.common.response_schemas import SuccessResponse, MessageResponse, EmptyData, create_success_response, create_message_response, ErrorCodes
+from api.common.exception_handlers import BusinessLogicError
 
 # ログの設定
 logger = structlog.get_logger()
@@ -276,3 +277,172 @@ async def reset_password_endpoint(reset_data: PasswordResetData, background_task
         )
     finally:
         logger.info("reset_password_endpoint - end")
+
+
+@router.patch(
+    "/me", 
+    response_model=SuccessResponse[UserResponse],
+    summary="ユーザー情報更新",
+    description="""現在ログイン中のユーザーの情報を部分的に更新します。
+    
+    **認証必須:** JWTトークンが必要です。
+    
+    **更新可能なフィールド:**
+    - username: ユーザー名
+    - email: メールアドレス  
+    - contact_number: 連絡先電話番号
+    - date_of_birth: 生年月日
+    
+    **注意事項:**
+    - メールアドレス変更時は再認証が必要になる場合があります
+    - パスワード変更は別エンドポイントで行ってください
+    """,
+    responses={
+        200: {
+            "description": "ユーザー情報更新成功",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "message": "ユーザー情報が正常に更新されました",
+                        "timestamp": "2025-07-03T12:00:00+09:00",
+                        "data": {
+                            "user_id": "123e4567-e89b-12d3-a456-426614174000",
+                            "username": "updated_user",
+                            "email": "updated@example.com"
+                        }
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "バリデーションエラー",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "message": "入力データの検証に失敗しました",
+                        "error_code": "VALID_001",
+                        "timestamp": "2025-07-03T12:00:00+09:00"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "認証エラー",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "message": "認証が必要です",
+                        "error_code": "AUTH_001",
+                        "timestamp": "2025-07-03T12:00:00+09:00"
+                    }
+                }
+            }
+        }
+    },
+    tags=["認証"]
+)
+async def update_user_profile(user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db)):
+    """現在のユーザー情報を更新するエンドポイント。
+
+    Args:
+        user_update (UserUpdate): 更新するユーザー情報。
+        request (Request): リクエストオブジェクト（認証用）。
+        db (AsyncSession): 非同期データベースセッション。
+
+    Returns:
+        SuccessResponse[UserResponse]: 更新されたユーザー情報。
+    """
+    logger.info("update_user_profile - start")
+    try:
+        # 現在のユーザーを取得
+        current_user = await get_current_user(request, db)
+        
+        # ユーザー情報を更新
+        updated_user = await update_user_with_schema(db, current_user, user_update)
+        logger.info("update_user_profile - success", user_id=updated_user.user_id)
+        
+        user_data = UserResponse.model_validate(updated_user)
+        return create_success_response(
+            message="ユーザー情報が正常に更新されました",
+            data=user_data.model_dump()
+        )
+    finally:
+        logger.info("update_user_profile - end")
+
+
+@router.delete(
+    "/me",
+    response_model=SuccessResponse[MessageResponse],
+    summary="ユーザーアカウント削除",
+    description="""現在ログイン中のユーザーアカウントを削除します。
+    
+    **認証必須:** JWTトークンが必要です。
+    
+    **削除方式:**
+    - 論理削除（ソフトデリート）を採用
+    - データは実際には残るが、非アクティブ状態に変更
+    - ログイン不可になり、APIアクセスも無効化
+    
+    **注意事項:**
+    - この操作は元に戻せません
+    - 削除後は再ログインが必要です
+    - 関連データの処理についてはシステム管理者にお問い合わせください
+    """,
+    responses={
+        200: {
+            "description": "ユーザーアカウント削除成功",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "message": "ユーザーアカウントが正常に削除されました",
+                        "timestamp": "2025-07-03T12:00:00+09:00",
+                        "data": {"message": "ユーザーアカウントが正常に削除されました"}
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "認証エラー",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "message": "認証が必要です",
+                        "error_code": "AUTH_001",
+                        "timestamp": "2025-07-03T12:00:00+09:00"
+                    }
+                }
+            }
+        }
+    },
+    tags=["認証"]
+)
+async def delete_user_account(request: Request, db: AsyncSession = Depends(get_db)):
+    """現在のユーザーアカウントを削除するエンドポイント。
+
+    Args:
+        request (Request): リクエストオブジェクト（認証用）。
+        db (AsyncSession): 非同期データベースセッション。
+
+    Returns:
+        SuccessResponse[MessageResponse]: 削除成功メッセージ。
+    """
+    logger.info("delete_user_account - start")
+    try:
+        # 現在のユーザーを取得
+        current_user = await get_current_user(request, db)
+        
+        # ユーザーを論理削除
+        await delete_user(db, current_user)
+        logger.info("delete_user_account - success", user_id=current_user.user_id)
+        
+        return create_success_response(
+            message="ユーザーアカウントが正常に削除されました",
+            data={"message": "ユーザーアカウントが正常に削除されました"}
+        )
+    finally:
+        logger.info("delete_user_account - end")

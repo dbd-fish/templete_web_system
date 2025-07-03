@@ -14,7 +14,7 @@ from sqlalchemy.future import select
 
 from api.common.database import get_db
 from api.common.setting import setting
-from api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse
+from api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse, UserUpdate
 from api.v1.features.feature_auth.security import create_access_token, decode_access_token, hash_password
 from api.v1.features.feature_auth.send_reset_password_email import send_reset_password_email
 from api.v1.features.feature_auth.send_verification_email import send_verification_email
@@ -101,7 +101,7 @@ async def update_user_password(db: AsyncSession, user: User, hashed_password: st
     return user
 
 
-async def update_user_profile(db: AsyncSession, user: User, username: str | None = None, email: str | None = None) -> User:
+async def update_user_profile(db: AsyncSession, user: User, username: str | None = None, email: str | None = None, contact_number: str | None = None, date_of_birth=None) -> User:
     """ユーザーのプロフィール情報を更新します。
 
     Args:
@@ -109,6 +109,8 @@ async def update_user_profile(db: AsyncSession, user: User, username: str | None
         user (User): 更新対象のユーザーオブジェクト。
         username (str | None): 新しいユーザー名（オプション）。
         email (str | None): 新しいメールアドレス（オプション）。
+        contact_number (str | None): 新しい連絡先（オプション）。
+        date_of_birth: 新しい生年月日（オプション）。
 
     Returns:
         User: 更新されたユーザーオブジェクト。
@@ -117,7 +119,12 @@ async def update_user_profile(db: AsyncSession, user: User, username: str | None
         user.username = username
     if email is not None:
         user.email = email
+    if contact_number is not None:
+        user.contact_number = contact_number
+    if date_of_birth is not None:
+        user.date_of_birth = date_of_birth
     
+    user.updated_at = datetime.now(ZoneInfo("Asia/Tokyo"))
     await db.commit()
     await db.refresh(user)
     return user
@@ -309,5 +316,26 @@ async def reset_password(email: str, new_password: str, db: AsyncSession) -> Non
     
     hashed_password = hash_password(new_password)
     await update_user_password(db, user, hashed_password)
+
+
+async def update_user_with_schema(db: AsyncSession, user: User, user_update: UserUpdate) -> User:
+    """UserUpdateスキーマを使ってユーザーを更新します。
+
+    Args:
+        db (AsyncSession): 非同期データベースセッション。
+        user (User): 更新対象のユーザーオブジェクト。
+        user_update (UserUpdate): 更新データ。
+
+    Returns:
+        User: 更新されたユーザーオブジェクト。
+    """
+    return await update_user_profile(
+        db=db,
+        user=user,
+        username=user_update.username,
+        email=user_update.email,
+        contact_number=user_update.contact_number,
+        date_of_birth=user_update.date_of_birth
+    )
 
 

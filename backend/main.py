@@ -20,7 +20,6 @@ from api.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
 from api.common.setting import setting
 from api.v1.features.feature_auth.route import router as auth_router
 from api.v1.features.feature_dev.dev_controller import router as dev_router
-from api.v1.routes.users import router as users_router
 from api.v1.routes.health import router as health_router
 
 # タイムゾーンをJST（日本標準時）に設定
@@ -123,11 +122,8 @@ if setting.DEV_MODE:
     # 開発環境用のルーター定義
     app.include_router(dev_router, prefix="/api/v1/dev", tags=["開発ツール"])
 
-# 認証関連のルーター
+# 認証関連のルーター（ユーザー管理機能も含む）
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["認証"])
-
-# ユーザー管理関連のルーター
-app.include_router(users_router, prefix="/api/v1/users", tags=["ユーザー管理"])
 
 # ヘルスチェック関連のルーター
 app.include_router(health_router, prefix="/api/v1/health", tags=["ヘルスチェック"])
