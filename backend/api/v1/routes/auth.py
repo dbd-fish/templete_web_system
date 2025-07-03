@@ -13,7 +13,7 @@ from api.common.database import get_db
 from api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse, Token, TokenData, SendPasswordResetEmailData, PasswordResetData
 from api.v1.features.feature_auth.security import create_access_token
 
-from api.v1.features.feature_auth.auth_service import (
+from api.v1.features.feature_auth.service import (
     create_user,
     decode_password_reset_token,
     reset_password,

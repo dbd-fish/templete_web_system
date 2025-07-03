@@ -18,7 +18,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from api.common.database import database
 from api.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
 from api.common.setting import setting
-from api.v1.features.feature_auth.auth_controller import router as auth_router
+from api.v1.features.feature_auth.route import router as auth_router
 from api.v1.features.feature_dev.dev_controller import router as dev_router
 from api.v1.routes.users import router as users_router
 from api.v1.routes.health import router as health_router
