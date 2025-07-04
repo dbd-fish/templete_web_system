@@ -36,8 +36,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          docker exec backend_container poetry install
-        # 依存関係のインストール（念のため）
+          docker exec backend_container poetry install --no-root
+        # 依存関係のインストール（--no-rootでパッケージインストールをスキップ）
 
       - name: Run Ruff Check
         run: |

@@ -43,6 +43,12 @@ jobs:
           docker ps
         # 起動中のDockerコンテナを一覧表示します。
 
+      - name: Install/Update Dependencies
+        run: |
+          docker exec backend_container poetry lock --no-update
+          docker exec backend_container poetry install --no-root
+        # 依存関係のロックファイル更新とインストール（--no-rootでパッケージインストールをスキップ）
+
       - name: Run Database Migrations
         run: |
           docker exec backend_container poetry run alembic upgrade head
