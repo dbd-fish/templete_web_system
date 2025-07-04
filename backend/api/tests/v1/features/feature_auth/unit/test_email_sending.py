@@ -32,8 +32,8 @@ async def test_send_verification_email_with_mock_smtp():
         mock_setting.PYTEST_MODE = False  # Falseにしてメール送信を有効化
         mock_setting.SMTP_SERVER = "localhost"
         mock_setting.SMTP_PORT = 1025
-        mock_setting.SMTP_USERNAME = ""
-        mock_setting.SMTP_PASSWORD = ""
+        mock_setting.SMTP_USERNAME = "test_user"
+        mock_setting.SMTP_PASSWORD = "test_pass"
         mock_setting.APP_NAME = "Test App"
         
         # SMTPサーバーのモック
@@ -71,8 +71,8 @@ async def test_send_reset_password_email_with_mock_smtp():
         mock_setting.PYTEST_MODE = False  # Falseに変更してメール送信を有効化
         mock_setting.SMTP_SERVER = "localhost"
         mock_setting.SMTP_PORT = 1025
-        mock_setting.SMTP_USERNAME = ""
-        mock_setting.SMTP_PASSWORD = ""
+        mock_setting.SMTP_USERNAME = "test_user"
+        mock_setting.SMTP_PASSWORD = "test_pass"
         mock_setting.APP_NAME = "Test App"
         
         # SMTPサーバーのモック
@@ -98,8 +98,8 @@ async def test_verification_email_content():
         mock_setting.PYTEST_MODE = False  # Falseに変更してメール送信を有効化
         mock_setting.SMTP_SERVER = "localhost"
         mock_setting.SMTP_PORT = 1025
-        mock_setting.SMTP_USERNAME = ""
-        mock_setting.SMTP_PASSWORD = ""
+        mock_setting.SMTP_USERNAME = "test_user"
+        mock_setting.SMTP_PASSWORD = "test_pass"
         mock_setting.APP_NAME = "Test Application"
         
         # SMTPサーバーのモック
@@ -149,8 +149,8 @@ async def test_reset_password_email_content():
         mock_setting.PYTEST_MODE = False  # Falseに変更してメール送信を有効化
         mock_setting.SMTP_SERVER = "localhost"
         mock_setting.SMTP_PORT = 1025
-        mock_setting.SMTP_USERNAME = ""
-        mock_setting.SMTP_PASSWORD = ""
+        mock_setting.SMTP_USERNAME = "test_user"
+        mock_setting.SMTP_PASSWORD = "test_pass"
         mock_setting.APP_NAME = "Test Application"
         
         # SMTPサーバーのモック

@@ -53,9 +53,9 @@ async def test_login_with_invalid_credentials() -> None:
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_register_user() -> None:
-    """ユーザー登録のテスト (現在はDBエラーが発生するため、500エラー確認)"""
+    """ユーザー登録のテスト"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
-        # 新規ユーザー情報（現在はタイムゾーンエラーでDB挿入に失敗）
+        # 新規ユーザー情報
         import uuid
         user_data = {
             "email": f"test_{uuid.uuid4().hex[:8]}@example.com",
@@ -73,12 +73,14 @@ async def test_register_user() -> None:
             headers={"Content-Type": "application/json"},
         )
         
-        # 現在はタイムゾーンエラーで500エラーが返る（TODO: 修正後は200に変更）
-        assert response.status_code == 500, response.text
+        # 正常に登録が完了することを確認
+        assert response.status_code == 200, response.text
         response_json = response.json()
         assert "success" in response_json
-        assert response_json["success"] is False
-        assert "データベースエラーが発生しました" == response_json["message"]
+        assert response_json["success"] is True
+        assert "ユーザー登録が完了しました" == response_json["message"]
+        assert "data" in response_json
+        assert response_json["data"]["email"] == user_data["email"]
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_reset_password(authenticated_client: AsyncClient) -> None:
@@ -172,7 +174,11 @@ async def test_reset_password_with_invalid_email() -> None:
             "/api/v1/auth/send-password-reset-email",
             json={"email": "nonexistent@example.com"},
         )
-        assert response.status_code == 200, response.text
+        assert response.status_code == 404, response.text
+        response_json = response.json()
+        # カスタムエラーハンドラーにより'message'フィールドにエラーメッセージが格納される
+        assert response_json["success"] is False
+        assert "指定されたメールアドレスのユーザーが見つかりません" in response_json["message"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
