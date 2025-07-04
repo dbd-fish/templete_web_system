@@ -124,7 +124,8 @@ async def update_user_profile(db: AsyncSession, user: User, username: str | None
     if date_of_birth is not None:
         user.date_of_birth = date_of_birth
     
-    user.updated_at = datetime.now(ZoneInfo("Asia/Tokyo"))
+    # 日本時間をタイムゾーン情報なしで保存
+    user.updated_at = datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None)
     await db.commit()
     await db.refresh(user)
     return user
@@ -140,8 +141,10 @@ async def delete_user(db: AsyncSession, user: User) -> User:
     Returns:
         User: 削除されたユーザーオブジェクト。
     """
-    user.user_status = User.STATUS_DELETED
-    user.deleted_at = datetime.now(ZoneInfo("Asia/Tokyo"))
+    # ユーザーステータスを停止中に変更し、削除日時を設定
+    user.user_status = User.STATUS_SUSPENDED
+    # 日本時間をタイムゾーン情報なしで保存
+    user.deleted_at = datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None)
     await db.commit()
     await db.refresh(user)
     return user
@@ -163,6 +166,9 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
     Raises:
         HTTPException: 認証に失敗した場合。
+    
+    Note:
+        JWTトークンのsubフィールドからメールアドレスを取得してユーザーを検索します。
     """
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="認証情報が無効です", headers={"WWW-Authenticate": "Bearer"})
 
@@ -172,16 +178,16 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         raise credentials_exception
 
     try:
-        # トークンからユーザーIDを取得
+        # トークンからメールアドレスを取得
         payload = decode_access_token(token)
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        email: str = payload.get("sub")
+        if email is None:
             raise credentials_exception
     except Exception:
         raise credentials_exception
 
-    # データベースからユーザーを取得
-    user = await get_user_by_id(db, user_id=user_id)
+    # データベースからユーザーを取得（メールアドレスで検索）
+    user = await get_user_by_email(db, email=email)
     if user is None:
         raise credentials_exception
 
@@ -208,8 +214,9 @@ async def create_user_service(email: str, username: str, password: str, db: Asyn
         username=username,
         hashed_password=hashed_password,
         user_status=User.STATUS_ACTIVE,
-        created_at=datetime.now(ZoneInfo("Asia/Tokyo")),
-        updated_at=datetime.now(ZoneInfo("Asia/Tokyo"))
+        # 日本時間をタイムゾーン情報なしで保存
+        created_at=datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None),
+        updated_at=datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None)
     )
     
     return await create_user(db, new_user)

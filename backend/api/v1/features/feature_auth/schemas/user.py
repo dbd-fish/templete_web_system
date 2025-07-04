@@ -53,9 +53,10 @@ class UserResponse(BaseModel):
     """ユーザー情報のレスポンスデータを表すモデル。
     """
 
-    user_id: UUID = Field(..., description="ユーザーの一意な識別子")
     email: EmailStr = Field(..., description="ユーザーのメールアドレス")
     username: str = Field(..., description="ユーザー名")
+    contact_number: str | None = Field(None, description="連絡先電話番号")
+    date_of_birth: date | None = Field(None, description="生年月日")
     user_role: int = Field(..., description="ユーザー権限 (1: guest, 2: free, 3: regular, 4: admin, 5: owner)")
     user_status: int = Field(..., description="アカウント状態 (1: active, 2: suspended)")
 

@@ -283,7 +283,7 @@ async def reset_password_endpoint(reset_data: PasswordResetData, background_task
     - パスワード変更は別エンドポイントで行ってください
     """,
 )
-async def update_user_profile(user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db)):
+async def update_user_profile(user_update: UserUpdate, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     logger.info("update_user_profile - start")
     try:
         # 現在のユーザーを取得
@@ -291,11 +291,30 @@ async def update_user_profile(user_update: UserUpdate, request: Request, db: Asy
         
         # ユーザー情報を更新
         updated_user = await update_user_with_schema(db, current_user, user_update)
+        logger.info("update_user_profile - user_updated", user_id=updated_user.user_id)
+        
+        # 新しい認証トークンを生成（更新されたユーザー情報で）
+        client_host = (
+            request.headers.get("X-Forwarded-For")
+            or (request.client.host if request.client else "unknown")
+        )
+        access_token = create_access_token(data={"sub": updated_user.email, "client_ip": client_host})
+        logger.info("update_user_profile - token_created")
+
+        # HttpOnlyクッキーとして新しいトークンを設定
+        response.set_cookie(
+            key="authToken",
+            value=access_token,
+            httponly=True,  # JavaScriptからアクセスできないようにする
+            max_age=60 * 60 * 3,  # クッキーの有効期限（秒）　3時間
+            secure=True,   # HTTPSのみで送信
+            samesite="lax"  # クロスサイトリクエストに対する制御
+        )
         logger.info("update_user_profile - success", user_id=updated_user.user_id)
         
         user_data = UserResponse.model_validate(updated_user)
         return create_success_response(
-            message="ユーザー情報が正常に更新されました",
+            message="ユーザー情報が正常に更新され、新しい認証トークンが発行されました",
             data=user_data.model_dump()
         )
     finally:
@@ -313,15 +332,15 @@ async def update_user_profile(user_update: UserUpdate, request: Request, db: Asy
     **削除方式:**
     - 論理削除（ソフトデリート）を採用
     - データは実際には残るが、非アクティブ状態に変更
-    - ログイン不可になり、APIアクセスも無効化
+    - アカウントは完全に無効化され、今後ログインできなくなります
     
     **注意事項:**
     - この操作は元に戻せません
-    - 削除後は再ログインが必要です
-    - 関連データの処理についてはシステム管理者にお問い合わせください
+    - 削除実行後は自動的にログアウトされます
+    - 同じメールアドレスでの再登録が必要な場合は、新規登録を行ってください
     """,
 )
-async def delete_user_account(request: Request, db: AsyncSession = Depends(get_db)):
+async def delete_user_account(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     logger.info("delete_user_account - start")
     try:
         # 現在のユーザーを取得
@@ -329,10 +348,19 @@ async def delete_user_account(request: Request, db: AsyncSession = Depends(get_d
         
         # ユーザーを論理削除
         await delete_user(db, current_user)
+        logger.info("delete_user_account - user_deleted", user_id=current_user.user_id)
+        
+        # 認証クッキーを削除（ログアウト処理）
+        response.delete_cookie(
+            key="authToken",
+            httponly=True,
+            secure=True,
+            samesite="lax"
+        )
         logger.info("delete_user_account - success", user_id=current_user.user_id)
         
         return create_success_response(
-            message="ユーザーアカウントが正常に削除されました",
+            message="ユーザーアカウントが正常に削除され、ログアウトしました",
             data={"message": "ユーザーアカウントが正常に削除されました"}
         )
     finally:
