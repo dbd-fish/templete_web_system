@@ -56,10 +56,10 @@ jobs:
 
       - name: Run All Tests with Coverage
         run: |
-          # docker exec backend_container poetry run pytest --cov=api --cov-report=xml --cov-report=term-missing -v
           docker exec backend_container poetry run pytest
         # backendコンテナ内でpytestを実行（カバレッジ付き）
         # メール送信は環境変数で無効化済み
+        # docker exec backend_container poetry run pytest --cov=api --cov-report=xml --cov-report=term-missing -v
 
       - name: Upload coverage to Codecov (Optional)
         if: always()
