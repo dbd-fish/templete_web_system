@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import jwt
 import pytest
+from fastapi import HTTPException
 
 from api.v1.features.feature_auth.models.user import User
 from api.v1.features.feature_auth.security import (
@@ -74,8 +75,19 @@ async def test_create_access_token_expiry():
 
     # 既に期限切れのトークンのテスト
     expired_token = create_access_token(data=data, expires_delta=timedelta(seconds=-1))
-    with pytest.raises((jwt.ExpiredSignatureError, jwt.InvalidTokenError)):
+    
+    # HTTPExceptionが発生することを確認
+    try:
         decode_access_token(expired_token)
+        # 例外が発生しなかった場合はテスト失敗
+        assert False, "Expected HTTPException was not raised"
+    except HTTPException as e:
+        # 期待する例外の詳細を確認
+        assert e.status_code == 401
+        assert "トークンが期限切れです" in str(e.detail)
+    except Exception as e:
+        # 予期しない例外の場合はテスト失敗
+        assert False, f"Unexpected exception type: {type(e).__name__}: {e}"
 
 
 @pytest.mark.asyncio
@@ -101,7 +113,6 @@ async def test_decode_access_token_invalid_token():
 
     【異常系】jwtとして不適切なトークンをdecode_access_tokenに渡した場合のテスト。
     """
-    from fastapi import HTTPException
 
     invalid_token = "invalid.token.value"
     with pytest.raises(HTTPException):
@@ -123,8 +134,6 @@ async def test_authenticate_user_password_mismatch():
     【異常系】authenticate_userでパスワードが一致しなかった場合のテスト。
     """
     from unittest.mock import AsyncMock, MagicMock
-
-    from fastapi import HTTPException
 
     # モックセッションの作成
     mock_session = AsyncMock()
@@ -157,8 +166,6 @@ async def test_authenticate_user_inactive_status():
     """
     from unittest.mock import AsyncMock, MagicMock
 
-    from fastapi import HTTPException
-
     # モックセッションの作成
     mock_session = AsyncMock()
     mock_result = MagicMock()
@@ -182,8 +189,6 @@ async def test_authenticate_user_deleted():
     【異常系】authenticate_userで削除済みのユーザーをテスト。
     """
     from unittest.mock import AsyncMock, MagicMock
-
-    from fastapi import HTTPException
 
     # モックセッションの作成
     mock_session = AsyncMock()
