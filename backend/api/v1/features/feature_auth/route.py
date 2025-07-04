@@ -104,31 +104,6 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
     - 成功時：HttpOnlyクッキーにJWTトークンを設定
     - 失敗時：401エラー（認証失敗）
     """,
-    responses={
-        200: {
-            "description": "ログイン成功",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": True,
-                        "message": "ログインに成功しました",
-                        "timestamp": "2025-07-03T12:00:00+09:00",
-                        "data": None
-                    }
-                }
-            }
-        },
-        401: {
-            "description": "認証失敗",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Incorrect username or password"
-                    }
-                }
-            }
-        }
-    },
     openapi_extra={
         "requestBody": {
             "content": {
@@ -157,7 +132,6 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
             }
         }
     },
-    tags=["認証"]
 )
 async def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     """ログイン処理を行うエンドポイント。
@@ -297,52 +271,6 @@ async def reset_password_endpoint(reset_data: PasswordResetData, background_task
     - メールアドレス変更時は再認証が必要になる場合があります
     - パスワード変更は別エンドポイントで行ってください
     """,
-    responses={
-        200: {
-            "description": "ユーザー情報更新成功",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": True,
-                        "message": "ユーザー情報が正常に更新されました",
-                        "timestamp": "2025-07-03T12:00:00+09:00",
-                        "data": {
-                            "user_id": "123e4567-e89b-12d3-a456-426614174000",
-                            "username": "updated_user",
-                            "email": "updated@example.com"
-                        }
-                    }
-                }
-            }
-        },
-        400: {
-            "description": "バリデーションエラー",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": False,
-                        "message": "入力データの検証に失敗しました",
-                        "error_code": "VALID_001",
-                        "timestamp": "2025-07-03T12:00:00+09:00"
-                    }
-                }
-            }
-        },
-        401: {
-            "description": "認証エラー",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": False,
-                        "message": "認証が必要です",
-                        "error_code": "AUTH_001",
-                        "timestamp": "2025-07-03T12:00:00+09:00"
-                    }
-                }
-            }
-        }
-    },
-    tags=["認証"]
 )
 async def update_user_profile(user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db)):
     """現在のユーザー情報を更新するエンドポイント。
@@ -391,35 +319,6 @@ async def update_user_profile(user_update: UserUpdate, request: Request, db: Asy
     - 削除後は再ログインが必要です
     - 関連データの処理についてはシステム管理者にお問い合わせください
     """,
-    responses={
-        200: {
-            "description": "ユーザーアカウント削除成功",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": True,
-                        "message": "ユーザーアカウントが正常に削除されました",
-                        "timestamp": "2025-07-03T12:00:00+09:00",
-                        "data": {"message": "ユーザーアカウントが正常に削除されました"}
-                    }
-                }
-            }
-        },
-        401: {
-            "description": "認証エラー",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": False,
-                        "message": "認証が必要です",
-                        "error_code": "AUTH_001",
-                        "timestamp": "2025-07-03T12:00:00+09:00"
-                    }
-                }
-            }
-        }
-    },
-    tags=["認証"]
 )
 async def delete_user_account(request: Request, db: AsyncSession = Depends(get_db)):
     """現在のユーザーアカウントを削除するエンドポイント。
