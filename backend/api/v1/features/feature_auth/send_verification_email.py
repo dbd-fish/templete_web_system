@@ -24,8 +24,12 @@ async def send_verification_email(email: str, verification_url: str):
     logger.info("send_verification_email - start", email=email)
     
     # テスト環境でメール送信が無効化されている場合はスキップ
-    if not setting.ENABLE_EMAIL_SENDING or setting.PYTEST_MODE:
-        logger.info("Email sending disabled in test environment", email=email)
+    # SMTP認証情報が設定されていない場合もスキップ
+    if not setting.ENABLE_EMAIL_SENDING or setting.PYTEST_MODE or not setting.SMTP_USERNAME or not setting.SMTP_PASSWORD:
+        logger.error("Email sending disabled - using mock mode", 
+                   email=email, 
+                   verification_url=verification_url,
+                   reason="Missing SMTP credentials or disabled")
         return
     
     try:
