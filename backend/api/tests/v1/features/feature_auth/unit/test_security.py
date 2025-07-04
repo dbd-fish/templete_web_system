@@ -75,7 +75,7 @@ async def test_create_access_token_expiry():
 
     # 既に期限切れのトークンのテスト
     expired_token = create_access_token(data=data, expires_delta=timedelta(seconds=-1))
-    
+
     # HTTPExceptionが発生することを確認
     try:
         decode_access_token(expired_token)
