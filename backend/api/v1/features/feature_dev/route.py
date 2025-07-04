@@ -13,20 +13,24 @@ logger = structlog.get_logger()
 router = APIRouter()
 
 
-@router.post("/clear_data", response_model=dict)
+@router.post(
+    "/clear_data", 
+    response_model=dict,
+    summary="全テーブルデータクリア",
+    description="""【開発用】全テーブルのデータをクリアします。
+    
+    **注意:** このエンドポイントは開発環境専用です。
+    
+    **パラメータ:**
+    - db: データベースセッション
+    
+    **レスポンス:**
+    - dict: 成功メッセージ
+    """
+)
 async def clear_data_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
-    """【開発用】
-    全テーブルのクリア処理
-
-    Args:
-        db (AsyncSession): データベースセッション。
-
-    Returns:
-        dict: 成功メッセージ
-
-    """
     logger.info("clear_data_endpoint - start")
     try:
         await clear_data(db)
@@ -35,19 +39,24 @@ async def clear_data_endpoint(
     finally:
         logger.info("clear_data_endpoint - end")
 
-@router.post("/seed_data", response_model=dict)
+@router.post(
+    "/seed_data", 
+    response_model=dict,
+    summary="テストデータ投入",
+    description="""【開発用】全テーブルにテスト用のシードデータを投入します。
+    
+    **注意:** このエンドポイントは開発環境専用です。
+    
+    **パラメータ:**
+    - db: データベースセッション
+    
+    **レスポンス:**
+    - dict: 成功メッセージ
+    """
+)
 async def seed_data_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
-    """【開発用】
-    全テーブルのシーダー処理
-    Args:
-        db (AsyncSession): データベースセッション。
-
-    Returns:
-        dict: 成功メッセージ
-
-    """
     logger.info("seed_data_endpoint - start")
     try:
         await seed_data(db)
@@ -76,29 +85,8 @@ async def seed_data_endpoint(
     
     **認証:** 不要
     """,
-    responses={
-        200: {
-            "description": "API正常動作中",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": True,
-                        "message": "APIが正常に動作しています",
-                        "timestamp": "2025-07-03T12:00:00+09:00",
-                        "data": {"status": "healthy"}
-                    }
-                }
-            }
-        }
-    },
-    tags=["開発ツール"]
 )
 async def health_check() -> dict:
-    """基本的なヘルスチェック
-    
-    Returns:
-        dict: ステータス情報
-    """
     logger.info("health_check - start")
     try:
         result = create_success_response(
@@ -132,52 +120,8 @@ async def health_check() -> dict:
     
     **認証:** 不要
     """,
-    responses={
-        200: {
-            "description": "データベース接続正常",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": True,
-                        "message": "データベースに正常に接続しています",
-                        "timestamp": "2025-07-03T12:00:00+09:00",
-                        "data": {
-                            "status": "healthy",
-                            "database": "connected"
-                        }
-                    }
-                }
-            }
-        },
-        500: {
-            "description": "データベース接続エラー",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": False,
-                        "message": "データベース接続に失敗しました",
-                        "error_code": "SERVER_002",
-                        "timestamp": "2025-07-03T12:00:00+09:00",
-                        "details": {
-                            "database": "disconnected",
-                            "error": "Connection timeout"
-                        }
-                    }
-                }
-            }
-        }
-    },
-    tags=["開発ツール"]
 )
 async def health_check_db(session: AsyncSession = Depends(get_db)) -> dict:
-    """データベース接続ヘルスチェック
-    
-    Args:
-        session: データベースセッション
-        
-    Returns:
-        dict: データベース接続ステータス
-    """
     logger.info("health_check_db - start")
     try:
         # シンプルなクエリでデータベース接続確認

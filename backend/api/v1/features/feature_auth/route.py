@@ -16,80 +16,6 @@ logger = structlog.get_logger()
 
 router = APIRouter()
 
-@router.post("/me", response_model=SuccessResponse[UserResponse])
-async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
-    """現在ログインしているユーザーの情報を取得するエンドポイント。
-
-    Args:
-        request (Request): リクエストオブジェクト（クッキーの解析に使用）。
-        db (AsyncSession): 非同期データベースセッション。
-
-    Returns:
-        SuccessResponse[UserResponse]: ログイン中のユーザー情報。
-
-    """
-    logger.info("get_me - start")
-    try:
-        user = await get_current_user(request, db)
-        logger.info("get_me - success", user_id=user.user_id)
-        user_data = UserResponse.model_validate(user)
-        return create_success_response(
-            message="ユーザー情報を取得しました",
-            data=user_data.model_dump()
-        )
-    finally:
-        logger.info("get_me - end")
-
-@router.post("/signup", response_model=SuccessResponse[UserResponse])
-async def register_user(tokenData: TokenData, db: AsyncSession = Depends(get_db)):
-    """新しいユーザーを登録するエンドポイント。
-
-    Args:
-        tokenData (TokenData): メール認証トークン。
-        db (AsyncSession): 非同期データベースセッション。
-
-    Returns:
-        SuccessResponse[UserResponse]: 登録成功メッセージと新規ユーザー情報。
-
-    """
-    logger.info("register_user - start",)
-    try:
-        # tokenからuser情報を取得
-        user_info = await verify_email_token(tokenData.token)
-        logger.info("register_user - user_info", user_info=user_info)
-        # トークンから取得したユーザー情報でユーザー登録
-        new_user = await create_user_service(user_info.email, user_info.username, user_info.password, db)
-        logger.info("register_user - success", user_id=new_user.user_id)
-        user_data = UserResponse.model_validate(new_user)
-        return create_success_response(
-            message="ユーザー登録が完了しました",
-            data=user_data.model_dump()
-        )
-    finally:
-        logger.info("register_user - end")
-
-@router.post("/send-verify-email", response_model=SuccessResponse[MessageResponse])
-async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
-    """新しいユーザーの仮登録用メールを送信するするエンドポイント。
-
-    Args:
-        user (UserCreate): 新規ユーザーの情報（メール、ユーザー名、パスワード）。
-        db (AsyncSession): 非同期データベースセッション。
-
-    Returns:
-        SuccessResponse[MessageResponse]: 認証メール送信成功メッセージ。
-
-    """
-    logger.info("temporary_register_user - start", email=user.email, username=user.username)
-    try:
-        await temporary_create_user(user=user, background_tasks=background_tasks, db=db)
-        logger.info("temporary_register_user - success")
-        return create_message_response(
-            message="認証メールを送信しました。メールをご確認ください"
-        )
-    finally:
-        logger.info("temporary_register_user - end")
-
 @router.post(
     "/login", 
     response_model=SuccessResponse[MessageResponse],
@@ -134,17 +60,6 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
     },
 )
 async def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    """ログイン処理を行うエンドポイント。
-
-    Args:
-        response (Response): レスポンスオブジェクト。
-        form_data (OAuth2PasswordRequestForm): ユーザー名とパスワード。
-        db (AsyncSession): 非同期データベースセッション。
-
-    Returns:
-        SuccessResponse[MessageResponse]: ログイン成功メッセージ。
-
-    """
     logger.info("login - start", username=form_data.username)
     try:
         user = await authenticate_user(form_data.username, form_data.password, db)
@@ -182,17 +97,105 @@ async def login(request: Request, response: Response, form_data: OAuth2PasswordR
     finally:
         logger.info("login - end")
 
-@router.post("/logout", response_model=SuccessResponse[MessageResponse])
-async def logout(current_user: User = Depends(get_current_user)):
-    """ログアウト処理を行うエンドポイント。
 
-    Args:
-        current_user (User): 現在ログイン中のユーザー。
-
-    Returns:
-        SuccessResponse[MessageResponse]: ログアウト成功メッセージ。
-
+@router.post(
+    "/me", 
+    response_model=SuccessResponse[UserResponse],
+    summary="現在のユーザー情報取得",
+    description="""現在ログインしているユーザーの情報を取得します。
+    
+    **パラメータ:**
+    - request: リクエストオブジェクト（クッキーの解析に使用）
+    - db: 非同期データベースセッション
+    
+    **レスポンス:**
+    - SuccessResponse[UserResponse]: ログイン中のユーザー情報
     """
+)
+async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
+    logger.info("get_me - start")
+    try:
+        user = await get_current_user(request, db)
+        logger.info("get_me - success", user_id=user.user_id)
+        user_data = UserResponse.model_validate(user)
+        return create_success_response(
+            message="ユーザー情報を取得しました",
+            data=user_data.model_dump()
+        )
+    finally:
+        logger.info("get_me - end")
+
+@router.post(
+    "/signup", 
+    response_model=SuccessResponse[UserResponse],
+    summary="ユーザー本登録",
+    description="""新しいユーザーを登録するエンドポイントです。
+    
+    **パラメータ:**
+    - tokenData: メール認証トークン
+    - db: 非同期データベースセッション
+    
+    **レスポンス:**
+    - SuccessResponse[UserResponse]: 登録成功メッセージと新規ユーザー情報
+    """
+)
+async def register_user(tokenData: TokenData, db: AsyncSession = Depends(get_db)):
+    logger.info("register_user - start",)
+    try:
+        # tokenからuser情報を取得
+        user_info = await verify_email_token(tokenData.token)
+        logger.info("register_user - user_info", user_info=user_info)
+        # トークンから取得したユーザー情報でユーザー登録
+        new_user = await create_user_service(user_info.email, user_info.username, user_info.password, db)
+        logger.info("register_user - success", user_id=new_user.user_id)
+        user_data = UserResponse.model_validate(new_user)
+        return create_success_response(
+            message="ユーザー登録が完了しました",
+            data=user_data.model_dump()
+        )
+    finally:
+        logger.info("register_user - end")
+
+@router.post(
+    "/send-verify-email", 
+    response_model=SuccessResponse[MessageResponse],
+    summary="仮登録・認証メール送信",
+    description="""新しいユーザーの仮登録用メールを送信するエンドポイントです。
+    
+    **パラメータ:**
+    - user: 新規ユーザーの情報（メール、ユーザー名、パスワード）
+    - background_tasks: バックグラウンドタスク
+    - db: 非同期データベースセッション
+    
+    **レスポンス:**
+    - SuccessResponse[MessageResponse]: 認証メール送信成功メッセージ
+    """
+)
+async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+    logger.info("temporary_register_user - start", email=user.email, username=user.username)
+    try:
+        await temporary_create_user(user=user, background_tasks=background_tasks, db=db)
+        logger.info("temporary_register_user - success")
+        return create_message_response(
+            message="認証メールを送信しました。メールをご確認ください"
+        )
+    finally:
+        logger.info("temporary_register_user - end")
+
+@router.post(
+    "/logout", 
+    response_model=SuccessResponse[MessageResponse],
+    summary="ユーザーログアウト",
+    description="""ログアウト処理を行うエンドポイントです。
+    
+    **パラメータ:**
+    - current_user: 現在ログイン中のユーザー
+    
+    **レスポンス:**
+    - SuccessResponse[MessageResponse]: ログアウト成功メッセージ
+    """
+)
+async def logout(current_user: User = Depends(get_current_user)):
     logger.info("logout - start", current_user=current_user.email)
     try:
         # クライアント側でトークンを削除するシンプルな処理
@@ -203,18 +206,22 @@ async def logout(current_user: User = Depends(get_current_user)):
     finally:
         logger.info("logout - end")
 
-@router.post("/send-password-reset-email", response_model=SuccessResponse[MessageResponse])
-async def send_reset_password_email_endpoint(SendPasswordResetEmailData: SendPasswordResetEmailData, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
-    """パスワードリセットメール送信処理を行うエンドポイント。
-
-    Args:
-        email (str): パスワードリセット対象のメールアドレス
-        db (AsyncSession): 非同期データベースセッション。
-
-    Returns:
-        SuccessResponse[MessageResponse]: パスワードリセットメール送信成功メッセージ。
-
+@router.post(
+    "/send-password-reset-email", 
+    response_model=SuccessResponse[MessageResponse],
+    summary="パスワードリセットメール送信",
+    description="""パスワードリセットメール送信処理を行うエンドポイントです。
+    
+    **パラメータ:**
+    - SendPasswordResetEmailData: パスワードリセット対象のメールアドレス
+    - background_tasks: バックグラウンドタスク
+    - db: 非同期データベースセッション
+    
+    **レスポンス:**
+    - SuccessResponse[MessageResponse]: パスワードリセットメール送信成功メッセージ
     """
+)
+async def send_reset_password_email_endpoint(SendPasswordResetEmailData: SendPasswordResetEmailData, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     logger.info("send_reset_password_email_endpoint - start", email=SendPasswordResetEmailData.email)
     try:
         await reset_password_email(email=SendPasswordResetEmailData.email, background_tasks=background_tasks, db=db)
@@ -228,18 +235,22 @@ async def send_reset_password_email_endpoint(SendPasswordResetEmailData: SendPas
 
 
 
-@router.post("/reset-password", response_model=SuccessResponse[MessageResponse])
-async def reset_password_endpoint(reset_data: PasswordResetData, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
-    """パスワードリセット処理を行うエンドポイント。
-
-    Args:
-        reset_data (PasswordResetData): パスワード変更ユーザの情報（トークン、新しいパスワード）。
-        db (AsyncSession): 非同期データベースセッション。
-
-    Returns:
-        SuccessResponse[MessageResponse]: パスワードリセット成功メッセージ。
-
+@router.post(
+    "/reset-password", 
+    response_model=SuccessResponse[MessageResponse],
+    summary="パスワードリセット実行",
+    description="""パスワードリセット処理を行うエンドポイントです。
+    
+    **パラメータ:**
+    - reset_data: パスワード変更ユーザの情報（トークン、新しいパスワード）
+    - background_tasks: バックグラウンドタスク
+    - db: 非同期データベースセッション
+    
+    **レスポンス:**
+    - SuccessResponse[MessageResponse]: パスワードリセット成功メッセージ
     """
+)
+async def reset_password_endpoint(reset_data: PasswordResetData, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     logger.info("reset_password_endpoint - start", reset_data=reset_data)
     try:
         # tokenからemailを取得
@@ -273,16 +284,6 @@ async def reset_password_endpoint(reset_data: PasswordResetData, background_task
     """,
 )
 async def update_user_profile(user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db)):
-    """現在のユーザー情報を更新するエンドポイント。
-
-    Args:
-        user_update (UserUpdate): 更新するユーザー情報。
-        request (Request): リクエストオブジェクト（認証用）。
-        db (AsyncSession): 非同期データベースセッション。
-
-    Returns:
-        SuccessResponse[UserResponse]: 更新されたユーザー情報。
-    """
     logger.info("update_user_profile - start")
     try:
         # 現在のユーザーを取得
@@ -321,15 +322,6 @@ async def update_user_profile(user_update: UserUpdate, request: Request, db: Asy
     """,
 )
 async def delete_user_account(request: Request, db: AsyncSession = Depends(get_db)):
-    """現在のユーザーアカウントを削除するエンドポイント。
-
-    Args:
-        request (Request): リクエストオブジェクト（認証用）。
-        db (AsyncSession): 非同期データベースセッション。
-
-    Returns:
-        SuccessResponse[MessageResponse]: 削除成功メッセージ。
-    """
     logger.info("delete_user_account - start")
     try:
         # 現在のユーザーを取得
