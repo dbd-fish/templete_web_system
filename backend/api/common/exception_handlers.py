@@ -4,7 +4,6 @@
 FastAPIの例外ハンドラーを標準レスポンス形式に統一
 """
 
-
 import structlog
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
