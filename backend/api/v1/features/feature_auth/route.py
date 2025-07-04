@@ -195,11 +195,17 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
     - SuccessResponse[MessageResponse]: ログアウト成功メッセージ
     """
 )
-async def logout(current_user: User = Depends(get_current_user)):
+async def logout(response: Response, current_user: User = Depends(get_current_user)):
     logger.info("logout - start", current_user=current_user.email)
     try:
-        # クライアント側でトークンを削除するシンプルな処理
-        logger.info("logout - success")
+        # 認証クッキーを削除してログアウト処理
+        response.delete_cookie(
+            key="authToken",
+            httponly=True,
+            secure=True,
+            samesite="lax"
+        )
+        logger.info("logout - success", user_email=current_user.email)
         return create_message_response(
             message="ログアウトしました"
         )
