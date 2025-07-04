@@ -132,7 +132,7 @@ async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
     description="""新しいユーザーを登録するエンドポイントです。
     
     **パラメータ:**
-    - tokenData: メール認証トークン
+    - tokenData: メールで送信されたURLから取得できるJWTトークン
     - db: 非同期データベースセッション
     
     **レスポンス:**
