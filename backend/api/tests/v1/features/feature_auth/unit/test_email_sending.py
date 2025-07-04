@@ -11,7 +11,9 @@ from api.v1.features.feature_auth.send_reset_password_email import send_reset_pa
 
 @pytest.mark.asyncio
 async def test_send_verification_email_disabled():
-    """メール送信が無効化されている場合のテスト"""
+    """send_verification_email
+    
+    【正常系】メール送信が無効化されている場合のテスト"""
     with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting:
         mock_setting.ENABLE_EMAIL_SENDING = False
         mock_setting.PYTEST_MODE = True
@@ -23,7 +25,9 @@ async def test_send_verification_email_disabled():
 
 @pytest.mark.asyncio
 async def test_send_verification_email_with_mock_smtp():
-    """SMTPサーバーをモック化したメール送信テスト"""
+    """send_verification_email
+    
+    【正常系】SMTPサーバーをモック化したメール送信テスト"""
     with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, \
          patch("smtplib.SMTP") as mock_smtp:
         
@@ -50,7 +54,9 @@ async def test_send_verification_email_with_mock_smtp():
 
 @pytest.mark.asyncio
 async def test_send_reset_password_email_disabled():
-    """パスワードリセットメール送信が無効化されている場合のテスト"""
+    """send_reset_password_email
+    
+    【正常系】パスワードリセットメール送信が無効化されている場合のテスト"""
     with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting:
         mock_setting.ENABLE_EMAIL_SENDING = False
         mock_setting.PYTEST_MODE = True
@@ -62,7 +68,9 @@ async def test_send_reset_password_email_disabled():
 
 @pytest.mark.asyncio
 async def test_send_reset_password_email_with_mock_smtp():
-    """SMTPサーバーをモック化したパスワードリセットメール送信テスト"""
+    """send_reset_password_email
+    
+    【正常系】SMTPサーバーをモック化したパスワードリセットメール送信テスト"""
     with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, \
          patch("smtplib.SMTP") as mock_smtp:
         
@@ -89,7 +97,9 @@ async def test_send_reset_password_email_with_mock_smtp():
 
 @pytest.mark.asyncio
 async def test_verification_email_content():
-    """認証メールの内容確認テスト"""
+    """send_verification_email
+    
+    【正常系】認証メールの内容確認テスト"""
     with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, \
          patch("smtplib.SMTP") as mock_smtp:
         
@@ -140,7 +150,9 @@ async def test_verification_email_content():
 
 @pytest.mark.asyncio
 async def test_reset_password_email_content():
-    """パスワードリセットメールの内容確認テスト"""
+    """send_reset_password_email
+    
+    【正常系】パスワードリセットメールの内容確認テスト"""
     with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, \
          patch("smtplib.SMTP") as mock_smtp:
         

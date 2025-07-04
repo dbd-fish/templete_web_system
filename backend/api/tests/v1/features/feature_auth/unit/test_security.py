@@ -15,7 +15,9 @@ from api.v1.features.feature_auth.models.user import User
 
 @pytest.mark.asyncio
 async def test_hash_password_not_empty():
-    """hash_passwordの出力が空でないことを確認。
+    """hash_password
+    
+    【正常系】hash_passwordの出力が空でないことを確認。
     """
     plain_password = "securepassword"
     hashed_password = hash_password(plain_password)
@@ -30,7 +32,9 @@ async def test_hash_password_not_empty():
 
 @pytest.mark.asyncio
 async def test_verify_password_special_case():
-    """verify_passwordの特殊ケースをテスト。
+    """verify_password
+    
+    【正常系】verify_passwordの特殊ケースをテスト。
     """
     plain_password = "特殊文字!@#$%^&*()"
     hashed_password = hash_password(plain_password)
@@ -43,7 +47,9 @@ async def test_verify_password_special_case():
 
 @pytest.mark.asyncio
 async def test_create_access_token_no_expiry():
-    """create_access_tokenで有効期限を指定しないケースをテスト。
+    """create_access_token
+    
+    【正常系】create_access_tokenで有効期限を指定しないケースをテスト。
     """
     data = {"sub": "test_user_id"}
     token = create_access_token(data=data)
@@ -54,7 +60,9 @@ async def test_create_access_token_no_expiry():
 
 @pytest.mark.asyncio
 async def test_create_access_token_expiry():
-    """create_access_tokenで有効期限を指定するケースをテスト。
+    """create_access_token
+    
+    【正常系】create_access_tokenで有効期限を指定するケースをテスト。
     """
     data = {"sub": "test_user_id"}
     
@@ -72,7 +80,9 @@ async def test_create_access_token_expiry():
 
 @pytest.mark.asyncio
 async def test_decode_access_token_missing_field():
-    """decode_access_tokenでトークンからsubフィールドが欠落しているケースをテスト。
+    """decode_access_token
+    
+    【正常系】decode_access_tokenでトークンからsubフィールドが欠落しているケースをテスト。
     """
     data = {"other_field": "value"}
     token = create_access_token(data=data)
@@ -87,7 +97,9 @@ async def test_decode_access_token_missing_field():
 
 @pytest.mark.asyncio
 async def test_decode_access_token_invalid_token():
-    """jwtとして不適切なトークンをdecode_access_tokenに渡した場合のテスト。
+    """decode_access_token
+    
+    【異常系】jwtとして不適切なトークンをdecode_access_tokenに渡した場合のテスト。
     """
     from fastapi import HTTPException
     
@@ -106,7 +118,9 @@ async def test_decode_access_token_invalid_token():
 
 @pytest.mark.asyncio
 async def test_authenticate_user_password_mismatch():
-    """authenticate_userでパスワードが一致しなかった場合のテスト。
+    """authenticate_user
+    
+    【異常系】authenticate_userでパスワードが一致しなかった場合のテスト。
     """
     from unittest.mock import AsyncMock, MagicMock
     from fastapi import HTTPException
@@ -136,7 +150,9 @@ async def test_authenticate_user_password_mismatch():
 
 @pytest.mark.asyncio
 async def test_authenticate_user_inactive_status():
-    """authenticate_userで非アクティブなユーザーをテスト。
+    """authenticate_user
+    
+    【異常系】authenticate_userで非アクティブなユーザーをテスト。
     """
     from unittest.mock import AsyncMock, MagicMock
     from fastapi import HTTPException
@@ -159,7 +175,9 @@ async def test_authenticate_user_inactive_status():
 
 @pytest.mark.asyncio
 async def test_authenticate_user_deleted():
-    """authenticate_userで削除済みのユーザーをテスト。
+    """authenticate_user
+    
+    【異常系】authenticate_userで削除済みのユーザーをテスト。
     """
     from unittest.mock import AsyncMock, MagicMock
     from fastapi import HTTPException
