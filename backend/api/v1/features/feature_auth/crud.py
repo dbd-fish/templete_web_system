@@ -38,6 +38,21 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     return result.scalars().first()
 
 
+async def get_user_by_email_including_deleted(db: AsyncSession, email: str) -> User | None:
+    """メールアドレスに基づいてユーザーを取得します（論理削除済みも含む）。
+
+    Args:
+        db (AsyncSession): 非同期データベースセッション。
+        email (str): 検索対象のメールアドレス。
+
+    Returns:
+        User | None: 該当するユーザーが存在すれば返却、それ以外はNone。
+    """
+    query = select(User).where(User.email == email)
+    result = await db.execute(query)
+    return result.scalars().first()
+
+
 async def get_user_by_username(db: AsyncSession, username: str) -> User | None:
     """ユーザー名に基づいてユーザーを取得します。
 
@@ -150,6 +165,30 @@ async def delete_user(db: AsyncSession, user: User) -> User:
     return user
 
 
+async def restore_user(db: AsyncSession, user: User, new_username: str, new_password: str) -> User:
+    """論理削除されたユーザーを復活させます。
+
+    Args:
+        db (AsyncSession): 非同期データベースセッション。
+        user (User): 復活対象のユーザーオブジェクト。
+        new_username (str): 新しいユーザー名。
+        new_password (str): 新しいパスワード。
+
+    Returns:
+        User: 復活されたユーザーオブジェクト。
+    """
+    # ユーザー情報を更新して復活
+    user.username = new_username
+    user.hashed_password = hash_password(new_password)
+    user.user_status = User.STATUS_ACTIVE
+    user.deleted_at = None
+    # 日本時間をタイムゾーン情報なしで保存
+    user.updated_at = datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
 # =============================================================================
 # サービス層関数（ビジネスロジック、認証、メール送信など）
 # =============================================================================
@@ -196,6 +235,8 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
 async def create_user_service(email: str, username: str, password: str, db: AsyncSession) -> User:
     """新しいユーザーを作成します（パスワードハッシュ化込み）。
+    
+    論理削除済みユーザーが存在する場合は復活させます。
 
     Args:
         email (str): メールアドレス。
@@ -204,8 +245,27 @@ async def create_user_service(email: str, username: str, password: str, db: Asyn
         db (AsyncSession): 非同期データベースセッション。
 
     Returns:
-        User: 作成されたユーザー。
+        User: 作成または復活されたユーザー。
     """
+    logger.info("create_user_service - start", email=email, username=username)
+    
+    # 論理削除済みも含めてユーザーが既に存在するかチェック
+    existing_user = await get_user_by_email_including_deleted(db, email)
+    
+    if existing_user:
+        if existing_user.deleted_at is not None:
+            # 論理削除済みユーザーを復活
+            logger.info("create_user_service - restoring deleted user", email=email, user_id=existing_user.user_id)
+            restored_user = await restore_user(db, existing_user, username, password)
+            logger.info("create_user_service - user restored", email=email, user_id=restored_user.user_id)
+            return restored_user
+        else:
+            # アクティブなユーザーが既に存在
+            logger.error("create_user_service - active user already exists", email=email)
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="このメールアドレスは既に使用されています")
+    
+    # 新規ユーザー作成
+    logger.info("create_user_service - creating new user", email=email)
     hashed_password = hash_password(password)
     
     new_user = User(
@@ -220,7 +280,9 @@ async def create_user_service(email: str, username: str, password: str, db: Asyn
         updated_at=datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None)
     )
     
-    return await create_user(db, new_user)
+    created_user = await create_user(db, new_user)
+    logger.info("create_user_service - new user created", email=email, user_id=created_user.user_id)
+    return created_user
 
 
 async def temporary_create_user(user: UserCreate, background_tasks: BackgroundTasks, db: AsyncSession) -> None:
@@ -272,15 +334,20 @@ async def reset_password_email(email: str, background_tasks: BackgroundTasks, db
         email (str): メールアドレス。
         background_tasks (BackgroundTasks): バックグラウンドタスク。
         db (AsyncSession): 非同期データベースセッション。
+        
+    Raises:
+        HTTPException: ユーザーが見つからない場合。
     """
     # ユーザーの存在確認
     user = await get_user_by_email(db, email)
-    if user:
-        # パスワードリセットトークンを生成
-        reset_token = create_access_token(data={"email": email}, expires_delta=timedelta(hours=1))
-        
-        # バックグラウンドでメール送信
-        background_tasks.add_task(send_reset_password_email, email, reset_token)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="指定されたメールアドレスのユーザーが見つかりません")
+    
+    # パスワードリセットトークンを生成
+    reset_token = create_access_token(data={"email": email}, expires_delta=timedelta(hours=1))
+    
+    # バックグラウンドでメール送信
+    background_tasks.add_task(send_reset_password_email, email, reset_token)
 
 
 async def decode_password_reset_token(token: str) -> str:

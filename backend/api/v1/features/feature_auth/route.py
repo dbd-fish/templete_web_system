@@ -22,6 +22,13 @@ router = APIRouter()
     summary="ユーザーログイン",
     description="""ユーザー名（またはメールアドレス）とパスワードでログインします。
     
+    **処理の流れ:**
+    1. フォームデータ（username/password）を受信
+    2. authenticate_user()でユーザー認証を実行
+    3. 認証成功時、JWTアクセストークンを生成
+    4. HttpOnlyクッキーとしてトークンを設定
+    5. セキュアなクッキー設定（3時間の有効期限）
+    
     **テスト用アカウント:**
     - ユーザー名: `testuser`
     - パスワード: `Password123456+-`
@@ -29,6 +36,11 @@ router = APIRouter()
     **レスポンス:**
     - 成功時：HttpOnlyクッキーにJWTトークンを設定
     - 失敗時：401エラー（認証失敗）
+    
+    **セキュリティ:**
+    - HttpOnlyクッキーでXSS攻撃を防止
+    - Secure属性でHTTPS通信を強制
+    - SameSite=Lax設定でCSRF攻撃を軽減
     """,
     openapi_extra={
         "requestBody": {
@@ -104,12 +116,25 @@ async def login(request: Request, response: Response, form_data: OAuth2PasswordR
     summary="現在のユーザー情報取得",
     description="""現在ログインしているユーザーの情報を取得します。
     
+    **処理の流れ:**
+    1. RequestオブジェクトからauthTokenクッキーを取得
+    2. get_current_user()でJWTトークンを検証
+    3. トークンからemailを抽出してデータベース検索
+    4. ユーザー情報をUserResponseスキーマに変換
+    5. 成功レスポンスとして返却
+    
+    **認証方式:**
+    - HttpOnlyクッキーからJWTトークンを取得
+    - トークンの有効性・有効期限を検証
+    - データベースでユーザー存在確認
+    
     **パラメータ:**
     - request: リクエストオブジェクト（クッキーの解析に使用）
     - db: 非同期データベースセッション
     
     **レスポンス:**
     - SuccessResponse[UserResponse]: ログイン中のユーザー情報
+    - 401エラー: 認証失敗時（無効なトークン・ユーザー未存在）
     """
 )
 async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
@@ -131,12 +156,30 @@ async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
     summary="ユーザー本登録",
     description="""新しいユーザーを登録するエンドポイントです。
     
+    **処理の流れ:**
+    1. 認証メール内のURLから取得したJWTトークンを受信
+    2. verify_email_token()でトークンの有効性を検証
+    3. トークンからユーザー情報（email, username, password）を抽出
+    4. create_user_service()でユーザー登録処理を実行：
+       - 論理削除済みユーザーが存在する場合：復活処理を実行
+       - アクティブユーザーが存在する場合：409エラーを返す
+       - 新規の場合：新しいユーザーを作成
+    5. パスワードはbcryptでハッシュ化して保存
+    6. 作成または復活されたユーザー情報をUserResponseスキーマで返却
+    
+    **前提条件:**
+    - 事前に/send-verify-emailで認証メールを送信済み
+    - 認証メール内のURLからトークンを取得
+    - トークンの有効期限は24時間
+    
     **パラメータ:**
     - tokenData: メールで送信されたURLから取得できるJWTトークン
     - db: 非同期データベースセッション
     
     **レスポンス:**
     - SuccessResponse[UserResponse]: 登録成功メッセージと新規ユーザー情報
+    - 400エラー: 無効なトークン、期限切れトークン
+    - 409エラー: アクティブなユーザーが既に存在する場合
     """
 )
 async def register_user(tokenData: TokenData, db: AsyncSession = Depends(get_db)):
@@ -161,6 +204,22 @@ async def register_user(tokenData: TokenData, db: AsyncSession = Depends(get_db)
     response_model=SuccessResponse[MessageResponse],
     summary="仮登録・認証メール送信",
     description="""新しいユーザーの仮登録用メールを送信するエンドポイントです。
+    
+    **処理の流れ:**
+    1. UserCreateスキーマでユーザー情報を受信
+    2. temporary_create_user()でメール認証処理を開始
+    3. ユーザー情報をJWTトークンに埋め込み（24時間有効）
+    4. send_verification_email()をバックグラウンドタスクで実行
+    5. メール送信は非同期で実行され、レスポンスを即座に返却
+    
+    **メール送信内容:**
+    - 件名: アカウント本登録のお知らせ
+    - 本文: 認証リンクURL（JWTトークン付き）
+    - 有効期限: 24時間
+    
+    **セキュリティ:**
+    - パスワードはトークンに含まれるが、JWTで暗号化
+    - SMTP認証情報が未設定の場合はモックモードで動作
     
     **パラメータ:**
     - user: 新規ユーザーの情報（メール、ユーザー名、パスワード）
@@ -188,11 +247,22 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
     summary="ユーザーログアウト",
     description="""ログアウト処理を行うエンドポイントです。
     
+    **処理の流れ:**
+    1. get_current_user()でログイン中のユーザーを確認
+    2. 認証クッキー（authToken）をセキュアな設定で削除
+    3. ログアウト成功メッセージを返却
+    
+    **クッキー削除設定:**
+    - HttpOnly: JavaScriptからアクセス不可
+    - Secure: HTTPS通信でのみ有効
+    - SameSite=Lax: CSRF攻撃防止
+    
     **パラメータ:**
-    - current_user: 現在ログイン中のユーザー
+    - current_user: 現在ログイン中のユーザー（依存性注入で自動取得）
     
     **レスポンス:**
     - SuccessResponse[MessageResponse]: ログアウト成功メッセージ
+    - 401エラー: 未認証状態でのアクセス時
     """
 )
 async def logout(response: Response, current_user: User = Depends(get_current_user)):
@@ -218,6 +288,22 @@ async def logout(response: Response, current_user: User = Depends(get_current_us
     summary="パスワードリセットメール送信",
     description="""パスワードリセットメール送信処理を行うエンドポイントです。
     
+    **処理の流れ:**
+    1. SendPasswordResetEmailDataでメールアドレスを受信
+    2. reset_password_email()でパスワードリセット処理を開始
+    3. データベースでユーザー存在確認
+    4. 存在しない場合：404エラーを返す
+    5. 存在する場合：JWTトークンを生成（1時間有効）
+    6. send_reset_password_email()をバックグラウンドタスクで実行
+    
+    **メール送信内容:**
+    - 件名: パスワードリセットのお知らせ
+    - 本文: パスワードリセットリンクURL（JWTトークン付き）
+    - 有効期限: 1時間
+    
+    **セキュリティ機能:**
+    - トークンは1時間の短期間で有効期限切れ
+    
     **パラメータ:**
     - SendPasswordResetEmailData: パスワードリセット対象のメールアドレス
     - background_tasks: バックグラウンドタスク
@@ -225,6 +311,7 @@ async def logout(response: Response, current_user: User = Depends(get_current_us
     
     **レスポンス:**
     - SuccessResponse[MessageResponse]: パスワードリセットメール送信成功メッセージ
+    - 404エラー: 指定されたメールアドレスのユーザーが見つからない場合
     """
 )
 async def send_reset_password_email_endpoint(SendPasswordResetEmailData: SendPasswordResetEmailData, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
@@ -247,6 +334,24 @@ async def send_reset_password_email_endpoint(SendPasswordResetEmailData: SendPas
     summary="パスワードリセット実行",
     description="""パスワードリセット処理を行うエンドポイントです。
     
+    **処理の流れ:**
+    1. PasswordResetDataでトークンと新しいパスワードを受信
+    2. decode_password_reset_token()でJWTトークンを検証
+    3. トークンからメールアドレスを抽出
+    4. reset_password()でパスワード更新処理を実行
+    5. 新しいパスワードをbcryptでハッシュ化
+    6. データベースでユーザーのパスワードを更新
+    
+    **前提条件:**
+    - 事前に/send-password-reset-emailでリセットメールを送信済み
+    - リセットメール内のURLからトークンを取得
+    - トークンの有効期限は1時間
+    
+    **セキュリティ:**
+    - JWTトークンの有効性・有効期限を厳密に検証
+    - パスワードはbcryptで安全にハッシュ化
+    - トークンは一回限りの使用（時間ベースで自動失効）
+    
     **パラメータ:**
     - reset_data: パスワード変更ユーザの情報（トークン、新しいパスワード）
     - background_tasks: バックグラウンドタスク
@@ -254,6 +359,8 @@ async def send_reset_password_email_endpoint(SendPasswordResetEmailData: SendPas
     
     **レスポンス:**
     - SuccessResponse[MessageResponse]: パスワードリセット成功メッセージ
+    - 400エラー: 無効なトークン、期限切れトークン
+    - 404エラー: ユーザーが見つからない場合
     """
 )
 async def reset_password_endpoint(reset_data: PasswordResetData, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
@@ -276,6 +383,19 @@ async def reset_password_endpoint(reset_data: PasswordResetData, background_task
     summary="ユーザー情報更新",
     description="""現在ログイン中のユーザーの情報を部分的に更新します。
     
+    **処理の流れ:**
+    1. get_current_user()で現在のユーザーを取得・認証
+    2. UserUpdateスキーマで更新データを受信
+    3. update_user_with_schema()でユーザー情報を更新
+    4. 更新されたユーザー情報で新しいJWTトークンを生成
+    5. 新しいトークンをHttpOnlyクッキーに設定
+    6. 更新されたユーザー情報をレスポンスで返却
+    
+    **自動トークン更新:**
+    - ユーザー情報更新後、新しいJWTトークンを自動生成
+    - 古いトークンは自動的に無効化
+    - セッションの継続性を保証
+    
     **認証必須:** JWTトークンが必要です。
     
     **更新可能なフィールド:**
@@ -285,8 +405,9 @@ async def reset_password_endpoint(reset_data: PasswordResetData, background_task
     - date_of_birth: 生年月日
     
     **注意事項:**
-    - メールアドレス変更時は再認証が必要になる場合があります
+    - メールアドレス変更時は新しいトークンが発行されます
     - パスワード変更は別エンドポイントで行ってください
+    - 更新時刻は自動的に日本時間で記録されます
     """,
 )
 async def update_user_profile(user_update: UserUpdate, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
@@ -332,6 +453,20 @@ async def update_user_profile(user_update: UserUpdate, request: Request, respons
     response_model=SuccessResponse[MessageResponse],
     summary="ユーザーアカウント削除",
     description="""現在ログイン中のユーザーアカウントを削除します。
+    
+    **処理の流れ:**
+    1. get_current_user()で現在のユーザーを取得・認証
+    2. delete_user()で論理削除を実行
+    3. ユーザーステータスを「停止中」に変更
+    4. deleted_at フィールドに削除日時を記録
+    5. 認証クッキーを削除してログアウト処理
+    6. 削除完了メッセージを返却
+    
+    **論理削除の詳細:**
+    - 物理削除は行わず、データベースレコードは保持
+    - user_status を STATUS_SUSPENDED に変更
+    - deleted_at に削除日時を記録（日本時間）
+    - 削除されたユーザーは検索対象から除外
     
     **認証必須:** JWTトークンが必要です。
     
