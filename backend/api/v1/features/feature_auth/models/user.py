@@ -10,21 +10,20 @@ from api.common.database import Base
 
 
 class User(Base):
-    """Userモデル: ユーザー管理テーブル
-    """
+    """Userモデル: ユーザー管理テーブル"""
 
     __tablename__ = "user"
 
     # ユーザー権限を定数として定義
-    ROLE_GUEST = 1      # ゲスト
-    ROLE_FREE = 2       # 無料会員
-    ROLE_REGULAR = 3    # 一般会員
-    ROLE_ADMIN = 4      # 管理者
-    ROLE_OWNER = 5      # オーナー
+    ROLE_GUEST = 1  # ゲスト
+    ROLE_FREE = 2  # 無料会員
+    ROLE_REGULAR = 3  # 一般会員
+    ROLE_ADMIN = 4  # 管理者
+    ROLE_OWNER = 5  # オーナー
 
     # ユーザー状態を定数として定義
-    STATUS_ACTIVE = 1   # アクティブ
-    STATUS_SUSPENDED = 2 # 停止中
+    STATUS_ACTIVE = 1  # アクティブ
+    STATUS_SUSPENDED = 2  # 停止中
 
     # ユーザーID (UUID) - プライマリキー
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, comment="ユーザーID (UUID)")

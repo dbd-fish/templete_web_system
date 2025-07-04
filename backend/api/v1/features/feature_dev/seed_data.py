@@ -1,4 +1,3 @@
-
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.sql import text
 
@@ -7,22 +6,20 @@ from api.v1.features.feature_dev.seed_user import seed_user
 
 
 async def clear_data(db: AsyncSession):
-    """データベースをクリアします。すべてのテーブルを削除し、再作成します。
-    """
-        # db.bind の型を明示的にチェック
+    """データベースをクリアします。すべてのテーブルを削除し、再作成します。"""
+    # db.bind の型を明示的にチェック
     if not isinstance(db.bind, AsyncEngine):
         raise TypeError("db.bind is not an AsyncEngine")
     engine: AsyncEngine = db.bind
     async with engine.begin() as conn:
-
         try:
             print("データベースURL:", engine.url)
             print("すべてのテーブルを削除中...")
             # テーブルを CASCADE で削除
             # スキーマ全体を削除
-            await conn.execute(text('DROP SCHEMA public CASCADE'))
+            await conn.execute(text("DROP SCHEMA public CASCADE"))
             # スキーマを再作成
-            await conn.execute(text('CREATE SCHEMA public'))
+            await conn.execute(text("CREATE SCHEMA public"))
             print("すべてのテーブルを作成中...")
             await conn.run_sync(Base.metadata.create_all)  # テーブルを作成
             print("データベースのクリアが完了しました。")
@@ -31,8 +28,7 @@ async def clear_data(db: AsyncSession):
 
 
 async def seed_data(db: AsyncSession):
-    """テーブルへデータを挿入します。
-    """
+    """テーブルへデータを挿入します。"""
     # db.bind の型を明示的にチェック
     if not isinstance(db.bind, AsyncEngine):
         raise TypeError("db.bind is not an AsyncEngine")

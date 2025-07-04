@@ -5,8 +5,7 @@ from api.common.core.log_config import logger, structlog
 
 
 class AddUserIPMiddleware(BaseHTTPMiddleware):
-    """リクエストのIPアドレスを取得し、ログのコンテキストに追加するミドルウェア。
-    """
+    """リクエストのIPアドレスを取得し、ログのコンテキストに追加するミドルウェア。"""
 
     async def dispatch(self, request: Request, call_next):
         """リクエストのIPアドレスを取得し、ログのコンテキストに追加します。

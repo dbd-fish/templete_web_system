@@ -54,8 +54,7 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
         app_log_file_path = get_log_file_path(setting.APP_LOG_DIRECTORY)
 
     class JSTFormatter(logging.Formatter):
-        """日本時間（JST）でタイムスタンプをフォーマットするカスタムフォーマッタ。
-        """
+        """日本時間（JST）でタイムスタンプをフォーマットするカスタムフォーマッタ。"""
 
         def formatTime(self, record, datefmt=None):
             dt = datetime.fromtimestamp(record.created, ZoneInfo("Asia/Tokyo"))
@@ -74,11 +73,16 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
             structlog.processors.CallsiteParameterAdder([CallsiteParameter.PATHNAME, CallsiteParameter.FUNC_NAME, CallsiteParameter.LINENO]),
         ],
     )
-    
+
     # コンソール出力用フォーマッタ
     console_formatter = structlog.stdlib.ProcessorFormatter(
         processor=structlog.dev.ConsoleRenderer(colors=True),
-        foreign_pre_chain=[structlog.contextvars.merge_contextvars, structlog.processors.TimeStamper(fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False), structlog.processors.add_log_level, structlog.stdlib.add_logger_name],
+        foreign_pre_chain=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.TimeStamper(fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False),
+            structlog.processors.add_log_level,
+            structlog.stdlib.add_logger_name,
+        ],
     )
 
     # ファイルハンドラ設定
@@ -96,14 +100,14 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
     root_logger.handlers.clear()  # 既存ハンドラをクリア
     root_logger.setLevel(logging.INFO)
     root_logger.addHandler(app_file_handler)
-    
+
     # コンソール出力制御（環境変数による制御）
     if setting.ENABLE_CONSOLE_LOG:
         root_logger.addHandler(console_handler)
         print("Console logging enabled")
     else:
         print("Console logging disabled - logs will only be written to files")
-    
+
     print("Application logger configuration completed.")
 
     # SQLAlchemyログの設定
@@ -114,7 +118,7 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
         processors=[
             structlog.stdlib.filter_by_level,  # ログレベルでフィルタリング
             structlog.contextvars.merge_contextvars,  # リクエストスコープでの変数をログに統合
-             structlog.processors.TimeStamper(fmt="iso", utc=False),  # ISOフォーマットのタイムスタンプを追加
+            structlog.processors.TimeStamper(fmt="iso", utc=False),  # ISOフォーマットのタイムスタンプを追加
             structlog.stdlib.add_logger_name,  # ロガー名を追加
             structlog.stdlib.add_log_level,  # ログレベルを追加
             structlog.stdlib.PositionalArgumentsFormatter(),  # 位置引数をフォーマット
@@ -151,14 +155,15 @@ def configure_sqlalchemy_logging(test_env: int = 0) -> None:
 
     sqlalchemy_file_handler = logging.FileHandler(sqlalchemy_log_file_path, encoding="utf-8")
     sqlalchemy_file_handler.setLevel(logging.WARNING)  # ハンドラのレベルもWARNINGに設定
-    
+
     # ISO形式でマイクロ秒まで含むSQLAlchemy用フォーマッタ
     class SQLAlchemyJSTFormatter(logging.Formatter):
         """SQLAlchemy用のJST時間フォーマッタ"""
+
         def formatTime(self, record, datefmt=None):
             dt = datetime.fromtimestamp(record.created, ZoneInfo("Asia/Tokyo"))
             return dt.strftime(datefmt) if datefmt else dt.isoformat()
-    
+
     sqlalchemy_formatter = SQLAlchemyJSTFormatter("[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%dT%H:%M:%S.%f")
     sqlalchemy_file_handler.setFormatter(sqlalchemy_formatter)
 
@@ -174,6 +179,7 @@ def configure_sqlalchemy_logging(test_env: int = 0) -> None:
         sub_logger.propagate = False  # 親ロガーへの伝播を防ぐ
 
     print("SQLAlchemy logging configuration completed.")
+
 
 # ロガー作成
 logger = configure_logging()

@@ -1,5 +1,4 @@
 from datetime import date
-from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -7,8 +6,7 @@ from api.v1.features.feature_auth.models.user import User
 
 
 class UserCreate(BaseModel):
-    """ユーザー作成時に必要なデータを表すモデル。
-    """
+    """ユーザー作成時に必要なデータを表すモデル。"""
 
     email: EmailStr = Field(..., description="ユーザーのメールアドレス")
     username: str = Field(..., max_length=50, description="ユーザー名 (50文字以内)")
@@ -17,30 +15,29 @@ class UserCreate(BaseModel):
     user_role: int = Field(User.ROLE_FREE, description="ユーザー権限 (1: guest, 2: free, 3: regular, 4: admin, 5: owner)")
     user_status: int = Field(User.STATUS_ACTIVE, description="アカウント状態 (1: active, 2: suspended)")
 
+
 class TokenData(BaseModel):
-    """ユーザー作成時に使用するリクエストデータを表すモデル。
-    """
+    """ユーザー作成時に使用するリクエストデータを表すモデル。"""
+
     token: str = Field(..., description="ユーザー情報が格納されるているJWT")
 
 
 class SendPasswordResetEmailData(BaseModel):
-    """パスワードリセットメール送信時のモデル。
-    """
+    """パスワードリセットメール送信時のモデル。"""
+
     email: EmailStr = Field(..., description="ユーザーのメールアドレス")
 
 
-
 class PasswordResetData(BaseModel):
-    """パスワードリセット時のリクエストデータを表すモデル。
-    """
+    """パスワードリセット時のリクエストデータを表すモデル。"""
+
     token: str = Field(..., description="ユーザー情報が格納されるているJWT")
     new_password: str = Field(..., min_length=8, description="新しいパスワード (8文字以上)")
 
 
 class UserUpdate(BaseModel):
-    """ユーザー情報更新時のリクエストデータを表すモデル。
-    """
-    
+    """ユーザー情報更新時のリクエストデータを表すモデル。"""
+
     email: EmailStr | None = Field(None, description="ユーザーのメールアドレス（任意）")
     username: str | None = Field(None, max_length=50, description="ユーザー名（任意・50文字以内）")
     contact_number: str | None = Field(None, max_length=20, description="連絡先電話番号（任意・20文字以内）")
@@ -50,8 +47,7 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """ユーザー情報のレスポンスデータを表すモデル。
-    """
+    """ユーザー情報のレスポンスデータを表すモデル。"""
 
     email: EmailStr = Field(..., description="ユーザーのメールアドレス")
     username: str = Field(..., description="ユーザー名")
@@ -60,4 +56,4 @@ class UserResponse(BaseModel):
     user_role: int = Field(..., description="ユーザー権限 (1: guest, 2: free, 3: regular, 4: admin, 5: owner)")
     user_status: int = Field(..., description="アカウント状態 (1: active, 2: suspended)")
 
-    model_config = ConfigDict(from_attributes = True)
+    model_config = ConfigDict(from_attributes=True)

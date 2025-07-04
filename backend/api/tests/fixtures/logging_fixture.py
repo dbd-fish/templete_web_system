@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 import pytest
 import structlog
@@ -13,7 +12,7 @@ def setup_logging() -> None:
     """
     # ログレベルをINFOに設定
     logging.basicConfig(level=logging.INFO)
-    
+
     # structlogの設定
     structlog.configure(
         processors=[
@@ -25,7 +24,7 @@ def setup_logging() -> None:
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
-            structlog.processors.JSONRenderer()
+            structlog.processors.JSONRenderer(),
         ],
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),

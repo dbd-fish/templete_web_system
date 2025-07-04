@@ -13,8 +13,7 @@ logger = structlog.get_logger()
 
 
 class ErrorHandlerMiddleware(BaseHTTPMiddleware):
-    """リクエスト処理中に発生した例外をキャッチし、適切なレスポンスを返すミドルウェア。
-    """
+    """リクエスト処理中に発生した例外をキャッチし、適切なレスポンスを返すミドルウェア。"""
 
     async def dispatch(self, request: Request, call_next):
         """リクエスト処理中に発生した例外をキャッチし、適切なレスポンスを返します。

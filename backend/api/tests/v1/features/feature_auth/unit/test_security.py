@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+import jwt
 import pytest
-from jwt.exceptions import InvalidTokenError as JWTError
 
+from api.v1.features.feature_auth.models.user import User
 from api.v1.features.feature_auth.security import (
     authenticate_user,
     create_access_token,
@@ -10,13 +11,12 @@ from api.v1.features.feature_auth.security import (
     hash_password,
     verify_password,
 )
-from api.v1.features.feature_auth.models.user import User
 
 
 @pytest.mark.asyncio
 async def test_hash_password_not_empty():
     """hash_password
-    
+
     【正常系】hash_passwordの出力が空でないことを確認。
     """
     plain_password = "securepassword"
@@ -33,7 +33,7 @@ async def test_hash_password_not_empty():
 @pytest.mark.asyncio
 async def test_verify_password_special_case():
     """verify_password
-    
+
     【正常系】verify_passwordの特殊ケースをテスト。
     """
     plain_password = "特殊文字!@#$%^&*()"
@@ -48,7 +48,7 @@ async def test_verify_password_special_case():
 @pytest.mark.asyncio
 async def test_create_access_token_no_expiry():
     """create_access_token
-    
+
     【正常系】create_access_tokenで有効期限を指定しないケースをテスト。
     """
     data = {"sub": "test_user_id"}
@@ -61,27 +61,27 @@ async def test_create_access_token_no_expiry():
 @pytest.mark.asyncio
 async def test_create_access_token_expiry():
     """create_access_token
-    
+
     【正常系】create_access_tokenで有効期限を指定するケースをテスト。
     """
     data = {"sub": "test_user_id"}
-    
+
     # 正常な期限内トークンのテスト
     expires_delta = timedelta(seconds=60)  # 60秒の有効期限
     token = create_access_token(data=data, expires_delta=expires_delta)
     decoded_data = decode_access_token(token)
     assert decoded_data["sub"] == "test_user_id", "Token should be decodable within expiry time."
-    
+
     # 既に期限切れのトークンのテスト
     expired_token = create_access_token(data=data, expires_delta=timedelta(seconds=-1))
-    with pytest.raises(Exception):  # PyJWTでは異なる例外が発生する場合がある
+    with pytest.raises((jwt.ExpiredSignatureError, jwt.InvalidTokenError)):
         decode_access_token(expired_token)
 
 
 @pytest.mark.asyncio
 async def test_decode_access_token_missing_field():
     """decode_access_token
-    
+
     【正常系】decode_access_tokenでトークンからsubフィールドが欠落しているケースをテスト。
     """
     data = {"other_field": "value"}
@@ -98,11 +98,11 @@ async def test_decode_access_token_missing_field():
 @pytest.mark.asyncio
 async def test_decode_access_token_invalid_token():
     """decode_access_token
-    
+
     【異常系】jwtとして不適切なトークンをdecode_access_tokenに渡した場合のテスト。
     """
     from fastapi import HTTPException
-    
+
     invalid_token = "invalid.token.value"
     with pytest.raises(HTTPException):
         decode_access_token(invalid_token)
@@ -119,12 +119,13 @@ async def test_decode_access_token_invalid_token():
 @pytest.mark.asyncio
 async def test_authenticate_user_password_mismatch():
     """authenticate_user
-    
+
     【異常系】authenticate_userでパスワードが一致しなかった場合のテスト。
     """
     from unittest.mock import AsyncMock, MagicMock
+
     from fastapi import HTTPException
-    
+
     # モックセッションの作成
     mock_session = AsyncMock()
     mock_result = MagicMock()
@@ -143,7 +144,7 @@ async def test_authenticate_user_password_mismatch():
     # 間違ったパスワードを使用して認証
     with pytest.raises(HTTPException) as exc_info:
         await authenticate_user("user@example.com", "wrongpassword", mock_session)
-    
+
     assert exc_info.value.status_code == 401
     assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)
 
@@ -151,12 +152,13 @@ async def test_authenticate_user_password_mismatch():
 @pytest.mark.asyncio
 async def test_authenticate_user_inactive_status():
     """authenticate_user
-    
+
     【異常系】authenticate_userで非アクティブなユーザーをテスト。
     """
     from unittest.mock import AsyncMock, MagicMock
+
     from fastapi import HTTPException
-    
+
     # モックセッションの作成
     mock_session = AsyncMock()
     mock_result = MagicMock()
@@ -168,7 +170,7 @@ async def test_authenticate_user_inactive_status():
     # 非アクティブなユーザーで認証
     with pytest.raises(HTTPException) as exc_info:
         await authenticate_user("inactiveuser@example.com", "securepassword", mock_session)
-    
+
     assert exc_info.value.status_code == 401
     assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)
 
@@ -176,12 +178,13 @@ async def test_authenticate_user_inactive_status():
 @pytest.mark.asyncio
 async def test_authenticate_user_deleted():
     """authenticate_user
-    
+
     【異常系】authenticate_userで削除済みのユーザーをテスト。
     """
     from unittest.mock import AsyncMock, MagicMock
+
     from fastapi import HTTPException
-    
+
     # モックセッションの作成
     mock_session = AsyncMock()
     mock_result = MagicMock()
@@ -193,6 +196,6 @@ async def test_authenticate_user_deleted():
     # 削除済みユーザーで認証
     with pytest.raises(HTTPException) as exc_info:
         await authenticate_user("deleteduser@example.com", "securepassword", mock_session)
-    
+
     assert exc_info.value.status_code == 401
     assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)

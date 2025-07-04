@@ -10,6 +10,7 @@ from api.common.setting import setting
 # ログの設定
 logger = structlog.get_logger()
 
+
 async def send_verification_email(email: str, verification_url: str):
     """
     認証用メールを送信する（標準ライブラリ使用）。
@@ -22,16 +23,13 @@ async def send_verification_email(email: str, verification_url: str):
         None
     """
     logger.info("send_verification_email - start", email=email)
-    
+
     # テスト環境でメール送信が無効化されている場合はスキップ
     # SMTP認証情報が設定されていない場合もスキップ
     if not setting.ENABLE_EMAIL_SENDING or setting.PYTEST_MODE or not setting.SMTP_USERNAME or not setting.SMTP_PASSWORD:
-        logger.error("Email sending disabled - using mock mode", 
-                   email=email, 
-                   verification_url=verification_url,
-                   reason="Missing SMTP credentials or disabled")
+        logger.error("Email sending disabled - using mock mode", email=email, verification_url=verification_url, reason="Missing SMTP credentials or disabled")
         return
-    
+
     try:
         # メールの内容
         subject = "【メールアドレス認証】アカウント登録の確認"

@@ -13,12 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from api.common.database import get_db
-from api.common.setting import setting
-from api.v1.features.feature_auth.schemas.user import UserCreate, UserResponse, UserUpdate
+from api.v1.features.feature_auth.models.user import User
+from api.v1.features.feature_auth.schemas.user import UserCreate, UserUpdate
 from api.v1.features.feature_auth.security import create_access_token, decode_access_token, hash_password
 from api.v1.features.feature_auth.send_reset_password_email import send_reset_password_email
 from api.v1.features.feature_auth.send_verification_email import send_verification_email
-from api.v1.features.feature_auth.models.user import User
 
 logger = structlog.get_logger()
 
@@ -138,7 +137,7 @@ async def update_user_profile(db: AsyncSession, user: User, username: str | None
         user.contact_number = contact_number
     if date_of_birth is not None:
         user.date_of_birth = date_of_birth
-    
+
     # 日本時間をタイムゾーン情報なしで保存
     user.updated_at = datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None)
     await db.commit()
@@ -193,6 +192,7 @@ async def restore_user(db: AsyncSession, user: User, new_username: str, new_pass
 # サービス層関数（ビジネスロジック、認証、メール送信など）
 # =============================================================================
 
+
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> User:
     """現在ログイン中のユーザーを取得します。
 
@@ -205,7 +205,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
     Raises:
         HTTPException: 認証に失敗した場合。
-    
+
     Note:
         JWTトークンのsubフィールドからメールアドレスを取得してユーザーを検索します。
     """
@@ -219,11 +219,11 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     try:
         # トークンからメールアドレスを取得
         payload = decode_access_token(token)
-        email: str = payload.get("sub")
+        email: str | None = payload.get("sub")
         if email is None:
             raise credentials_exception
     except Exception:
-        raise credentials_exception
+        raise credentials_exception from None
 
     # データベースからユーザーを取得（メールアドレスで検索）
     user = await get_user_by_email(db, email=email)
@@ -235,7 +235,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
 async def create_user_service(email: str, username: str, password: str, db: AsyncSession) -> User:
     """新しいユーザーを作成します（パスワードハッシュ化込み）。
-    
+
     論理削除済みユーザーが存在する場合は復活させます。
 
     Args:
@@ -248,10 +248,10 @@ async def create_user_service(email: str, username: str, password: str, db: Asyn
         User: 作成または復活されたユーザー。
     """
     logger.info("create_user_service - start", email=email, username=username)
-    
+
     # 論理削除済みも含めてユーザーが既に存在するかチェック
     existing_user = await get_user_by_email_including_deleted(db, email)
-    
+
     if existing_user:
         if existing_user.deleted_at is not None:
             # 論理削除済みユーザーを復活
@@ -263,11 +263,11 @@ async def create_user_service(email: str, username: str, password: str, db: Asyn
             # アクティブなユーザーが既に存在
             logger.error("create_user_service - active user already exists", email=email)
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="このメールアドレスは既に使用されています")
-    
+
     # 新規ユーザー作成
     logger.info("create_user_service - creating new user", email=email)
     hashed_password = hash_password(password)
-    
+
     new_user = User(
         user_id=str(uuid.uuid4()),
         email=email,
@@ -277,9 +277,9 @@ async def create_user_service(email: str, username: str, password: str, db: Asyn
         user_status=User.STATUS_ACTIVE,
         # 日本時間をタイムゾーン情報なしで保存
         created_at=datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None),
-        updated_at=datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None)
+        updated_at=datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None),
     )
-    
+
     created_user = await create_user(db, new_user)
     logger.info("create_user_service - new user created", email=email, user_id=created_user.user_id)
     return created_user
@@ -296,7 +296,7 @@ async def temporary_create_user(user: UserCreate, background_tasks: BackgroundTa
     # メール認証トークンを生成
     token_data = {"email": user.email, "username": user.username, "password": user.password}
     verification_token = create_access_token(data=token_data, expires_delta=timedelta(hours=24))
-    
+
     # バックグラウンドでメール送信
     background_tasks.add_task(send_verification_email, user.email, verification_token)
 
@@ -315,16 +315,16 @@ async def verify_email_token(token: str) -> UserCreate:
     """
     try:
         payload = decode_access_token(token)
-        email: str = payload.get("email")
-        username: str = payload.get("username")
-        password: str = payload.get("password")
-        
+        email: str | None = payload.get("email")
+        username: str | None = payload.get("username")
+        password: str | None = payload.get("password")
+
         if email is None or username is None or password is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無効な認証トークンです")
-            
-        return UserCreate(email=email, username=username, password=password)
+
+        return UserCreate(email=email, username=username, password=password, user_role=User.ROLE_FREE, user_status=User.STATUS_ACTIVE)
     except Exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無効な認証トークンです")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無効な認証トークンです") from None
 
 
 async def reset_password_email(email: str, background_tasks: BackgroundTasks, db: AsyncSession) -> None:
@@ -334,7 +334,7 @@ async def reset_password_email(email: str, background_tasks: BackgroundTasks, db
         email (str): メールアドレス。
         background_tasks (BackgroundTasks): バックグラウンドタスク。
         db (AsyncSession): 非同期データベースセッション。
-        
+
     Raises:
         HTTPException: ユーザーが見つからない場合。
     """
@@ -342,10 +342,10 @@ async def reset_password_email(email: str, background_tasks: BackgroundTasks, db
     user = await get_user_by_email(db, email)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="指定されたメールアドレスのユーザーが見つかりません")
-    
+
     # パスワードリセットトークンを生成
     reset_token = create_access_token(data={"email": email}, expires_delta=timedelta(hours=1))
-    
+
     # バックグラウンドでメール送信
     background_tasks.add_task(send_reset_password_email, email, reset_token)
 
@@ -364,14 +364,14 @@ async def decode_password_reset_token(token: str) -> str:
     """
     try:
         payload = decode_access_token(token)
-        email: str = payload.get("email")
-        
+        email: str | None = payload.get("email")
+
         if email is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無効なリセットトークンです")
-            
+
         return email
     except Exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無効なリセットトークンです")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無効なリセットトークンです") from None
 
 
 async def reset_password(email: str, new_password: str, db: AsyncSession) -> None:
@@ -388,7 +388,7 @@ async def reset_password(email: str, new_password: str, db: AsyncSession) -> Non
     user = await get_user_by_email(db, email)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ユーザーが見つかりません")
-    
+
     hashed_password = hash_password(new_password)
     await update_user_password(db, user, hashed_password)
 
@@ -404,13 +404,4 @@ async def update_user_with_schema(db: AsyncSession, user: User, user_update: Use
     Returns:
         User: 更新されたユーザーオブジェクト。
     """
-    return await update_user_profile(
-        db=db,
-        user=user,
-        username=user_update.username,
-        email=user_update.email,
-        contact_number=user_update.contact_number,
-        date_of_birth=user_update.date_of_birth
-    )
-
-
+    return await update_user_profile(db=db, user=user, username=user_update.username, email=user_update.email, contact_number=user_update.contact_number, date_of_birth=user_update.date_of_birth)

@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql import text
 
-from api.v1.features.feature_auth.models.user import User
 from api.common.common import datetime_now
 from api.common.database import AsyncSessionLocal, Base
 from api.common.test_data import TestData
+from api.v1.features.feature_auth.models.user import User
 
 # パスワードハッシュ用のコンテキスト
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -94,9 +94,9 @@ async def clear_data(db: AsyncSession):
             print("データベースURL:", engine.url)
             print("すべてのテーブルを削除中...")
             # テーブルを CASCADE で削除
-            await conn.execute(text('DROP SCHEMA public CASCADE'))
+            await conn.execute(text("DROP SCHEMA public CASCADE"))
             # スキーマを再作成
-            await conn.execute(text('CREATE SCHEMA public'))
+            await conn.execute(text("CREATE SCHEMA public"))
             print("すべてのテーブルを作成中...")
             await conn.run_sync(Base.metadata.create_all)  # テーブルを作成
             print("データベースのクリアが完了しました。")

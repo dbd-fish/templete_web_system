@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 # ログ設定
 logger = structlog.get_logger()
 
+
 async def http_exception_handler(request: Request, exc: HTTPException):
     """HTTPExceptionが発生した際のハンドラ。
 

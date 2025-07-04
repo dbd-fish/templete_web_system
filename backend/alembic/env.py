@@ -1,6 +1,6 @@
 # ruff: noqa: I001, F401
 from logging.config import fileConfig
-import api.v1.features.feature_auth.models # Almbericでモデルを読み込ために必要
+import api.v1.features.feature_auth.models  # Almbericでモデルを読み込ために必要
 
 from sqlalchemy import create_engine, pool
 from sqlalchemy.engine import Engine
@@ -83,7 +83,8 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata,
+            connection=connection,
+            target_metadata=target_metadata,
         )
 
         with context.begin_transaction():

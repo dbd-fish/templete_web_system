@@ -11,6 +11,7 @@ from api.common.setting import setting
 
 Base = declarative_base()
 
+
 def get_database_url(test_env: int = 0) -> str:
     """環境に応じてデータベース接続URLを取得します。
 
@@ -77,6 +78,7 @@ db_config = configure_database()
 database = db_config["database"]
 engine = db_config["engine"]
 AsyncSessionLocal = db_config["sessionmaker"]
+
 
 async def get_db() -> AsyncGenerator:
     """非同期データベースセッションを生成するジェネレーター関数。

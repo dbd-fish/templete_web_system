@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import jwt
 import structlog
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-import jwt
 from passlib.context import CryptContext
 from sqlalchemy.future import select
 
@@ -26,6 +26,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # トークンのエンドポイント（FastAPIのOAuth2PasswordBearerを使用）
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
+
 def hash_password(password: str) -> str:
     """パスワードをハッシュ化する。
 
@@ -43,6 +44,7 @@ def hash_password(password: str) -> str:
         return hashed_password
     finally:
         logger.info("hash_password - end")
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """プレーンパスワードとハッシュ化されたパスワードを比較して検証する。
@@ -62,6 +64,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return result
     finally:
         logger.info("verify_password - end")
+
 
 # TODO: 関数名を汎用的なものに変更する
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
@@ -84,9 +87,11 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         logger.info("create_access_token - success", encoded_jwt=encoded_jwt)
         logger.info("create_access_token - expire", expire=expire)
-        return encoded_jwt
+        # PyJWT 2.x系では文字列を返すが、型チェックのために明示的にstrにキャスト
+        return str(encoded_jwt)
     finally:
         logger.info("create_access_token - end")
+
 
 # TODO: 関数名を汎用的なものに変更する
 def decode_access_token(token: str) -> dict:
@@ -113,16 +118,17 @@ def decode_access_token(token: str) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="トークンが期限切れです",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
     except jwt.InvalidTokenError:
         logger.error("Invalid token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="無効なトークンです",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
     finally:
         logger.info("decode_access_token - end")
+
 
 async def authenticate_user(username_or_email: str, password: str, db: AsyncSession) -> User:
     """ユーザー名またはメールアドレスとパスワードを使用してユーザー認証を行う。

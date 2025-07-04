@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 # ログ設定
 logger = structlog.get_logger()
 
+
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """バリデーションエラーが発生した際のハンドラ。
 

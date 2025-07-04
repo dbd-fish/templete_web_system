@@ -4,18 +4,18 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
 from api.common.core.log_config import logger
-from api.common.exception_handlers import (
-    http_exception_handler,
-    validation_exception_handler,
-    sqlalchemy_exception_handler,
-    general_exception_handler,
-    business_logic_exception_handler,
-    BusinessLogicError
-)
-from sqlalchemy.exc import SQLAlchemyError
 from api.common.database import database
+from api.common.exception_handlers import (
+    BusinessLogicError,
+    business_logic_exception_handler,
+    general_exception_handler,
+    http_exception_handler,
+    sqlalchemy_exception_handler,
+    validation_exception_handler,
+)
 from api.common.middleware import AddUserIPMiddleware, ErrorHandlerMiddleware
 from api.common.setting import setting
 from api.v1.features.feature_auth.route import router as auth_router
@@ -25,10 +25,10 @@ from api.v1.features.feature_dev.route import router as dev_router
 os.environ["TZ"] = "Asia/Tokyo"
 time.tzset()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """アプリケーションのライフサイクル管理を行うコンテキストマネージャ。
-    """
+    """アプリケーションのライフサイクル管理を行うコンテキストマネージャ。"""
     logger.info("Application startup - connecting to database")
 
     # 明示的にイベントループを設定（最新バージョンでも安全）
@@ -39,6 +39,7 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("Application shutdown - disconnecting from database")
     await database.disconnect()
+
 
 # FastAPIアプリケーションのインスタンスを作成し、ライフサイクルを設定
 if setting.DEV_MODE:
@@ -86,22 +87,11 @@ FastAPIで構築された包括的なWebシステムテンプレートAPIです�
             "name": "MIT License",
             "url": "https://opensource.org/licenses/MIT",
         },
-        servers=[
-            {
-                "url": "http://localhost:8000",
-                "description": "開発サーバー"
-            }
-        ]
+        servers=[{"url": "http://localhost:8000", "description": "開発サーバー"}],
     )
 else:
     # 本番環境ではOpenAPIドキュメントを無効化（セキュリティ対策）
-    app = FastAPI(
-        title="Template Web System API",
-        lifespan=lifespan, 
-        docs_url=None, 
-        redoc_url=None, 
-        openapi_url=None
-    )
+    app = FastAPI(title="Template Web System API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
 # ミドルウェアの追加（ユーザーIP記録とエラーハンドリング）
 # 注意: ミドルウェアを別ファイルにする場合、@app.middleware()デコレータが機能しないため、
@@ -110,11 +100,11 @@ app.add_middleware(AddUserIPMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 
 # 統一例外ハンドラーの登録
-app.add_exception_handler(HTTPException, http_exception_handler) # type: ignore
-app.add_exception_handler(RequestValidationError, validation_exception_handler) # type: ignore
-app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler) # type: ignore
-app.add_exception_handler(BusinessLogicError, business_logic_exception_handler) # type: ignore
-app.add_exception_handler(Exception, general_exception_handler) # type: ignore
+app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore
+app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore
+app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)  # type: ignore
+app.add_exception_handler(BusinessLogicError, business_logic_exception_handler)  # type: ignore
+app.add_exception_handler(Exception, general_exception_handler)  # type: ignore
 
 # ルーターをアプリケーションに追加
 if setting.DEV_MODE:
@@ -127,4 +117,5 @@ app.include_router(auth_router, prefix="/api/v1/auth", tags=["認証"])
 # スクリプトが直接実行された場合のUvicornサーバー起動設定
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("api.v1.main:app", host="0.0.0.0", port=8000, reload=True)

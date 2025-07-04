@@ -10,6 +10,7 @@ from api.common.setting import setting
 # ログの設定
 logger = structlog.get_logger()
 
+
 async def send_reset_password_email(email: str, reset_password_url: str):
     """
     パスワードリセット用メールを送信する（標準ライブラリ使用）。
@@ -22,16 +23,13 @@ async def send_reset_password_email(email: str, reset_password_url: str):
         None
     """
     logger.info("send_reset_password_email - start", email=email)
-    
+
     # テスト環境でメール送信が無効化されている場合はスキップ
     # SMTP認証情報が設定されていない場合もスキップ
     if not setting.ENABLE_EMAIL_SENDING or setting.PYTEST_MODE or not setting.SMTP_USERNAME or not setting.SMTP_PASSWORD:
-        logger.info("Email sending disabled - using mock mode", 
-                   email=email, 
-                   reset_password_url=reset_password_url,
-                   reason="Missing SMTP credentials or disabled")
+        logger.info("Email sending disabled - using mock mode", email=email, reset_password_url=reset_password_url, reason="Missing SMTP credentials or disabled")
         return
-    
+
     try:
         # メールの内容
         subject = "パスワード再設定のお願い"

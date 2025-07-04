@@ -10,11 +10,10 @@ from api.v1.features.feature_auth.models.user import User
 from main import app
 
 
-
 @pytest_asyncio.fixture(scope="function")
 async def authenticated_client() -> AsyncGenerator[AsyncClient, None]:
     """認証済みのクライアントを提供するフィクスチャ。
-    
+
     依存性注入でget_current_userをオーバーライドし、モックユーザーを提供します。
     通常の認証テストに使用してください。
     """

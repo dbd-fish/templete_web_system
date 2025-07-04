@@ -1,16 +1,14 @@
-import os
-from pydantic import ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Setting(BaseSettings):
     """
     アプリケーション設定クラス
-    
+
     環境変数または.envファイルから設定を読み込みます。
     環境変数が存在しない場合はデフォルト値を使用します。
     """
-    
+
     # アプリケーション基本設定
     APP_NAME: str = "Template Web System"
     DEV_MODE: bool = True
@@ -39,7 +37,7 @@ class Setting(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
-    
+
     # テスト環境でのメール送信設定
     ENABLE_EMAIL_SENDING: bool = True
     TEST_SMTP_SERVER: str = "localhost"
@@ -50,15 +48,12 @@ class Setting(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://frontend:5173"
     LOG_LEVEL: str = "INFO"
     TIMEZONE: str = "Asia/Tokyo"
-    
+
     # ログ出力設定
     ENABLE_CONSOLE_LOG: bool = False
 
-    model_config = ConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=True
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True)
+
 
 # 設定インスタンス作成
 setting = Setting()
