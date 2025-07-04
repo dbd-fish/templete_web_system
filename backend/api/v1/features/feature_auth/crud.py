@@ -213,6 +213,7 @@ async def create_user_service(email: str, username: str, password: str, db: Asyn
         email=email,
         username=username,
         hashed_password=hashed_password,
+        user_role=User.ROLE_FREE,  # デフォルトで無料会員として設定
         user_status=User.STATUS_ACTIVE,
         # 日本時間をタイムゾーン情報なしで保存
         created_at=datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None),
