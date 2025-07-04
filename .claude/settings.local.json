@@ -16,7 +16,9 @@
       "Bash(find:*)",
       "Bash(docker compose:*)",
       "Bash(docker logs:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(rm:*)"
     ],
     "deny": [
       "Bash(git commit:*)",
