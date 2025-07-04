@@ -34,10 +34,11 @@ jobs:
           docker exec backend_container poetry --version
         # 起動中のDockerコンテナとPoetryの確認
 
-      - name: Install Dependencies
+      - name: Update Dependencies
         run: |
+          docker exec backend_container poetry lock
           docker exec backend_container poetry install --no-root
-        # 依存関係のインストール（--no-rootでパッケージインストールをスキップ）
+        # 依存関係のロックファイル更新とインストール
 
       - name: Run Ruff Check
         run: |
