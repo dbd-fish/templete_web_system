@@ -10,30 +10,17 @@ from api.v1.features.feature_auth.models.user import User
 from main import app
 
 
-@pytest_asyncio.fixture(scope="function")
-def login_user_data() -> User:
-    """テスト用のログイン中ユーザーデータ。
-    NOTE: 本来はJWTトークンからユーザー情報を復元するべきだが、テスト対象の処理が狭めるため、本メソッドからログイン情報を取得する。
-    """
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-    return User(
-        user_id=TestData.TEST_USER_ID_1,
-        email=TestData.TEST_USER_EMAIL_1,
-        username=TestData.TEST_USERNAME_1,
-        hashed_password=pwd_context.hash(TestData.TEST_USER_PASSWORD),
-        user_role=User.ROLE_FREE,
-        user_status=User.STATUS_ACTIVE,
-    )
-
 
 @pytest_asyncio.fixture(scope="function")
 async def authenticated_client() -> AsyncGenerator[AsyncClient, None]:
     """認証済みのクライアントを提供するフィクスチャ。
+    
+    依存性注入でget_current_userをオーバーライドし、モックユーザーを提供します。
+    通常の認証テストに使用してください。
     """
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    # モックユーザーを定義
+    # テスト用モックユーザーを作成
     mock_user = User(
         user_id=TestData.TEST_USER_ID_1,
         email=TestData.TEST_USER_EMAIL_1,

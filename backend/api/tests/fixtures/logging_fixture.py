@@ -34,9 +34,5 @@ def setup_logging() -> None:
     )
 
 
-@pytest.fixture(scope="function")
-def logger() -> Any:
-    """
-    テスト用のロガーを提供するフィクスチャ。
-    """
-    return structlog.get_logger()
+# logger フィクスチャは未使用のため削除済み
+# 必要に応じて将来追加可能
