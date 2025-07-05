@@ -40,5 +40,5 @@ class TestData:
     TEST_RESET_NEW_PASSWORD = "NewPassword123!"
 
     # JWT Token Examples
-    DOC_JWT_TOKEN_EXAMPLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzI1NTM2ODAwfQ.example_signature"
-    DOC_RESET_TOKEN_EXAMPLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNldEBleGFtcGxlLmNvbSIsImV4cCI6MTcyNTU0MDQwMH0.reset_signature"
+    DOC_JWT_TOKEN_EXAMPLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzI1NTM2ODAwfQ.example_signature"   # ggshield: ignore
+    DOC_RESET_TOKEN_EXAMPLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNldEBleGFtcGxlLmNvbSIsImV4cCI6MTcyNTU0MDQwMH0.reset_signature"   # ggshield: ignore
