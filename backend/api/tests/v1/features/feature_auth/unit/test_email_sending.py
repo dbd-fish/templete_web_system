@@ -1,7 +1,8 @@
 """
-メール送信機能の単体テスト
+メール送信機能の単体テスト（AAAパターン）
 """
-
+import base64
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,40 +15,57 @@ from api.v1.features.feature_auth.send_verification_email import send_verificati
 async def test_send_verification_email_disabled():
     """send_verification_email
 
-    【正常系】メール送信が無効化されている場合のテスト"""
+    【正常系】メール送信が無効化されている場合のテスト
+    """
+    # Arrange: メール送信無効化の設定を準備
+    test_email = "test@example.com"
+    test_url = "http://example.com/verify"
+
     with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting:
         mock_setting.ENABLE_EMAIL_SENDING = False
         mock_setting.PYTEST_MODE = True
         mock_setting.APP_NAME = "Test App"
 
-        # メール送信が無効化されているため、例外は発生しない
-        await send_verification_email("test@example.com", "http://example.com/verify")
+        # Act: メール送信を実行（無効化されているため実際には送信されない）
+        result = await send_verification_email(test_email, test_url)
+
+        # Assert: 例外が発生せず、正常に処理が完了すること
+        assert result is None  # メール送信無効時はNoneが返される
 
 
 @pytest.mark.asyncio
 async def test_send_verification_email_with_mock_smtp():
     """send_verification_email
 
-    【正常系】SMTPサーバーをモック化したメール送信テスト"""
-    with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, patch("smtplib.SMTP") as mock_smtp:
+    【正常系】SMTPサーバーをモック化したメール送信テスト
+    """
+    # Arrange: SMTP設定とモックを準備
+    test_email = "test@example.com"
+    test_url = "http://example.com/verify"
+    smtp_server = "localhost"
+    smtp_port = 1025
+
+    with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, \
+         patch("smtplib.SMTP") as mock_smtp:
+        
         # 設定をテスト用に設定
         mock_setting.ENABLE_EMAIL_SENDING = True
-        mock_setting.PYTEST_MODE = False  # Falseにしてメール送信を有効化
-        mock_setting.SMTP_SERVER = "localhost"
-        mock_setting.SMTP_PORT = 1025
+        mock_setting.PYTEST_MODE = False
+        mock_setting.SMTP_SERVER = smtp_server
+        mock_setting.SMTP_PORT = smtp_port
         mock_setting.SMTP_USERNAME = "test_user"
         mock_setting.SMTP_PASSWORD = "test_pass"
         mock_setting.APP_NAME = "Test App"
 
-        # SMTPサーバーのモック
+        # SMTPサーバーのモック設定
         mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
 
-        # メール送信テスト
-        await send_verification_email("test@example.com", "http://example.com/verify")
+        # Act: メール送信を実行
+        await send_verification_email(test_email, test_url)
 
-        # SMTPサーバーが正しく呼び出されたことを確認
-        mock_smtp.assert_called_once_with("localhost", 1025)
+        # Assert: SMTPサーバーが正しく呼び出されたことを確認
+        mock_smtp.assert_called_once_with(smtp_server, smtp_port)
         mock_server.sendmail.assert_called_once()
 
 
@@ -55,40 +73,57 @@ async def test_send_verification_email_with_mock_smtp():
 async def test_send_reset_password_email_disabled():
     """send_reset_password_email
 
-    【正常系】パスワードリセットメール送信が無効化されている場合のテスト"""
+    【正常系】パスワードリセットメール送信が無効化されている場合のテスト
+    """
+    # Arrange: メール送信無効化の設定を準備
+    test_email = "test@example.com"
+    test_url = "http://example.com/reset"
+
     with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting:
         mock_setting.ENABLE_EMAIL_SENDING = False
         mock_setting.PYTEST_MODE = True
         mock_setting.APP_NAME = "Test App"
 
-        # メール送信が無効化されているため、例外は発生しない
-        await send_reset_password_email("test@example.com", "http://example.com/reset")
+        # Act: パスワードリセットメール送信を実行
+        result = await send_reset_password_email(test_email, test_url)
+
+        # Assert: 例外が発生せず、正常に処理が完了すること
+        assert result is None  # メール送信無効時はNoneが返される
 
 
 @pytest.mark.asyncio
 async def test_send_reset_password_email_with_mock_smtp():
     """send_reset_password_email
 
-    【正常系】SMTPサーバーをモック化したパスワードリセットメール送信テスト"""
-    with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, patch("smtplib.SMTP") as mock_smtp:
+    【正常系】SMTPサーバーをモック化したパスワードリセットメール送信テスト
+    """
+    # Arrange: SMTP設定とモックを準備
+    test_email = "test@example.com"
+    test_url = "http://example.com/reset"
+    smtp_server = "localhost"
+    smtp_port = 1025
+
+    with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, \
+         patch("smtplib.SMTP") as mock_smtp:
+        
         # 設定をテスト用に設定
         mock_setting.ENABLE_EMAIL_SENDING = True
-        mock_setting.PYTEST_MODE = False  # Falseに変更してメール送信を有効化
-        mock_setting.SMTP_SERVER = "localhost"
-        mock_setting.SMTP_PORT = 1025
+        mock_setting.PYTEST_MODE = False
+        mock_setting.SMTP_SERVER = smtp_server
+        mock_setting.SMTP_PORT = smtp_port
         mock_setting.SMTP_USERNAME = "test_user"
         mock_setting.SMTP_PASSWORD = "test_pass"
         mock_setting.APP_NAME = "Test App"
 
-        # SMTPサーバーのモック
+        # SMTPサーバーのモック設定
         mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
 
-        # メール送信テスト
-        await send_reset_password_email("test@example.com", "http://example.com/reset")
+        # Act: パスワードリセットメール送信を実行
+        await send_reset_password_email(test_email, test_url)
 
-        # SMTPサーバーが正しく呼び出されたことを確認
-        mock_smtp.assert_called_once_with("localhost", 1025)
+        # Assert: SMTPサーバーが正しく呼び出されたことを確認
+        mock_smtp.assert_called_once_with(smtp_server, smtp_port)
         mock_server.sendmail.assert_called_once()
 
 
@@ -96,50 +131,51 @@ async def test_send_reset_password_email_with_mock_smtp():
 async def test_verification_email_content():
     """send_verification_email
 
-    【正常系】認証メールの内容確認テスト"""
-    with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, patch("smtplib.SMTP") as mock_smtp:
-        # 設定
+    【正常系】認証メールの内容確認テスト
+    """
+    # Arrange: メール内容検証用の設定とモックを準備
+    test_email = "user@example.com"
+    test_url = "http://example.com/verify?token=abc123"
+    app_name = "Test Application"
+
+    with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, \
+         patch("smtplib.SMTP") as mock_smtp:
+        
+        # 設定準備
         mock_setting.ENABLE_EMAIL_SENDING = True
-        mock_setting.PYTEST_MODE = False  # Falseに変更してメール送信を有効化
+        mock_setting.PYTEST_MODE = False
         mock_setting.SMTP_SERVER = "localhost"
         mock_setting.SMTP_PORT = 1025
         mock_setting.SMTP_USERNAME = "test_user"
         mock_setting.SMTP_PASSWORD = "test_pass"
-        mock_setting.APP_NAME = "Test Application"
+        mock_setting.APP_NAME = app_name
 
-        # SMTPサーバーのモック
+        # SMTPサーバーのモック設定
         mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
 
-        # メール送信
-        test_email = "user@example.com"
-        test_url = "http://example.com/verify?token=abc123"
+        # Act: メール送信を実行
         await send_verification_email(test_email, test_url)
 
-        # sendmailが呼び出されたかを確認
+        # Assert: sendmailが呼び出されたかを確認
         assert mock_server.sendmail.called
 
         # sendmailの引数を確認
         call_args = mock_server.sendmail.call_args[0]
-        call_args[0]
         to_addr = call_args[1]
         message = call_args[2]
 
         assert to_addr == test_email
-        # メッセージはBase64エンコードされているため、デコードして確認
-        import base64
 
+        # メッセージ内容の確認（Base64エンコードされている場合はデコード）
         if "base64" in message:
-            # Base64エンコードされた部分を抽出してデコード
-            import re
-
-            base64_match = re.search(r"Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)", message)
+            base64_match = re.search(r'Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)', message)
             if base64_match:
-                encoded_content = base64_match.group(1).replace("\n", "").replace("\r", "")
+                encoded_content = base64_match.group(1).replace('\n', '').replace('\r', '')
                 try:
-                    decoded_content = base64.b64decode(encoded_content).decode("utf-8")
+                    decoded_content = base64.b64decode(encoded_content).decode('utf-8')
                     assert test_url in decoded_content
-                    assert "Test Application" in decoded_content
+                    assert app_name in decoded_content
                 except Exception:
                     # フォールバック: エンコードされた状態で確認
                     assert "test" in message.lower()
@@ -149,50 +185,51 @@ async def test_verification_email_content():
 async def test_reset_password_email_content():
     """send_reset_password_email
 
-    【正常系】パスワードリセットメールの内容確認テスト"""
-    with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, patch("smtplib.SMTP") as mock_smtp:
-        # 設定
+    【正常系】パスワードリセットメールの内容確認テスト
+    """
+    # Arrange: メール内容検証用の設定とモックを準備
+    test_email = "user@example.com"
+    test_url = "http://example.com/reset?token=xyz789"
+    app_name = "Test Application"
+
+    with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, \
+         patch("smtplib.SMTP") as mock_smtp:
+        
+        # 設定準備
         mock_setting.ENABLE_EMAIL_SENDING = True
-        mock_setting.PYTEST_MODE = False  # Falseに変更してメール送信を有効化
+        mock_setting.PYTEST_MODE = False
         mock_setting.SMTP_SERVER = "localhost"
         mock_setting.SMTP_PORT = 1025
         mock_setting.SMTP_USERNAME = "test_user"
         mock_setting.SMTP_PASSWORD = "test_pass"
-        mock_setting.APP_NAME = "Test Application"
+        mock_setting.APP_NAME = app_name
 
-        # SMTPサーバーのモック
+        # SMTPサーバーのモック設定
         mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
 
-        # メール送信
-        test_email = "user@example.com"
-        test_url = "http://example.com/reset?token=xyz789"
+        # Act: パスワードリセットメール送信を実行
         await send_reset_password_email(test_email, test_url)
 
-        # sendmailが呼び出されたかを確認
+        # Assert: sendmailが呼び出されたかを確認
         assert mock_server.sendmail.called
 
         # sendmailの引数を確認
         call_args = mock_server.sendmail.call_args[0]
-        call_args[0]
         to_addr = call_args[1]
         message = call_args[2]
 
         assert to_addr == test_email
-        # メッセージはBase64エンコードされているため、デコードして確認
-        import base64
 
+        # メッセージ内容の確認（Base64エンコードされている場合はデコード）
         if "base64" in message:
-            # Base64エンコードされた部分を抽出してデコード
-            import re
-
-            base64_match = re.search(r"Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)", message)
+            base64_match = re.search(r'Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)', message)
             if base64_match:
-                encoded_content = base64_match.group(1).replace("\n", "").replace("\r", "")
+                encoded_content = base64_match.group(1).replace('\n', '').replace('\r', '')
                 try:
-                    decoded_content = base64.b64decode(encoded_content).decode("utf-8")
+                    decoded_content = base64.b64decode(encoded_content).decode('utf-8')
                     assert test_url in decoded_content
-                    assert "Test Application" in decoded_content
+                    assert app_name in decoded_content
                 except Exception:
                     # フォールバック: エンコードされた状態で確認
                     assert "test" in message.lower()
