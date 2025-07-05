@@ -79,14 +79,14 @@ async def test_create_access_token_expiry():
     try:
         decode_access_token(expired_token)
         # 例外が発生しなかった場合はテスト失敗
-        assert False, "Expected HTTPException was not raised"
+        raise AssertionError("Expected HTTPException was not raised")
     except HTTPException as e:
         # 期待する例外の詳細を確認
         assert e.status_code == 401
         assert "トークンが期限切れです" in str(e.detail)
     except Exception as e:
         # 予期しない例外の場合はテスト失敗
-        assert False, f"Unexpected exception type: {type(e).__name__}: {e}"
+        raise AssertionError(f"Unexpected exception type: {type(e).__name__}: {e}") from e
 
 
 @pytest.mark.asyncio
