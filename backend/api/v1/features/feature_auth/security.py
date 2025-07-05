@@ -57,7 +57,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         bool: 検証結果（True: 一致, False: 不一致）。
 
     """
-    logger.info("verify_password - start", plain_password=plain_password, hashed_password=hashed_password)
+    logger.info("verify_password - start")
     try:
         result = pwd_context.verify(plain_password, hashed_password)
         logger.info("verify_password - end", result=result)
@@ -78,14 +78,14 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         str: 作成されたJWTアクセストークン。
 
     """
-    logger.info("create_access_token - start", data=data, expires_delta=expires_delta)
+    logger.info("create_access_token - start")
     try:
         to_encode = data.copy()
         expire = datetime.now(ZoneInfo("Asia/Tokyo")) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
         to_encode.update({"exp": expire})
-        logger.debug("create_access_token - to_encode", to_encode=to_encode)
+        logger.debug("create_access_token - to_encode prepared")
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-        logger.info("create_access_token - success", encoded_jwt=encoded_jwt)
+        logger.info("create_access_token - success")
         logger.info("create_access_token - expire", expire=expire)
         # PyJWT 2.x系では文字列を返すが、型チェックのために明示的にstrにキャスト
         return str(encoded_jwt)
@@ -107,10 +107,10 @@ def decode_access_token(token: str) -> dict:
         HTTPException: トークンが無効または不正な場合。
 
     """
-    logger.info("decode_access_token - start", token=token)
+    logger.info("decode_access_token - start")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])  # トークンをデコード
-        logger.info("decode_access_token - success", payload=payload)
+        logger.info("decode_access_token - success")
         return payload
     except jwt.ExpiredSignatureError:
         logger.error("Token has expired")
