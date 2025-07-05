@@ -226,7 +226,7 @@ def test_request_form_data_structure():
     【正常系】OAuth2PasswordRequestFormの構造が適切であることを確認。
     """
     # Arrange: フォームデータ構造を準備
-    form_data_structure = {"username": "testuser", "password": "password123", "scope": "", "client_id": None, "client_secret": None}
+    form_data_structure = {"username": "testuser", "password": "Password123!", "scope": "", "client_id": None, "client_secret": None}
 
     # Act: フォームデータ構造を検証
     # Assert: 必要なフィールドが含まれることを確認

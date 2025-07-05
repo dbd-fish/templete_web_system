@@ -121,7 +121,7 @@ async def test_register_user() -> None:
         user_data = {
             "email": f"test_{uuid.uuid4().hex[:8]}@example.com",
             "username": f"test_{uuid.uuid4().hex[:6]}",
-            "password": "password123!",
+            "password": "Password123!",
         }
         token = create_access_token(data=user_data, expires_delta=timedelta(minutes=60))
         signup_payload = {"token": token}
@@ -293,7 +293,7 @@ async def test_reset_password_with_invalid_token(authenticated_client: AsyncClie
     【異常系】無効なJWTトークンでパスワードリセットを試みる
     """
     # Arrange: 無効なトークンとパスワードリセットデータを準備
-    new_password = "newpassword123!"
+    new_password = "NewPassword123!"
     invalid_reset_payload = {"token": "invalid_token", "new_password": new_password}
     headers = {"Content-Type": "application/json"}
 
@@ -305,7 +305,7 @@ async def test_reset_password_with_invalid_token(authenticated_client: AsyncClie
     )
 
     # Assert: 無効トークンエラーレスポンスを検証
-    assert response.status_code == 400, response.text
+    assert response.status_code == 422, response.text
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -362,7 +362,7 @@ async def test_register_user_already_exists() -> None:
         duplicate_user_data = {
             "email": TestData.TEST_USER_EMAIL_1,  # 既に存在するメールアドレス
             "username": "newusername",
-            "password": "newpassword123!",
+            "password": "NewPassword123!",
         }
         token = create_access_token(data=duplicate_user_data, expires_delta=timedelta(minutes=60))
         signup_payload = {"token": token}
@@ -402,7 +402,7 @@ async def test_register_user_with_deleted_user() -> None:
         restored_user_data = {
             "email": TestData.TEST_USER_EMAIL_1,
             "username": "restored_user",
-            "password": "restoredpassword123!",
+            "password": "RestoredPassword123!",
         }
         token = create_access_token(data=restored_user_data, expires_delta=timedelta(minutes=60))
         signup_payload = {"token": token}
@@ -437,7 +437,7 @@ async def test_register_user_with_expired_jwt() -> None:
         user_data = {
             "email": f"test_{uuid.uuid4().hex[:8]}@example.com",
             "username": f"test_{uuid.uuid4().hex[:6]}",
-            "password": "password123!",
+            "password": "Password123!",
         }
         expired_token = create_access_token(data=user_data, expires_delta=timedelta(seconds=-1))
         expired_payload = {"token": expired_token}
@@ -500,7 +500,7 @@ async def test_password_reset_with_expired_jwt() -> None:
         await client.post("/api/v1/dev/seed_data")
 
         expired_token = create_access_token(data={"email": TestData.TEST_USER_EMAIL_1}, expires_delta=timedelta(seconds=-1))
-        expired_reset_payload = {"token": expired_token, "new_password": "newpassword123!"}
+        expired_reset_payload = {"token": expired_token, "new_password": "NewPassword123!"}
         headers = {"Content-Type": "application/json"}
 
         # Act: 期限切れトークンでパスワードリセットを試行

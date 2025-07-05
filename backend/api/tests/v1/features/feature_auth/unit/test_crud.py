@@ -41,7 +41,7 @@ async def test_get_user_by_email_found():
     # Arrange: モックユーザーとセッションを準備
     mock_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="testuser",
+        username=TestData.DOC_USERNAME_EXAMPLE,
         hashed_password="hashed_password",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
@@ -78,7 +78,7 @@ async def test_get_user_by_email_not_found():
     mock_session.execute.return_value = mock_result
 
     # Act: 存在しないメールアドレスでユーザー検索を実行
-    result = await get_user_by_email(mock_session, "nonexistent@example.com")
+    result = await get_user_by_email(mock_session, TestData.TEST_NONEXISTENT_EMAIL)
 
     # Assert: Noneが返されることを確認
     assert result is None
@@ -93,7 +93,7 @@ async def test_get_user_by_email_including_deleted_found():
     # Arrange: 論理削除済みユーザーのモックを準備
     mock_deleted_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="deleted_user",
+        username=TestData.TEST_DELETED_USERNAME,
         hashed_password="hashed_password",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_SUSPENDED,
@@ -125,7 +125,7 @@ async def test_get_user_by_username_found():
     # Arrange: モックユーザーとセッションを準備
     mock_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="testuser",
+        username=TestData.DOC_USERNAME_EXAMPLE,
         hashed_password="hashed_password",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
@@ -139,11 +139,11 @@ async def test_get_user_by_username_found():
     mock_session.execute.return_value = mock_result
 
     # Act: ユーザー名でユーザー検索を実行
-    result = await get_user_by_username(mock_session, "testuser")
+    result = await get_user_by_username(mock_session, TestData.DOC_USERNAME_EXAMPLE)
 
     # Assert: 正しいユーザーが取得されることを確認
     assert result == mock_user
-    assert result.username == "testuser"
+    assert result.username == TestData.DOC_USERNAME_EXAMPLE
 
 
 @pytest.mark.asyncio
@@ -157,7 +157,7 @@ async def test_get_user_by_id_found():
     mock_user = User(
         user_id=test_user_id,
         email=TestData.TEST_USER_EMAIL_1,
-        username="testuser",
+        username=TestData.DOC_USERNAME_EXAMPLE,
         hashed_password="hashed_password",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
@@ -187,7 +187,7 @@ async def test_create_user_success():
     # Arrange: 新しいユーザーオブジェクトとモックセッションを準備
     new_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="newuser",
+        username=TestData.DOC_NEW_USERNAME,
         hashed_password="hashed_password",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
@@ -217,7 +217,7 @@ async def test_update_user_password_success():
     # Arrange: 既存ユーザーと新しいハッシュパスワードを準備
     existing_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="testuser",
+        username=TestData.DOC_USERNAME_EXAMPLE,
         hashed_password="old_password_hash",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
@@ -246,7 +246,7 @@ async def test_update_user_profile_partial_update():
     # Arrange: 既存ユーザーと更新データを準備
     existing_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="oldusername",
+        username=TestData.TEST_OLD_USERNAME,
         hashed_password="hashed_password",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
@@ -258,11 +258,11 @@ async def test_update_user_profile_partial_update():
     mock_session.refresh = AsyncMock()
 
     # Act: ユーザー名と連絡先のみ更新を実行
-    result = await update_user_profile(mock_session, existing_user, username="newusername", contact_number="090-1234-5678")
+    result = await update_user_profile(mock_session, existing_user, username=TestData.TEST_NEW_USERNAME, contact_number=TestData.DOC_CONTACT_NUMBER)
 
     # Assert: 指定したフィールドのみ更新されることを確認
-    assert result.username == "newusername"
-    assert result.contact_number == "090-1234-5678"
+    assert result.username == TestData.TEST_NEW_USERNAME
+    assert result.contact_number == TestData.DOC_CONTACT_NUMBER
     assert result.email == TestData.TEST_USER_EMAIL_1  # 変更されていないことを確認
     mock_session.commit.assert_called_once()
     mock_session.refresh.assert_called_once_with(existing_user)
@@ -277,7 +277,7 @@ async def test_delete_user_success():
     # Arrange: アクティブなユーザーとモックセッションを準備
     active_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="testuser",
+        username=TestData.DOC_USERNAME_EXAMPLE,
         hashed_password="hashed_password",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
@@ -307,7 +307,7 @@ async def test_restore_user_success():
     # Arrange: 論理削除済みユーザーと復活用データを準備
     deleted_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="deleted_user",
+        username=TestData.TEST_DELETED_USERNAME,
         hashed_password="old_password_hash",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_SUSPENDED,
@@ -319,10 +319,10 @@ async def test_restore_user_success():
     mock_session.refresh = AsyncMock()
 
     # Act: ユーザー復活を実行
-    result = await restore_user(mock_session, deleted_user, "restored_user", "new_password")
+    result = await restore_user(mock_session, deleted_user, TestData.TEST_RESTORED_USERNAME, TestData.TEST_NEW_PASSWORD)
 
     # Assert: ユーザーが正常に復活されることを確認
-    assert result.username == "restored_user"
+    assert result.username == TestData.TEST_RESTORED_USERNAME
     assert result.user_status == User.STATUS_ACTIVE
     assert result.deleted_at is None
     assert result.hashed_password != "old_password_hash"  # パスワードが更新されている
@@ -342,7 +342,7 @@ async def test_get_current_user_success():
 
     mock_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="testuser",
+        username=TestData.DOC_USERNAME_EXAMPLE,
         hashed_password="hashed_password",
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
@@ -388,9 +388,9 @@ async def test_create_user_service_new_user():
     【正常系】新規ユーザーが正常に作成されることを確認。
     """
     # Arrange: 新規ユーザー情報とモックセッションを準備
-    email = "newuser@example.com"
-    username = "newuser"
-    password = "password123"
+    email = TestData.DOC_NEW_USER_EMAIL
+    username = TestData.DOC_NEW_USERNAME
+    password = TestData.DOC_PASSWORD_EXAMPLE
 
     mock_session = AsyncMock()
 
@@ -421,12 +421,12 @@ async def test_create_user_service_restore_deleted_user():
     """
     # Arrange: 論理削除済みユーザーと復活用データを準備
     email = TestData.TEST_USER_EMAIL_1
-    username = "restored_user"
-    password = "new_password"
+    username = TestData.TEST_RESTORED_USERNAME
+    password = TestData.TEST_NEW_PASSWORD
 
     deleted_user = User(
         email=email,
-        username="old_username",
+        username=TestData.TEST_OLD_USERNAME,
         user_status=User.STATUS_SUSPENDED,
         deleted_at=datetime.now(),
     )
@@ -459,12 +459,12 @@ async def test_create_user_service_user_already_exists():
     """
     # Arrange: 既存のアクティブユーザーを準備
     email = TestData.TEST_USER_EMAIL_1
-    username = "testuser"
-    password = "password123"
+    username = TestData.DOC_USERNAME_EXAMPLE
+    password = TestData.DOC_PASSWORD_EXAMPLE
 
     existing_user = User(
         email=email,
-        username="existing_user",
+        username=TestData.TEST_EXISTING_USERNAME,
         user_status=User.STATUS_ACTIVE,
         deleted_at=None,
     )
@@ -493,14 +493,14 @@ async def test_verify_email_token_success():
 
     # Act & Assert: トークンデコードをモック化して実行
     with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
-        mock_decode.return_value = {"email": TestData.TEST_USER_EMAIL_1, "username": "testuser", "password": "password123"}
+        mock_decode.return_value = {"email": TestData.TEST_USER_EMAIL_1, "username": TestData.DOC_USERNAME_EXAMPLE, "password": TestData.DOC_PASSWORD_EXAMPLE}
 
         result = await verify_email_token(token)
 
         assert isinstance(result, UserCreate)
         assert result.email == TestData.TEST_USER_EMAIL_1
-        assert result.username == "testuser"
-        assert result.password == "password123"
+        assert result.username == TestData.DOC_USERNAME_EXAMPLE
+        assert result.password == TestData.DOC_PASSWORD_EXAMPLE
 
 
 @pytest.mark.asyncio
@@ -533,7 +533,7 @@ async def test_reset_password_email_success():
     email = TestData.TEST_USER_EMAIL_1
     mock_user = User(
         email=email,
-        username="testuser",
+        username=TestData.DOC_USERNAME_EXAMPLE,
         user_status=User.STATUS_ACTIVE,
     )
 
@@ -558,7 +558,7 @@ async def test_reset_password_email_user_not_found():
     【異常系】存在しないユーザーでHTTPExceptionが発生することを確認。
     """
     # Arrange: 存在しないユーザーのメールアドレスを準備
-    email = "nonexistent@example.com"
+    email = TestData.TEST_NONEXISTENT_EMAIL
     mock_background_tasks = MagicMock()
     mock_session = AsyncMock()
 
@@ -619,11 +619,11 @@ async def test_reset_password_success():
     """
     # Arrange: 有効なユーザーと新しいパスワードを準備
     email = TestData.TEST_USER_EMAIL_1
-    new_password = "new_password123"
+    new_password = TestData.TEST_RESET_NEW_PASSWORD
 
     mock_user = User(
         email=email,
-        username="testuser",
+        username=TestData.DOC_USERNAME_EXAMPLE,
         user_status=User.STATUS_ACTIVE,
     )
 
@@ -646,8 +646,8 @@ async def test_reset_password_user_not_found():
     【異常系】存在しないユーザーでHTTPExceptionが発生することを確認。
     """
     # Arrange: 存在しないユーザーのデータを準備
-    email = "nonexistent@example.com"
-    new_password = "new_password123"
+    email = TestData.TEST_NONEXISTENT_EMAIL
+    new_password = TestData.TEST_RESET_NEW_PASSWORD
     mock_session = AsyncMock()
 
     # Act & Assert: ユーザー未発見エラーが発生することを確認
@@ -670,11 +670,11 @@ async def test_update_user_with_schema_success():
     # Arrange: 既存ユーザーと更新スキーマを準備
     existing_user = User(
         email=TestData.TEST_USER_EMAIL_1,
-        username="oldusername",
+        username=TestData.TEST_OLD_USERNAME,
         user_status=User.STATUS_ACTIVE,
     )
 
-    user_update = UserUpdate(username="newusername", contact_number="090-1234-5678")
+    user_update = UserUpdate(username=TestData.TEST_NEW_USERNAME, contact_number=TestData.DOC_CONTACT_NUMBER)
 
     mock_session = AsyncMock()
 
@@ -682,8 +682,8 @@ async def test_update_user_with_schema_success():
     with patch("api.v1.features.feature_auth.crud.update_user_profile") as mock_update_profile:
         updated_user = User(
             email=TestData.TEST_USER_EMAIL_1,
-            username="newusername",
-            contact_number="090-1234-5678",
+            username=TestData.TEST_NEW_USERNAME,
+            contact_number=TestData.DOC_CONTACT_NUMBER,
             user_status=User.STATUS_ACTIVE,
         )
         mock_update_profile.return_value = updated_user
@@ -691,4 +691,11 @@ async def test_update_user_with_schema_success():
         result = await update_user_with_schema(mock_session, existing_user, user_update)
 
         assert result == updated_user
-        mock_update_profile.assert_called_once_with(db=mock_session, user=existing_user, username="newusername", email=None, contact_number="090-1234-5678", date_of_birth=None)
+        mock_update_profile.assert_called_once_with(
+            db=mock_session,
+            user=existing_user,
+            username=TestData.TEST_NEW_USERNAME,
+            email=None,
+            contact_number=TestData.DOC_CONTACT_NUMBER,
+            date_of_birth=None
+        )
