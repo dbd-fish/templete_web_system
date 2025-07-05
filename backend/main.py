@@ -10,7 +10,7 @@ from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.asyncpg import AsyncPGInstrumentor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics import MeterProvider, set_meter_provider
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -58,6 +58,7 @@ def setup_opentelemetry():
     # Prometheusメトリクスの設定
     prometheus_reader = PrometheusMetricReader()
     meter_provider = MeterProvider(resource=resource, metric_readers=[prometheus_reader])
+    set_meter_provider(meter_provider)
 
     # Prometheusメトリクスサーバー起動（ポート8001）
     start_http_server(8001)
