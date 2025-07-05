@@ -68,11 +68,8 @@ async def test_login_user() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000/") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
-        login_data = {
-            "username": TestData.TEST_USER_EMAIL_1, 
-            "password": TestData.TEST_USER_PASSWORD
-        }
+
+        login_data = {"username": TestData.TEST_USER_EMAIL_1, "password": TestData.TEST_USER_PASSWORD}
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         # Act: ログインAPIを実行
@@ -81,7 +78,7 @@ async def test_login_user() -> None:
             data=login_data,
             headers=headers,
         )
-        
+
         # Assert: ログイン成功レスポンスを検証
         assert response.status_code == 200
         response_json = response.json()
@@ -96,10 +93,7 @@ async def test_login_with_invalid_credentials() -> None:
     """
     # Arrange: 不正な認証情報とクライアントを準備
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000/") as client:
-        invalid_credentials = {
-            "username": "wronguser@example.com", 
-            "password": "wrongpassword"
-        }
+        invalid_credentials = {"username": "wronguser@example.com", "password": "wrongpassword"}
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         # Act: 不正な認証情報でログインを試行
@@ -108,7 +102,7 @@ async def test_login_with_invalid_credentials() -> None:
             data=invalid_credentials,
             headers=headers,
         )
-        
+
         # Assert: 認証エラーレスポンスを検証
         assert response.status_code == 401
         assert "メールアドレスまたはパスワードが無効です" == response.json()["message"]
@@ -122,7 +116,7 @@ async def test_register_user() -> None:
     """
     # Arrange: 新規ユーザー情報とトークンを準備
     import uuid
-    
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         user_data = {
             "email": f"test_{uuid.uuid4().hex[:8]}@example.com",
@@ -158,13 +152,10 @@ async def test_reset_password(authenticated_client: AsyncClient) -> None:
     """
     # Arrange: パスワードリセット用トークンとデータを準備
     new_password = TestData.TEST_USER_PASSWORD + "123"
-    token = create_access_token(
-        data={"email": TestData.TEST_USER_EMAIL_1}, 
-        expires_delta=timedelta(minutes=60)
-    )
+    token = create_access_token(data={"email": TestData.TEST_USER_EMAIL_1}, expires_delta=timedelta(minutes=60))
     reset_payload = {"token": token, "new_password": new_password}
     headers = {"Content-Type": "application/json"}
-    
+
     # Arrange: トークンが正常に生成されていることを確認
     assert token is not None, "Reset token is missing in the response"
 
@@ -191,18 +182,14 @@ async def test_send_verify_email(disable_email_sending) -> None:
     """
     # Arrange: 仮登録用ユーザー情報とクライアントを準備
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
-        verification_data = {
-            "email": "newuser@example.com", 
-            "username": "newuser", 
-            "password": "Test1234!"
-        }
+        verification_data = {"email": "newuser@example.com", "username": "newuser", "password": "Test1234!"}
 
         # Act: 認証メール送信APIを実行
         response = await client.post(
             "/api/v1/auth/send-verify-email",
             json=verification_data,
         )
-        
+
         # Assert: メール送信成功レスポンスを検証（メール送信は無効化済み）
         assert response.status_code == 200
         assert "認証メールを送信しました。メールをご確認ください" == response.json()["message"]
@@ -218,7 +205,7 @@ async def test_send_reset_password_email(disable_email_sending) -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
+
         reset_email_data = {"email": TestData.TEST_USER_EMAIL_1}
 
         # Act: パスワードリセットメール送信APIを実行
@@ -226,7 +213,7 @@ async def test_send_reset_password_email(disable_email_sending) -> None:
             "/api/v1/auth/send-password-reset-email",
             json=reset_email_data,
         )
-        
+
         # Assert: メール送信成功レスポンスを検証（メール送信は無効化済み）
         assert response.status_code == 200
         assert "パスワードリセットメールを送信しました" == response.json()["message"]
@@ -271,7 +258,7 @@ async def test_register_with_invalid_token() -> None:
             json=invalid_payload,
             headers=headers,
         )
-        
+
         # Assert: 無効トークンエラーレスポンスを検証
         assert response.status_code == 400, response.text
 
@@ -291,7 +278,7 @@ async def test_reset_password_with_invalid_email() -> None:
             "/api/v1/auth/send-password-reset-email",
             json=nonexistent_email_data,
         )
-        
+
         # Assert: ユーザー未発見エラーレスポンスを検証
         assert response.status_code == 404, response.text
         response_json = response.json()
@@ -316,7 +303,7 @@ async def test_reset_password_with_invalid_token(authenticated_client: AsyncClie
         json=invalid_reset_payload,
         headers=headers,
     )
-    
+
     # Assert: 無効トークンエラーレスポンスを検証
     assert response.status_code == 400, response.text
 
@@ -336,7 +323,7 @@ async def test_logout_with_invalid_token() -> None:
             "/api/v1/auth/logout",
             headers=invalid_headers,
         )
-        
+
         # Assert: 認証エラーレスポンスを検証
         assert response.status_code == 401, response.text
 
@@ -351,7 +338,7 @@ async def test_logout_without_authentication() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         # Act: 認証情報なしでログアウトを試行
         response = await client.post("/api/v1/auth/logout")
-        
+
         # Assert: 認証エラーレスポンスを検証
         assert response.status_code == 401, response.text
 
@@ -371,7 +358,7 @@ async def test_register_user_already_exists() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
+
         duplicate_user_data = {
             "email": TestData.TEST_USER_EMAIL_1,  # 既に存在するメールアドレス
             "username": "newusername",
@@ -405,12 +392,12 @@ async def test_register_user_with_deleted_user() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
+
         # 既存ユーザーでログインしてアカウント削除
         await setup_authenticated_client_with_manual_token(client, TestData.TEST_USER_EMAIL_1, TestData.TEST_USER_PASSWORD)
         delete_response = await client.delete("/api/v1/auth/me")
         assert delete_response.status_code == 200
-        
+
         # 復活用の新しいユーザーデータ
         restored_user_data = {
             "email": TestData.TEST_USER_EMAIL_1,
@@ -445,7 +432,7 @@ async def test_register_user_with_expired_jwt() -> None:
     """
     # Arrange: 期限切れトークンとユーザーデータを準備
     import uuid
-    
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         user_data = {
             "email": f"test_{uuid.uuid4().hex[:8]}@example.com",
@@ -480,12 +467,12 @@ async def test_password_reset_with_deleted_user() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
+
         # 既存ユーザーでログインしてアカウント削除
         await setup_authenticated_client_with_manual_token(client, TestData.TEST_USER_EMAIL_1, TestData.TEST_USER_PASSWORD)
         delete_response = await client.delete("/api/v1/auth/me")
         assert delete_response.status_code == 200
-        
+
         deleted_user_email_data = {"email": TestData.TEST_USER_EMAIL_1}
 
         # Act: 論理削除済みユーザーでパスワードリセットメール送信を試行
@@ -511,11 +498,8 @@ async def test_password_reset_with_expired_jwt() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
-        expired_token = create_access_token(
-            data={"email": TestData.TEST_USER_EMAIL_1}, 
-            expires_delta=timedelta(seconds=-1)
-        )
+
+        expired_token = create_access_token(data={"email": TestData.TEST_USER_EMAIL_1}, expires_delta=timedelta(seconds=-1))
         expired_reset_payload = {"token": expired_token, "new_password": "newpassword123!"}
         headers = {"Content-Type": "application/json"}
 
@@ -543,16 +527,13 @@ async def test_authentication_with_deleted_user() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
+
         # 既存ユーザーでログインしてアカウント削除
         await setup_authenticated_client_with_manual_token(client, TestData.TEST_USER_EMAIL_1, TestData.TEST_USER_PASSWORD)
         delete_response = await client.delete("/api/v1/auth/me")
         assert delete_response.status_code == 200
-        
-        deleted_login_data = {
-            "username": TestData.TEST_USER_EMAIL_1, 
-            "password": TestData.TEST_USER_PASSWORD
-        }
+
+        deleted_login_data = {"username": TestData.TEST_USER_EMAIL_1, "password": TestData.TEST_USER_PASSWORD}
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         # Act: 論理削除済みユーザーでログインを試行
@@ -579,11 +560,8 @@ async def test_user_operations_with_expired_jwt() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
-        expired_token = create_access_token(
-            data={"sub": TestData.TEST_USER_EMAIL_1, "client_ip": "127.0.0.1"}, 
-            expires_delta=timedelta(seconds=-1)
-        )
+
+        expired_token = create_access_token(data={"sub": TestData.TEST_USER_EMAIL_1, "client_ip": "127.0.0.1"}, expires_delta=timedelta(seconds=-1))
         client.cookies.set("authToken", expired_token)
         update_data = {"username": "updated_name"}
 
@@ -613,12 +591,12 @@ async def test_update_user_info_with_deleted_user() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
-        
+
         # 既存ユーザーでログインしてアカウント削除
         await setup_authenticated_client_with_manual_token(client, TestData.TEST_USER_EMAIL_1, TestData.TEST_USER_PASSWORD)
         delete_response = await client.delete("/api/v1/auth/me")
         assert delete_response.status_code == 200
-        
+
         update_data = {"username": "updated_deleted_user"}
 
         # Act: 論理削除済みユーザーでユーザー情報更新を試行

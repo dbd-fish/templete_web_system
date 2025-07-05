@@ -1,6 +1,7 @@
 """
 レスポンススキーマの単体テスト（AAAパターン）
 """
+
 from datetime import datetime
 
 import pytest
@@ -24,7 +25,7 @@ from api.common.response_schemas import (
 
 def test_success_response_creation():
     """SuccessResponse
-    
+
     【正常系】成功レスポンスが正常に作成されることを確認。
     """
     # Arrange: 成功レスポンス用のデータを準備
@@ -32,10 +33,7 @@ def test_success_response_creation():
     test_message = "操作が正常に完了しました"
 
     # Act: SuccessResponseを作成
-    response = SuccessResponse[dict](
-        message=test_message,
-        data=test_data
-    )
+    response = SuccessResponse[dict](message=test_message, data=test_data)
 
     # Assert: レスポンスが正しく作成されることを確認
     assert response.success is True
@@ -46,7 +44,7 @@ def test_success_response_creation():
 
 def test_success_response_without_data():
     """SuccessResponse
-    
+
     【正常系】データなしの成功レスポンスが正常に作成されることを確認。
     """
     # Arrange: データなしの成功レスポンス用メッセージを準備
@@ -64,7 +62,7 @@ def test_success_response_without_data():
 
 def test_error_response_creation():
     """ErrorResponse
-    
+
     【正常系】エラーレスポンスが正常に作成されることを確認。
     """
     # Arrange: エラーレスポンス用のデータを準備
@@ -73,11 +71,7 @@ def test_error_response_creation():
     test_details = {"field": "password", "reason": "incorrect"}
 
     # Act: ErrorResponseを作成
-    response = ErrorResponse(
-        message=test_message,
-        error_code=test_error_code,
-        details=test_details
-    )
+    response = ErrorResponse(message=test_message, error_code=test_error_code, details=test_details)
 
     # Assert: エラーレスポンスが正しく作成されることを確認
     assert response.success is False
@@ -89,7 +83,7 @@ def test_error_response_creation():
 
 def test_error_response_without_details():
     """ErrorResponse
-    
+
     【正常系】詳細なしのエラーレスポンスが正常に作成されることを確認。
     """
     # Arrange: 詳細なしのエラーレスポンス用データを準備
@@ -97,10 +91,7 @@ def test_error_response_without_details():
     test_error_code = ErrorCodes.INTERNAL_SERVER_ERROR
 
     # Act: 詳細なしのErrorResponseを作成
-    response = ErrorResponse(
-        message=test_message,
-        error_code=test_error_code
-    )
+    response = ErrorResponse(message=test_message, error_code=test_error_code)
 
     # Assert: 詳細がNoneでもエラーレスポンスが正しく作成されることを確認
     assert response.success is False
@@ -112,7 +103,7 @@ def test_error_response_without_details():
 
 def test_message_response_creation():
     """MessageResponse
-    
+
     【正常系】メッセージレスポンスが正常に作成されることを確認。
     """
     # Arrange: メッセージレスポンス用データを準備
@@ -127,7 +118,7 @@ def test_message_response_creation():
 
 def test_create_success_response_function():
     """create_success_response
-    
+
     【正常系】成功レスポンス作成関数が正常に動作することを確認。
     """
     # Arrange: 成功レスポンス作成用データを準備
@@ -147,7 +138,7 @@ def test_create_success_response_function():
 
 def test_create_message_response_function():
     """create_message_response
-    
+
     【正常系】メッセージレスポンス作成関数が正常に動作することを確認。
     """
     # Arrange: メッセージレスポンス作成用データを準備
@@ -165,7 +156,7 @@ def test_create_message_response_function():
 
 def test_create_error_response_function():
     """create_error_response
-    
+
     【正常系】エラーレスポンス作成関数が正常に動作することを確認。
     """
     # Arrange: エラーレスポンス作成用データを準備
@@ -174,11 +165,7 @@ def test_create_error_response_function():
     test_details = {"field": "email", "error": "invalid format"}
 
     # Act: create_error_response関数を実行
-    response_dict = create_error_response(
-        message=test_message,
-        error_code=test_error_code,
-        details=test_details
-    )
+    response_dict = create_error_response(message=test_message, error_code=test_error_code, details=test_details)
 
     # Assert: 適切な辞書形式のエラーレスポンスが作成されることを確認
     assert response_dict["success"] is False
@@ -190,7 +177,7 @@ def test_create_error_response_function():
 
 def test_error_codes_constants():
     """ErrorCodes
-    
+
     【正常系】エラーコード定数が正しく定義されていることを確認。
     """
     # Arrange: エラーコード定数を確認
@@ -210,7 +197,7 @@ def test_error_codes_constants():
 
 def test_base_response_with_generic_type():
     """BaseResponse
-    
+
     【正常系】ジェネリック型を使用したBaseResponseが正常に動作することを確認。
     """
     # Arrange: ジェネリック型のデータを準備
@@ -218,11 +205,7 @@ def test_base_response_with_generic_type():
     test_message = "リスト取得が完了しました"
 
     # Act: BaseResponseをリスト型で作成
-    response = BaseResponse[list](
-        success=True,
-        message=test_message,
-        data=test_data
-    )
+    response = BaseResponse[list](success=True, message=test_message, data=test_data)
 
     # Assert: ジェネリック型が正しく動作することを確認
     assert response.success is True
@@ -234,11 +217,12 @@ def test_base_response_with_generic_type():
 
 def test_response_timestamp_japan_timezone():
     """レスポンスタイムスタンプ（日本時間）
-    
+
     【正常系】レスポンスのタイムスタンプが日本時間で設定されることを確認。
     """
     # Arrange: レスポンス作成前の時刻を記録（日本時間）
     from zoneinfo import ZoneInfo
+
     before_creation = datetime.now(ZoneInfo("Asia/Tokyo"))
 
     # Act: レスポンスを作成
@@ -246,7 +230,7 @@ def test_response_timestamp_japan_timezone():
 
     # Assert: タイムスタンプが適切に設定されることを確認
     after_creation = datetime.now(ZoneInfo("Asia/Tokyo"))
-    
+
     assert response.timestamp >= before_creation
     assert response.timestamp <= after_creation
     # 日本時間のタイムスタンプであることを確認
@@ -255,15 +239,12 @@ def test_response_timestamp_japan_timezone():
 
 def test_response_serialization():
     """レスポンスシリアライゼーション
-    
+
     【正常系】レスポンスオブジェクトが正しくJSON形式にシリアライズされることを確認。
     """
     # Arrange: シリアライズ用のレスポンスデータを準備
     test_data = {"key": "value", "number": 123}
-    response = SuccessResponse[dict](
-        message="シリアライズテスト",
-        data=test_data
-    )
+    response = SuccessResponse[dict](message="シリアライズテスト", data=test_data)
 
     # Act: レスポンスを辞書形式に変換
     response_dict = response.model_dump()
@@ -280,35 +261,35 @@ def test_response_serialization():
 
 def test_response_validation_error():
     """レスポンスバリデーションエラー
-    
+
     【異常系】必須フィールドが不足している場合にValidationErrorが発生することを確認。
     """
     # Arrange: 不正なレスポンスデータを準備（messageフィールドなし）
     # Act & Assert: ValidationErrorが発生することを確認
     with pytest.raises(ValidationError) as exc_info:
         SuccessResponse[None](success=True)  # messageフィールドが不足
-    
+
     # バリデーションエラーの詳細を確認
     assert "message" in str(exc_info.value)
 
 
 def test_error_response_validation():
     """ErrorResponseバリデーション
-    
+
     【異常系】ErrorResponseで必須フィールドが不足している場合のエラーを確認。
     """
     # Arrange: 不正なエラーレスポンスデータを準備
     # Act & Assert: ValidationErrorが発生することを確認
     with pytest.raises(ValidationError) as exc_info:
         ErrorResponse(message="エラーメッセージ")  # error_codeフィールドが不足
-    
+
     # バリデーションエラーの詳細を確認
     assert "error_code" in str(exc_info.value)
 
 
 def test_response_field_descriptions():
     """レスポンスフィールド説明
-    
+
     【正常系】レスポンススキーマのフィールド説明が正しく設定されていることを確認。
     """
     # Arrange: SuccessResponseのスキーマ情報を取得
@@ -317,12 +298,12 @@ def test_response_field_descriptions():
     # Act: フィールドの説明を検証
     # Assert: 適切なフィールド説明が設定されることを確認
     properties = schema["properties"]
-    
+
     assert "description" in properties["success"]
     assert "description" in properties["message"]
     assert "description" in properties["timestamp"]
     assert "description" in properties["data"]
-    
+
     # 具体的な説明文の確認
     assert "処理成功フラグ" in properties["success"]["description"]
     assert "レスポンスメッセージ" in properties["message"]["description"]
@@ -331,32 +312,17 @@ def test_response_field_descriptions():
 
 def test_complex_data_structure_response():
     """複雑なデータ構造のレスポンス
-    
+
     【正常系】ネストした複雑なデータ構造でもレスポンスが正常に作成されることを確認。
     """
     # Arrange: 複雑なネストデータ構造を準備
     complex_data = {
-        "user": {
-            "id": "123",
-            "profile": {
-                "name": "テストユーザー",
-                "settings": {
-                    "notifications": True,
-                    "theme": "dark"
-                }
-            }
-        },
-        "metadata": {
-            "version": "1.0",
-            "features": ["auth", "notifications", "analytics"]
-        }
+        "user": {"id": "123", "profile": {"name": "テストユーザー", "settings": {"notifications": True, "theme": "dark"}}},
+        "metadata": {"version": "1.0", "features": ["auth", "notifications", "analytics"]},
     }
 
     # Act: 複雑なデータでSuccessResponseを作成
-    response = SuccessResponse[dict](
-        message="複雑なデータ取得が完了しました",
-        data=complex_data
-    )
+    response = SuccessResponse[dict](message="複雑なデータ取得が完了しました", data=complex_data)
 
     # Assert: 複雑なデータ構造でも正しくレスポンスが作成されることを確認
     assert response.success is True
@@ -367,7 +333,7 @@ def test_complex_data_structure_response():
 
 def test_create_empty_response_function():
     """create_empty_response
-    
+
     【正常系】空データレスポンス作成関数が正常に動作することを確認。
     """
     # Arrange: 空データレスポンス作成用データを準備
@@ -385,7 +351,7 @@ def test_create_empty_response_function():
 
 def test_create_paginated_response_function():
     """create_paginated_response
-    
+
     【正常系】ページネーション対応レスポンス作成関数が正常に動作することを確認。
     """
     # Arrange: ページネーション対応レスポンス用データを準備
@@ -396,20 +362,14 @@ def test_create_paginated_response_function():
     total_items = 25
 
     # Act: create_paginated_response関数を実行
-    response_dict = create_paginated_response(
-        message=test_message,
-        data=test_data,
-        current_page=current_page,
-        per_page=per_page,
-        total_items=total_items
-    )
+    response_dict = create_paginated_response(message=test_message, data=test_data, current_page=current_page, per_page=per_page, total_items=total_items)
 
     # Assert: 適切なページネーション対応レスポンスが作成されることを確認
     assert response_dict["success"] is True
     assert response_dict["message"] == test_message
     assert response_dict["data"] == test_data
     assert "pagination" in response_dict
-    
+
     pagination = response_dict["pagination"]
     assert pagination["current_page"] == 1
     assert pagination["per_page"] == 10
@@ -421,18 +381,11 @@ def test_create_paginated_response_function():
 
 def test_pagination_meta_model():
     """PaginationMeta
-    
+
     【正常系】PaginationMetaモデルが正常に動作することを確認。
     """
     # Arrange: ページネーション情報を準備
-    pagination_data = {
-        "current_page": 2,
-        "per_page": 5,
-        "total_items": 12,
-        "total_pages": 3,
-        "has_next": True,
-        "has_prev": True
-    }
+    pagination_data = {"current_page": 2, "per_page": 5, "total_items": 12, "total_pages": 3, "has_next": True, "has_prev": True}
 
     # Act: PaginationMetaモデルを作成
     pagination = PaginationMeta(**pagination_data)
@@ -448,7 +401,7 @@ def test_pagination_meta_model():
 
 def test_empty_data_model():
     """EmptyData
-    
+
     【正常系】EmptyDataモデルが正常に作成されることを確認。
     """
     # Arrange: 空データモデルを準備
@@ -457,7 +410,7 @@ def test_empty_data_model():
 
     # Assert: EmptyDataが正常に作成されることを確認
     assert isinstance(empty_data, EmptyData)
-    
+
     # 辞書形式に変換して空であることを確認
     empty_dict = empty_data.model_dump()
     assert empty_dict == {}
@@ -465,7 +418,7 @@ def test_empty_data_model():
 
 def test_paginated_response_with_empty_list():
     """create_paginated_response
-    
+
     【正常系】空リストでのページネーション対応レスポンスが正常に動作することを確認。
     """
     # Arrange: 空リストのページネーション用データを準備
@@ -476,18 +429,12 @@ def test_paginated_response_with_empty_list():
     total_items = 0
 
     # Act: 空リストでcreate_paginated_response関数を実行
-    response_dict = create_paginated_response(
-        message=test_message,
-        data=test_data,
-        current_page=current_page,
-        per_page=per_page,
-        total_items=total_items
-    )
+    response_dict = create_paginated_response(message=test_message, data=test_data, current_page=current_page, per_page=per_page, total_items=total_items)
 
     # Assert: 空リストでも適切なレスポンスが作成されることを確認
     assert response_dict["success"] is True
     assert response_dict["data"] == []
-    
+
     pagination = response_dict["pagination"]
     assert pagination["total_items"] == 0
     assert pagination["total_pages"] == 0  # (0 + 10 - 1) // 10 = 0

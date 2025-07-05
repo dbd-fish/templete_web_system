@@ -1,8 +1,9 @@
 """
 ルートレイヤーのユーティリティ関数の単体テスト（AAAパターン）
 """
+
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import Request
@@ -12,7 +13,7 @@ from api.v1.features.feature_auth.models.user import User
 
 def test_extract_client_ip_from_x_forwarded_for():
     """クライアントIP取得（X-Forwarded-Forヘッダー使用）
-    
+
     【正常系】X-Forwarded-ForヘッダーからクライアントIPが正常に取得できることを確認。
     """
     # Arrange: X-Forwarded-Forヘッダーを持つリクエストを準備
@@ -29,7 +30,7 @@ def test_extract_client_ip_from_x_forwarded_for():
 
 def test_extract_client_ip_fallback_to_client_host():
     """クライアントIP取得（request.client.hostにフォールバック）
-    
+
     【正常系】X-Forwarded-Forがない場合にrequest.client.hostが使用されることを確認。
     """
     # Arrange: X-Forwarded-Forヘッダーがないリクエストを準備
@@ -46,7 +47,7 @@ def test_extract_client_ip_fallback_to_client_host():
 
 def test_extract_client_ip_no_client_info():
     """クライアントIP取得（クライアント情報なし）
-    
+
     【正常系】クライアント情報がない場合に"unknown"が返されることを確認。
     """
     # Arrange: クライアント情報がないリクエストを準備
@@ -63,7 +64,7 @@ def test_extract_client_ip_no_client_info():
 
 def test_cookie_security_settings():
     """クッキーセキュリティ設定
-    
+
     【正常系】セキュアなクッキー設定値が正しいことを確認。
     """
     # Arrange: クッキー設定パラメータを準備
@@ -72,7 +73,7 @@ def test_cookie_security_settings():
         "httponly": True,
         "max_age": 60 * 60 * 3,  # 3時間
         "secure": True,
-        "samesite": "lax"
+        "samesite": "lax",
     }
 
     # Act: 設定値を検証
@@ -86,7 +87,7 @@ def test_cookie_security_settings():
 
 def test_user_response_data_structure():
     """ユーザーレスポンスデータ構造
-    
+
     【正常系】ユーザーレスポンス用のデータ構造が正しいことを確認。
     """
     # Arrange: ユーザーオブジェクトを準備
@@ -128,21 +129,15 @@ def test_user_response_data_structure():
 
 def test_error_logging_structure():
     """エラーログ構造
-    
+
     【正常系】エラーログの構造が適切であることを確認。
     """
     # Arrange: ログ用データを準備
     username = "testuser"
     error_message = "Authentication failed"
     endpoint = "/api/v1/auth/login"
-    
-    log_data = {
-        "event": "authentication_failed",
-        "username": username,
-        "error": error_message,
-        "endpoint": endpoint,
-        "timestamp": datetime.now().isoformat()
-    }
+
+    log_data = {"event": "authentication_failed", "username": username, "error": error_message, "endpoint": endpoint, "timestamp": datetime.now().isoformat()}
 
     # Act: ログデータ構造を検証
     # Assert: ログデータが適切な構造であることを確認
@@ -156,24 +151,21 @@ def test_error_logging_structure():
 
 def test_token_data_validation():
     """JWTトークンデータバリデーション
-    
+
     【正常系】JWTトークンに含めるデータが適切であることを確認。
     """
     # Arrange: トークン用データを準備
     user_email = "test@example.com"
     client_ip = "192.168.1.100"
-    
-    token_data = {
-        "sub": user_email,
-        "client_ip": client_ip
-    }
+
+    token_data = {"sub": user_email, "client_ip": client_ip}
 
     # Act: トークンデータを検証
     # Assert: トークンデータが適切であることを確認
     assert token_data["sub"] == user_email
     assert token_data["client_ip"] == client_ip
     assert len(token_data) == 2  # 余計なデータが含まれていない
-    
+
     # セキュリティ確認：機密情報が含まれていないことを確認
     assert "password" not in token_data
     assert "hashed_password" not in token_data
@@ -182,18 +174,14 @@ def test_token_data_validation():
 
 def test_background_task_data_structure():
     """バックグラウンドタスクデータ構造
-    
+
     【正常系】バックグラウンドタスク用のデータ構造が正しいことを確認。
     """
     # Arrange: バックグラウンドタスク用データを準備
     email = "test@example.com"
     verification_url = "http://example.com/verify?token=abc123"
-    
-    email_task_data = {
-        "recipient_email": email,
-        "verification_url": verification_url,
-        "email_type": "verification"
-    }
+
+    email_task_data = {"recipient_email": email, "verification_url": verification_url, "email_type": "verification"}
 
     # Act: バックグラウンドタスクデータを検証
     # Assert: タスクデータが適切な構造であることを確認
@@ -205,7 +193,7 @@ def test_background_task_data_structure():
 
 def test_http_status_code_mapping():
     """HTTPステータスコードマッピング
-    
+
     【正常系】適切なHTTPステータスコードが使用されることを確認。
     """
     # Arrange: 各種操作のステータスコードマッピングを準備
@@ -217,7 +205,7 @@ def test_http_status_code_mapping():
         "user_not_found": 404,
         "email_already_exists": 409,
         "validation_error": 422,
-        "server_error": 500
+        "server_error": 500,
     }
 
     # Act: ステータスコードを検証
@@ -234,17 +222,11 @@ def test_http_status_code_mapping():
 
 def test_request_form_data_structure():
     """リクエストフォームデータ構造
-    
+
     【正常系】OAuth2PasswordRequestFormの構造が適切であることを確認。
     """
     # Arrange: フォームデータ構造を準備
-    form_data_structure = {
-        "username": "testuser",
-        "password": "password123",
-        "scope": "",
-        "client_id": None,
-        "client_secret": None
-    }
+    form_data_structure = {"username": "testuser", "password": "password123", "scope": "", "client_id": None, "client_secret": None}
 
     # Act: フォームデータ構造を検証
     # Assert: 必要なフィールドが含まれることを確認
@@ -252,7 +234,7 @@ def test_request_form_data_structure():
     assert "password" in form_data_structure
     assert form_data_structure["username"] is not None
     assert form_data_structure["password"] is not None
-    
+
     # オプションフィールドの確認
     assert "scope" in form_data_structure
     assert "client_id" in form_data_structure
@@ -262,15 +244,11 @@ def test_request_form_data_structure():
 @pytest.mark.asyncio
 async def test_response_content_type_validation():
     """レスポンスコンテンツタイプバリデーション
-    
+
     【正常系】APIレスポンスのコンテンツタイプが適切であることを確認。
     """
     # Arrange: レスポンスヘッダー情報を準備
-    response_headers = {
-        "content-type": "application/json",
-        "cache-control": "no-store",
-        "pragma": "no-cache"
-    }
+    response_headers = {"content-type": "application/json", "cache-control": "no-store", "pragma": "no-cache"}
 
     # Act: レスポンスヘッダーを検証
     # Assert: 適切なヘッダーが設定されることを確認
@@ -281,7 +259,7 @@ async def test_response_content_type_validation():
 
 def test_user_role_constants():
     """ユーザー権限定数
-    
+
     【正常系】ユーザー権限の定数が正しく定義されていることを確認。
     """
     # Arrange: ユーザー権限定数を準備
@@ -292,7 +270,7 @@ def test_user_role_constants():
     assert User.ROLE_REGULAR == 3
     assert User.ROLE_ADMIN == 4
     assert User.ROLE_OWNER == 5
-    
+
     # ステータス定数の確認
     assert User.STATUS_ACTIVE == 1
     assert User.STATUS_SUSPENDED == 2

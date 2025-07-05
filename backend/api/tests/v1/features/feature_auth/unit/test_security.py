@@ -160,7 +160,7 @@ async def test_authenticate_user_success():
     email = "user@example.com"
     password = "correct_password"
     hashed_password = hash_password(password)
-    
+
     mock_user = User(
         email=email,
         hashed_password=hashed_password,
@@ -168,7 +168,7 @@ async def test_authenticate_user_success():
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
     )
-    
+
     mock_session = AsyncMock()
     mock_result = MagicMock()
     mock_scalars = MagicMock()
@@ -196,7 +196,7 @@ async def test_authenticate_user_password_mismatch():
     correct_password = "correct_password"
     wrong_password = "wrong_password"
     hashed_password = hash_password(correct_password)
-    
+
     mock_user = User(
         email=email,
         hashed_password=hashed_password,
@@ -204,7 +204,7 @@ async def test_authenticate_user_password_mismatch():
         user_role=User.ROLE_FREE,
         user_status=User.STATUS_ACTIVE,
     )
-    
+
     mock_session = AsyncMock()
     mock_result = MagicMock()
     mock_scalars = MagicMock()
@@ -215,7 +215,7 @@ async def test_authenticate_user_password_mismatch():
     # Act & Assert: 間違ったパスワードで認証を試行し、HTTPExceptionが発生すること
     with pytest.raises(HTTPException) as exc_info:
         await authenticate_user(email, wrong_password, mock_session)
-    
+
     assert exc_info.value.status_code == 401
     assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)
 
@@ -229,7 +229,7 @@ async def test_authenticate_user_inactive_status():
     # Arrange: 非アクティブユーザーは検索結果に含まれないモックを準備
     email = "inactive@example.com"
     password = "password"
-    
+
     mock_session = AsyncMock()
     mock_result = MagicMock()
     mock_scalars = MagicMock()
@@ -240,7 +240,7 @@ async def test_authenticate_user_inactive_status():
     # Act & Assert: 非アクティブユーザーでの認証でHTTPExceptionが発生すること
     with pytest.raises(HTTPException) as exc_info:
         await authenticate_user(email, password, mock_session)
-    
+
     assert exc_info.value.status_code == 401
     assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)
 
@@ -254,7 +254,7 @@ async def test_authenticate_user_deleted():
     # Arrange: 削除済みユーザーは検索結果に含まれないモックを準備
     email = "deleted@example.com"
     password = "password"
-    
+
     mock_session = AsyncMock()
     mock_result = MagicMock()
     mock_scalars = MagicMock()
@@ -265,6 +265,6 @@ async def test_authenticate_user_deleted():
     # Act & Assert: 削除済みユーザーでの認証でHTTPExceptionが発生すること
     with pytest.raises(HTTPException) as exc_info:
         await authenticate_user(email, password, mock_session)
-    
+
     assert exc_info.value.status_code == 401
     assert "メールアドレスまたはパスワードが無効です" in str(exc_info.value.detail)

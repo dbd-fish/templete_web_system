@@ -1,6 +1,7 @@
 """
 メール送信機能の単体テスト（AAAパターン）
 """
+
 import base64
 import re
 from unittest.mock import MagicMock, patch
@@ -45,9 +46,7 @@ async def test_send_verification_email_with_mock_smtp():
     smtp_server = "localhost"
     smtp_port = 1025
 
-    with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, \
-         patch("smtplib.SMTP") as mock_smtp:
-        
+    with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, patch("smtplib.SMTP") as mock_smtp:
         # 設定をテスト用に設定
         mock_setting.ENABLE_EMAIL_SENDING = True
         mock_setting.PYTEST_MODE = False
@@ -103,9 +102,7 @@ async def test_send_reset_password_email_with_mock_smtp():
     smtp_server = "localhost"
     smtp_port = 1025
 
-    with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, \
-         patch("smtplib.SMTP") as mock_smtp:
-        
+    with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, patch("smtplib.SMTP") as mock_smtp:
         # 設定をテスト用に設定
         mock_setting.ENABLE_EMAIL_SENDING = True
         mock_setting.PYTEST_MODE = False
@@ -138,9 +135,7 @@ async def test_verification_email_content():
     test_url = "http://example.com/verify?token=abc123"
     app_name = "Test Application"
 
-    with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, \
-         patch("smtplib.SMTP") as mock_smtp:
-        
+    with patch("api.v1.features.feature_auth.send_verification_email.setting") as mock_setting, patch("smtplib.SMTP") as mock_smtp:
         # 設定準備
         mock_setting.ENABLE_EMAIL_SENDING = True
         mock_setting.PYTEST_MODE = False
@@ -169,11 +164,11 @@ async def test_verification_email_content():
 
         # メッセージ内容の確認（Base64エンコードされている場合はデコード）
         if "base64" in message:
-            base64_match = re.search(r'Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)', message)
+            base64_match = re.search(r"Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)", message)
             if base64_match:
-                encoded_content = base64_match.group(1).replace('\n', '').replace('\r', '')
+                encoded_content = base64_match.group(1).replace("\n", "").replace("\r", "")
                 try:
-                    decoded_content = base64.b64decode(encoded_content).decode('utf-8')
+                    decoded_content = base64.b64decode(encoded_content).decode("utf-8")
                     assert test_url in decoded_content
                     assert app_name in decoded_content
                 except Exception as decode_error:
@@ -193,9 +188,7 @@ async def test_reset_password_email_content():
     test_url = "http://example.com/reset?token=xyz789"
     app_name = "Test Application"
 
-    with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, \
-         patch("smtplib.SMTP") as mock_smtp:
-        
+    with patch("api.v1.features.feature_auth.send_reset_password_email.setting") as mock_setting, patch("smtplib.SMTP") as mock_smtp:
         # 設定準備
         mock_setting.ENABLE_EMAIL_SENDING = True
         mock_setting.PYTEST_MODE = False
@@ -224,11 +217,11 @@ async def test_reset_password_email_content():
 
         # メッセージ内容の確認（Base64エンコードされている場合はデコード）
         if "base64" in message:
-            base64_match = re.search(r'Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)', message)
+            base64_match = re.search(r"Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)", message)
             if base64_match:
-                encoded_content = base64_match.group(1).replace('\n', '').replace('\r', '')
+                encoded_content = base64_match.group(1).replace("\n", "").replace("\r", "")
                 try:
-                    decoded_content = base64.b64decode(encoded_content).decode('utf-8')
+                    decoded_content = base64.b64decode(encoded_content).decode("utf-8")
                     assert test_url in decoded_content
                     assert app_name in decoded_content
                 except Exception as decode_error:
@@ -240,7 +233,7 @@ async def test_reset_password_email_content():
 @pytest.mark.asyncio
 async def test_email_error_handling_coverage():
     """メール送信機能のエラーハンドリングカバレッジテスト
-    
+
     【正常系】例外処理の分岐をカバーするテスト。
     """
     # Arrange: エラーハンドリングテスト用データを準備
