@@ -52,6 +52,10 @@ class Setting(BaseSettings):
     # ログ出力設定
     ENABLE_CONSOLE_LOG: bool = False
 
+    # API仕様書用のサンプルJWTトークン（実際のトークンではない）
+    DOC_JWT_TOKEN_EXAMPLE: str = "test"
+    DOC_RESET_TOKEN_EXAMPLE: str = "test"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True)
 
 

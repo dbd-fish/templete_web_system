@@ -1,5 +1,8 @@
 # 動作確認データ
 # gg:ignore - GitGuardian exclusion for test/demo data only
+from api.common.setting import setting
+
+
 class TestData:
     """app/seeders/seed_data.pyで使用するテストデータを格納する。
     pytestに影響があるテストデータのみ定数化する。
@@ -44,6 +47,6 @@ class TestData:
     TEST_RESET_NEW_PASSWORD = "NewPassword123!"
 
     # JWT Token Examples (for documentation only - not real tokens)
-    # gg:ignore - Fake JWT tokens for API documentation examples only
-    DOC_JWT_TOKEN_EXAMPLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzI1NTM2ODAwfQ.example_signature"
-    DOC_RESET_TOKEN_EXAMPLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNldEBleGFtcGxlLmNvbSIsImV4cCI6MTcyNTU0MDQwMH0.reset_signature"
+    # 環境変数から読み込み
+    DOC_JWT_TOKEN_EXAMPLE = setting.DOC_JWT_TOKEN_EXAMPLE
+    DOC_RESET_TOKEN_EXAMPLE = setting.DOC_RESET_TOKEN_EXAMPLE
