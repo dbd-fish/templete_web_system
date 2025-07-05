@@ -1,98 +1,129 @@
-# CLAUDE.md - バックエンド
+# CLAUDE.md - バックエンド開発ガイド
 
-このファイルは、バックエンドコンテナ（FastAPI + PostgreSQL）のセットアップと開発に関する情報を提供します。
+このファイルは、FastAPI + PostgreSQL バックエンドの開発に関する包括的な情報を提供します。
 日本語で回答してください。
+また提供するコーディングはRuffやmypyに準拠したコーディングを提供してください。
 
-## バックエンド概要
+## 🏗️ プロジェクト概要
 
-FastAPI + PostgreSQLを使用したRESTful APIバックエンド環境です。
-- **フレームワーク**: FastAPI + uvicorn
-- **データベース**: PostgreSQL 13（別コンテナ）
-- **ORM**: SQLAlchemy 2.0（非同期）
+FastAPI + PostgreSQL を使用した高性能RESTful APIバックエンドです。
+
+### 基本技術スタック
+- **フレームワーク**: FastAPI 0.115.5 + uvicorn
+- **データベース**: PostgreSQL 13（非同期接続）
+- **ORM**: SQLAlchemy 2.0（非同期モード）
 - **言語**: Python 3.13
-- **依存関係管理**: Poetry
+- **依存関係管理**: Poetry（package-mode = false）
 - **開発ポート**: 8000
 
-## ディレクトリ構成（段階的移行中）
+## 📁 ディレクトリ構成
 
 ```
 backend/
 ├── Dockerfile                   # バックエンドコンテナ設定
-├── main.py                      # FastAPIアプリケーションエントリーポイント
-├── pyproject.toml               # Poetry設定（依存関係・ツール設定）
+├── main.py                      # FastAPI アプリケーションエントリーポイント
+├── pyproject.toml               # Poetry 設定（package-mode = false）
 ├── poetry.lock                  # 依存関係ロックファイル
-├── alembic.ini                  # Alembicマイグレーション設定
-├── alembic/                     # データベースマイグレーション
-├── app/                         # メインアプリケーション
-│   ├── api/                     # APIバージョニング
-│   │   ├── deps.py              # 共通の依存性注入（段階的移行版）
-│   │   └── v1/                  # API v1
-│   │       ├── routes.py        # v1ルーター統合
-│   │       ├── routes/          # v1エンドポイント（FastAPI公式準拠）
-│   │       │   ├── auth.py      # 認証API
-│   │       │   ├── users.py     # ユーザー管理API
-│   │       │   ├── dev.py       # 開発API
-│   │       │   └── health.py    # ヘルスチェックAPI
-│   │       └── features/        # フィーチャー機能（移動済み）
-│   │           ├── feature_auth/ # 認証機能
-│   │           └── feature_dev/ # 開発用機能
-│   ├── core/                    # 【NEW】FastAPI公式パターン準拠
-│   │   ├── config.py            # 統一設定管理（Pydantic BaseSettings）
-│   │   ├── db.py                # データベース設定（将来使用予定）
-│   │   ├── security.py          # セキュリティ機能集約
-│   │   └── compat.py            # 既存コードとの互換性維持
-│   ├── common/                  # 【LEGACY】段階的に移行予定
-│   │   ├── core/                # コア機能（ログ、エラーハンドリング）
+├── alembic.ini                  # データベースマイグレーション設定
+├── alembic/                     # Alembic マイグレーション
+│   ├── env.py                   # Alembic 環境設定
+│   ├── script.py.mako           # マイグレーションテンプレート
+│   └── versions/                # マイグレーションファイル
+├── api/                         # メインアプリケーション
+│   ├── common/                  # 共通機能
+│   │   ├── core/                # コア機能
+│   │   │   ├── log_config.py    # ログ設定（structlog + rich）
+│   │   │   ├── http_exception_handler.py
+│   │   │   └── request_validation_error.py
 │   │   ├── middleware/          # カスタムミドルウェア
-│   │   ├── database.py          # データベース設定（現在使用中）
-│   │   └── setting.py           # 設定管理（core/compatを使用）
-│   ├── models.py                # 【NEW】SQLModel統合モデル
-│   ├── crud.py                  # 【NEW】CRUD操作集約
-│   ├── models/                  # SQLAlchemyモデル（将来SQLModelに移行）
-│   └── routes.py                # 旧ルーティング（後方互換）
-├── tests/                       # テストファイル
-├── logs/                        # ログファイル
+│   │   │   ├── add_userIP_middleware.py
+│   │   │   └── error_handler_middleware.py
+│   │   ├── database.py          # データベース接続設定
+│   │   ├── setting.py           # 設定管理（Pydantic BaseSettings）
+│   │   ├── exception_handlers.py # 統一エラーハンドリング
+│   │   ├── response_schemas.py  # レスポンス統一スキーマ
+│   │   └── test_data.py         # テストデータ生成
+│   ├── v1/                      # API v1
+│   │   └── features/            # 機能別モジュール
+│   │       ├── feature_auth/    # 認証機能
+│   │       │   ├── models/      # データモデル
+│   │       │   ├── schemas/     # Pydantic スキーマ
+│   │       │   ├── crud.py      # CRUD 操作
+│   │       │   ├── route.py     # API エンドポイント
+│   │       │   ├── security.py  # セキュリティ機能
+│   │       │   ├── send_verification_email.py
+│   │       │   └── send_reset_password_email.py
+│   │       └── feature_dev/     # 開発用機能
+│   │           ├── route.py     # 開発API
+│   │           ├── seed_data.py # シードデータ
+│   │           └── seed_user.py # ユーザーシードデータ
+│   └── tests/                   # テストコード
+│       ├── conftest.py          # pytest 設定
+│       ├── fixtures/            # テストフィクスチャ
+│       └── v1/features/         # 機能別テスト
+├── logs/                        # ログファイル（日付別）
+├── certs/                       # SSL証明書（必要に応じて）
 └── CLAUDE.md                    # このファイル
 ```
 
-## 開発コマンド
+## 🚀 開発コマンド
 
 ### Docker環境での開発
 ```bash
-# バックエンドコンテナ起動（データベース含む）
-docker compose up backend db
+# バックエンド + データベース起動
+docker compose up -d backend db
 
 # バックエンドコンテナ再ビルド
 docker compose build backend
 
 # コンテナ内でシェルアクセス
 docker exec -it backend_container bash
+
+# ログ確認
+docker logs backend_container
+docker logs postgres_db
 ```
 
 ### Poetry（コンテナ内）
 ```bash
 # 依存関係インストール
-poetry install
+poetry install --no-root
 
-# 開発環境での起動（自動リロード）
+# 開発サーバー起動（ホットリロード）
 poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-# テスト実行
+# アプリケーション情報確認
+poetry show
+poetry --version
+```
+
+### テスト実行
+```bash
+# 全テスト実行（35テストケース）
 poetry run pytest
 
-# 非同期テスト実行
-poetry run pytest --asyncio-mode=strict
+# カバレッジ付きテスト実行
+poetry run pytest --cov=api --cov-report=term-missing
+
+# 詳細出力でテスト実行
+poetry run pytest -v
+
+# 特定のテストファイル実行
+poetry run pytest api/tests/v1/features/feature_auth/test_auth_controller.py
 ```
 
 ### コード品質ツール
 ```bash
 # リンティング実行
-poetry run ruff check
+poetry run ruff check .
+
+# 自動修正付きリンティング
+poetry run ruff check . --fix
 
 # コードフォーマット
-poetry run ruff format
+poetry run ruff format .
 
-# 型チェック実行
+# 型チェック実行（43ファイル対象）
 poetry run mypy .
 ```
 
@@ -106,174 +137,317 @@ poetry run alembic upgrade head
 
 # マイグレーション履歴確認
 poetry run alembic history
+
+# 現在のリビジョン確認
+poetry run alembic current
 ```
 
-## 技術スタック詳細
+## 🔧 技術仕様詳細
 
-### 主要な依存関係
-- **FastAPI**: 高性能なWebAPIフレームワーク
-- **uvicorn**: ASGIサーバー
-- **SQLAlchemy 2.0**: 非同期ORM
-- **asyncpg**: PostgreSQL非同期ドライバー
-- **Alembic**: データベースマイグレーション
-- **Pydantic**: データバリデーション
+### 主要依存関係
+```toml
+# Web フレームワーク
+fastapi = {extras = ["all"], version = "^0.115.5"}
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
 
-### 認証・セキュリティ
-- **python-jose**: JWT トークン処理
-- **passlib**: パスワードハッシュ化
-- **bcrypt**: 暗号化
+# データベース（非同期）
+sqlalchemy = "^2.0.36"
+asyncpg = "^0.30.0"
+alembic = "^1.14.0"
+databases = "^0.9.0"
 
-### 開発ツール
-- **Ruff**: 高速リンティング・フォーマット（行長200設定）
-- **MyPy**: 静的型チェック
-- **pytest**: テストフレームワーク（非同期サポート）
-- **structlog**: 構造化ログ出力
+# 認証・セキュリティ
+pyjwt = {extras = ["crypto"], version = "^2.8.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+bcrypt = "==4.0.1"
 
-## データベース設定
+# 設定管理
+pydantic-settings = "^2.6.1"
 
-### 接続情報
+# ログ・監視
+structlog = "^24.4.0"
+rich = "^13.9.4"
+
+# 開発・テスト
+pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
+pytest-cov = "^6.0.0"
+httpx = "^0.27.2"  # テスト用非同期HTTPクライアント
+
+# コード品質
+ruff = "^0.7.2"
+mypy = "^1.13.0"
+```
+
+### データベース設定
 ```python
+# 接続情報
 DATABASE_URL = "postgresql://template_user:template_password@db:5432/template_db"
+
+# 環境変数（docker-compose.yml 設定済み）
+POSTGRES_DB = "template_db"
+POSTGRES_USER = "template_user"
+POSTGRES_PASSWORD = "template_password"
+TZ = "Asia/Tokyo"
 ```
 
-### 環境変数（docker-compose.yml設定済み）
-- `POSTGRES_DB`: template_db
-- `POSTGRES_USER`: template_user  
-- `POSTGRES_PASSWORD`: template_password
-- `TZ`: Asia/Tokyo
+### ログ設定
+- **ライブラリ**: structlog + rich
+- **出力先**: `logs/server/app/app_YYYY-MM-DD.log`
+- **SQL ログ**: `logs/server/sql/sqlalchemy_YYYY-MM-DD.log`
+- **コンソール出力**: 開発時のみ有効
 
-## APIドキュメント
+## 📚 API ドキュメント
 
-FastAPIの自動生成ドキュメント：
+### 自動生成ドキュメント
 - **Swagger UI**: `http://localhost:8000/docs`
 - **ReDoc**: `http://localhost:8000/redoc`
 - **OpenAPI JSON**: `http://localhost:8000/openapi.json`
 
 ### API エンドポイント
 
-#### 認証API（v1） 🟢 推奨
-- `POST /api/v1/auth/signup` - ユーザー登録（トークン認証）
-- `POST /api/v1/auth/send-verify-email` - 仮登録メール送信
-- `POST /api/v1/auth/login` - ログイン処理
-- `POST /api/v1/auth/logout` - ログアウト処理
-- `POST /api/v1/auth/send-password-reset-email` - パスワードリセットメール送信
-- `POST /api/v1/auth/reset-password` - パスワードリセット
-
-#### ユーザー管理API（v1） 🆕 NEW
-- `GET /api/v1/users/me` - 現在のユーザー情報取得
-- `PATCH /api/v1/users/me` - ユーザー情報更新
-- `DELETE /api/v1/users/me` - ユーザーアカウント削除
-
-#### ヘルスチェックAPI（v1） 🆕 NEW
-- `GET /api/v1/health/` - 基本ヘルスチェック
-- `GET /api/v1/health/db` - データベース接続確認
-
-#### 開発API（v1・開発環境のみ） 🟢 推奨
-- `POST /api/v1/dev/clear_data` - 全テーブル削除・再作成
-- `POST /api/v1/dev/seed_data` - テストデータ挿入
-
-#### 後方互換API 🚨 非推奨
-- `/api/auth/*` - v1移行により非推奨（段階的削除予定）
-- `/api/dev/*` - v1移行により非推奨（段階的削除予定）
-
-## アーキテクチャ移行状況
-
-### 🟢 完了済み（Phase 1-4）
-- **APIバージョニング**: `/api/v1/` 構造の導入
-- **コア設定の統一**: `app/core/config.py` でPydantic BaseSettings使用
-- **SQLModel導入**: `app/models.py` でSQLAlchemy + Pydantic統合
-- **CRUD層集約**: `app/crud.py` で関数ベースのCRUD操作
-- **API構造最適化**: 機能別ルート分離（auth, users, dev, health）
-- **後方互換性**: 既存コードの動作を維持しながら段階的移行
-
-### 🟡 進行中（Phase 5）
-- **Legacy code整理**: 非推奨マーキングと段階的削除
-- **型安全な依存性注入**: `SessionDep`, `CurrentUser`エイリアス使用
-
-### 🔴 将来の予定
-- **完全なLegacy削除**: 移行期間完了後
-- **パフォーマンス最適化**: データベースクエリとキャッシング
-- **テストカバレッジ拡張**: SQLModelベースのテスト
-
-### 新しいAPI構造
+#### 🔐 認証API（v1）
 ```
-/api/v1/auth/*     # 認証API（推奨）
-/api/v1/users/*    # ユーザー管理API（NEW）
-/api/v1/health/*   # ヘルスチェックAPI（NEW）
-/api/v1/dev/*      # 開発用API（推奨）
-
-/api/auth/*        # 🚨 非推奨（後方互換）
-/api/dev/*         # 🚨 非推奨（後方互換）
+POST /api/v1/auth/signup              # ユーザー登録（トークン認証）
+POST /api/v1/auth/send-verify-email   # 仮登録メール送信
+POST /api/v1/auth/login               # ログイン処理
+POST /api/v1/auth/logout              # ログアウト処理
+POST /api/v1/auth/send-password-reset-email  # パスワードリセットメール
+POST /api/v1/auth/reset-password      # パスワードリセット
+PATCH /api/v1/auth/update-user-info   # ユーザー情報更新
 ```
 
-### 移行方針
-FastAPI公式テンプレートに準拠した段階的移行を**完了**。既存のフィーチャードリブン設計と公式推奨パターンのハイブリッド構成を実現。
+#### 🛠️ 開発API（v1・開発環境のみ）
+```
+POST /api/v1/dev/clear_data           # 全テーブル削除・再作成
+POST /api/v1/dev/seed_data            # テストデータ挿入
+POST /api/v1/dev/reset_password_test  # パスワードリセットテスト
+GET  /api/v1/dev/health               # 基本ヘルスチェック
+GET  /api/v1/dev/health_db            # データベース接続確認
+```
 
-## 開発時の注意点
+### レスポンス形式
 
-### SQLAlchemy 2.0
-- 非同期セッション（AsyncSession）を使用
-- `await` キーワードが必要なデータベース操作
-- `select()` 構文の使用
+#### 成功レスポンス
+```json
+{
+  "success": true,
+  "message": "操作が正常に完了しました",
+  "data": { ... },
+  "timestamp": "2025-07-05T12:00:00Z"
+}
+```
 
-### ログ設定
-- structlog + rich formattingで構造化ログ
-- ログファイルは `logs/` ディレクトリに出力
+#### エラーレスポンス
+```json
+{
+  "success": false,
+  "message": "エラーの説明",
+  "error_code": "VALIDATION_ERROR",
+  "details": { ... },
+  "timestamp": "2025-07-05T12:00:00Z"
+}
+```
 
-### CORS設定
-フロントエンドからのアクセスを許可：
+## 🧪 テスト構成
+
+### テスト統計
+- **総テストケース数**: 35件
+- **カバレッジ**: 78%
+- **テスト実行時間**: 約13秒
+
+### テスト分類
+```
+api/tests/v1/features/feature_auth/
+├── test_auth_controller.py          # 認証API統合テスト（20件）
+└── unit/
+    ├── test_email_sending.py        # メール送信単体テスト（6件）
+    └── test_security.py             # セキュリティ単体テスト（9件）
+```
+
+### テストフィクスチャ
+```python
+# api/tests/fixtures/
+authenticate_fixture.py    # 認証済みクライアント
+db_fixture.py             # データベーステスト環境
+mock_email_fixture.py     # メール送信モック
+logging_fixture.py       # ログ設定
+```
+
+### テスト実行環境
+- **データベース**: PostgreSQL（実際のDB使用）
+- **メール送信**: モック化（ENABLE_EMAIL_SENDING=false）
+- **ログ出力**: テスト専用ディレクトリ
+
+## 🔒 セキュリティ機能
+
+### 認証方式
+- **JWT トークン**: HS256 アルゴリズム
+- **クッキー認証**: HttpOnly, Secure, SameSite=lax
+- **トークン有効期限**: 240分（4時間）
+
+### パスワード処理
+- **ハッシュ化**: bcrypt（ソルト付き）
+- **強度チェック**: パスワード複雑性要求
+- **リセット機能**: トークンベースのリセット
+
+### データベースセキュリティ
+- **SQLインジェクション対策**: SQLAlchemy パラメータ化クエリ
+- **論理削除**: 物理削除ではなく deleted_at フラグ使用
+- **データ復旧**: 論理削除されたデータの復元機能
+
+## 🌐 CORS設定
+
 ```python
 origins = [
-    "http://localhost:3000",  # フロントエンド本番用
-    "http://localhost:5173",  # フロントエンド開発用
-    "http://frontend:5173",   # コンテナ間通信
+    "http://localhost:3000",     # フロントエンド本番用
+    "http://localhost:5173",     # フロントエンド開発用（Vite）
+    "http://frontend:5173",      # コンテナ間通信
 ]
 ```
 
-### コンテナ間通信
-- フロントエンド → バックエンド: `http://backend:8000`
-- バックエンド → データベース: `postgresql://db:5432`
+## 🔧 開発ツール設定
 
-## テスト
+### Ruff設定（pyproject.toml）
+```toml
+[tool.ruff]
+line-length = 200                    # 行長制限
+target-version = "py313"             # Python 3.13対応
+lint.select = ["F", "E", "W", "I", "B", "UP"]  # 適用ルール
 
-### テスト構成
-- **pytest**: 基本テストフレームワーク
-- **pytest-asyncio**: 非同期テスト対応
-- **httpx**: 非同期HTTPクライアント（テスト用）
-
-### テスト実行
-```bash
-# 全テスト実行
-poetry run pytest
-
-# 詳細出力
-poetry run pytest -v
-
-# カバレッジ付き実行
-poetry run pytest --cov=app
+# 除外パス
+exclude = [
+    "**/migrations/**",
+    "**/__pycache__/**",
+    "alembic/versions/**"
+]
 ```
 
-## トラブルシューティング
+### pytest設定
+```toml
+[tool.pytest.ini_options]
+asyncio_mode = "strict"              # 非同期テスト厳密モード
+asyncio_default_fixture_loop_scope = "session"
+```
 
-### よくある問題
-1. **データベース接続エラー**:
-   - PostgreSQLコンテナが起動していることを確認
-   - `docker compose logs db` でデータベースログ確認
+### MyPy設定
+- **チェック対象**: 43ファイル
+- **型チェック**: strict モード
+- **除外**: alembic/versions/
 
-2. **依存関係の問題**:
-   - `poetry install` で依存関係再インストール
-   - `poetry.lock` が最新かどうか確認
+## 🐳 Docker構成
 
-3. **マイグレーションエラー**:
-   - `alembic current` で現在のリビジョン確認
-   - データベーススキーマとモデルの整合性確認
+### コンテナ情報
+- **ベースイメージ**: python:3.13
+- **作業ディレクトリ**: /app/backend
+- **ポート**: 8000
+- **ボリューム**: ホットリロード対応
 
-### パフォーマンス
-- SQLAlchemy非同期セッションでコネクションプール利用
-- uvicornワーカー数は本番環境で調整
-- データベースインデックス設計を考慮
+### コンテナ間通信
+```
+frontend_container → backend_container:8000
+backend_container → postgres_db:5432
+```
 
-### セキュリティ
-- JWT SECRET_KEYは本番環境で必ず変更
-- パスワードは必ずbcryptでハッシュ化
-- SQLインジェクション対策としてSQLAlchemyのパラメータ化クエリ使用
+### 環境変数
+```bash
+DATABASE_URL="postgresql://template_user:template_password@db:5432/template_db"
+PYTEST_MODE=false
+ENABLE_EMAIL_SENDING=false
+```
+
+## 🚨 トラブルシューティング
+
+### よくある問題と解決方法
+
+#### 1. データベース接続エラー
+```bash
+# PostgreSQL の起動確認
+docker compose logs db
+docker exec postgres_db pg_isready -U template_user
+
+# 解決方法
+docker compose down
+docker compose up -d db backend
+```
+
+#### 2. 依存関係の問題
+```bash
+# poetry.lock の問題
+docker exec backend_container poetry lock
+docker exec backend_container poetry install --no-root
+
+# コンテナ再ビルド
+docker compose build backend --no-cache
+```
+
+#### 3. マイグレーションエラー
+```bash
+# 現在のリビジョン確認
+poetry run alembic current
+
+# データベースリセット
+poetry run alembic downgrade base
+poetry run alembic upgrade head
+```
+
+#### 4. テスト失敗
+```bash
+# 詳細ログでテスト実行
+poetry run pytest -v --tb=short
+
+# カバレッジで問題箇所特定
+poetry run pytest --cov=api --cov-report=html
+```
+
+#### 5. ログの確認
+```bash
+# アプリケーションログ
+tail -f backend/logs/server/app/app_$(date +%Y-%m-%d).log
+
+# SQLログ
+tail -f backend/logs/server/sql/sqlalchemy_$(date +%Y-%m-%d).log
+```
+
+### パフォーマンス最適化
+
+#### データベース
+- **接続プール**: SQLAlchemy の非同期接続プール使用
+- **インデックス**: 適切なデータベースインデックス設計
+- **クエリ最適化**: N+1問題の回避
+
+#### アプリケーション
+- **非同期処理**: uvicorn + asyncio の活用
+- **レスポンス圧縮**: gzip 圧縮有効化
+- **キャッシュ**: 必要に応じてRedis導入検討
+
+## 📈 CI/CD対応
+
+### GitHub Actions
+- **テスト自動実行**: 35テストケース
+- **コード品質チェック**: Ruff + MyPy
+- **カバレッジレポート**: pytest-cov
+- **依存関係管理**: Poetry + package-mode = false
+
+### デプロイ準備
+- **Docker対応**: マルチステージビルド対応
+- **環境分離**: 開発・ステージング・本番環境対応
+- **ヘルスチェック**: /api/v1/dev/health エンドポイント
+
+## 📝 開発における注意事項
+
+### SQLAlchemy 2.0
+- **非同期セッション**: `AsyncSession` 必須
+- **await構文**: データベース操作時は `await` 必須
+- **select構文**: 新しい `select()` 構文を使用
+
+### Poetry設定
+- **package-mode = false**: アプリケーション開発モード
+- **--no-root**: プロジェクトパッケージはインストールしない
+
+### コード品質
+- **行長制限**: 200文字
+- **型ヒント**: MyPy での型チェック必須
+- **テストカバレッジ**: 78%以上を維持
+
+この構成により、高品質で保守性の高いFastAPIバックエンドアプリケーションの開発が可能です。
