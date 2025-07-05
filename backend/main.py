@@ -4,6 +4,17 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.instrumentation.asyncpg import AsyncPGInstrumentor
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from prometheus_client import start_http_server
 from sqlalchemy.exc import SQLAlchemyError
 
 from api.common.core.log_config import logger
@@ -26,10 +37,45 @@ os.environ["TZ"] = "Asia/Tokyo"
 time.tzset()
 
 
+def setup_opentelemetry():
+    """OpenTelemetryの初期化設定"""
+    # Resourceの設定（アプリケーション識別情報）
+    resource = Resource.create({"service.name": "template-web-system-backend", "service.version": "1.0.0", "deployment.environment": "development" if setting.DEV_MODE else "production"})
+
+    # Tracer Providerの設定
+    tracer_provider = TracerProvider(resource=resource)
+    trace.set_tracer_provider(tracer_provider)
+
+    # OTLP Exporterの設定（本番環境用）
+    if not setting.DEV_MODE:
+        otlp_exporter = OTLPSpanExporter(
+            endpoint="http://localhost:4317",  # OTLPコレクターのエンドポイント
+            insecure=True,
+        )
+        span_processor = BatchSpanProcessor(otlp_exporter)
+        tracer_provider.add_span_processor(span_processor)
+
+    # Prometheusメトリクスの設定
+    prometheus_reader = PrometheusMetricReader()
+    meter_provider = MeterProvider(resource=resource, metric_readers=[prometheus_reader])
+
+    # Prometheusメトリクスサーバー起動（ポート8001）
+    start_http_server(8001)
+
+    # データベースとWebフレームワークの自動instrumentation
+    SQLAlchemyInstrumentor().instrument()
+    AsyncPGInstrumentor().instrument()
+
+    logger.info("OpenTelemetry initialized", service_name="template-web-system-backend", metrics_port=8001, dev_mode=setting.DEV_MODE)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理を行うコンテキストマネージャ。"""
-    logger.info("Application startup - connecting to database")
+    logger.info("Application startup - initializing OpenTelemetry and connecting to database")
+
+    # OpenTelemetryの初期化
+    setup_opentelemetry()
 
     # 明示的にイベントループを設定（最新バージョンでも安全）
     # loop = asyncio.get_running_loop()
@@ -98,6 +144,9 @@ else:
 #       add_middlewareメソッドでミドルウェアを登録する方法を採用
 app.add_middleware(AddUserIPMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
+
+# FastAPIの自動instrumentation（アプリケーション作成後）
+FastAPIInstrumentor.instrument_app(app)
 
 # 統一例外ハンドラーの登録
 app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore

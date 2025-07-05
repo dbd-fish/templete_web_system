@@ -4,6 +4,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import structlog
+from opentelemetry import trace
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from structlog.processors import CallsiteParameter
 
 from api.common.setting import setting
@@ -113,11 +115,24 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
     # SQLAlchemyログの設定
     configure_sqlalchemy_logging(test_env)
 
+    # OpenTelemetry Logging instrumentationの初期化
+    LoggingInstrumentor().instrument(set_logging_format=True)
+
+    def add_trace_id(logger, name, event_dict):
+        """OpenTelemetryのトレースIDをログに追加するプロセッサ"""
+        span = trace.get_current_span()
+        if span and span.get_span_context().trace_id != 0:
+            trace_context = span.get_span_context()
+            event_dict["trace_id"] = f"{trace_context.trace_id:032x}"
+            event_dict["span_id"] = f"{trace_context.span_id:016x}"
+        return event_dict
+
     # structlogの設定
     structlog.configure(
         processors=[
             structlog.stdlib.filter_by_level,  # ログレベルでフィルタリング
             structlog.contextvars.merge_contextvars,  # リクエストスコープでの変数をログに統合
+            add_trace_id,  # OpenTelemetryトレースIDを追加
             structlog.processors.TimeStamper(fmt="iso", utc=False),  # ISOフォーマットのタイムスタンプを追加
             structlog.stdlib.add_logger_name,  # ロガー名を追加
             structlog.stdlib.add_log_level,  # ログレベルを追加
