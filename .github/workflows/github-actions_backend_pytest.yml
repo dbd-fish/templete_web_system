@@ -1,11 +1,10 @@
-name: Pytest
+name: Backend Tests (Pytest)
  
 on:
   pull_request:
-  # プルリクエストにプッシュするたびに実行したい場合はtypesをコメントにする
-    # types: 
-    #   - closed
-    # プルリクエストがマージされるときにこのワークフローをトリガーします。
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
   workflow_dispatch:
     # 手動でこのワークフローをトリガーします。
 
@@ -21,26 +20,58 @@ jobs:
         # リポジトリのコードをチェックアウトします。
         # これにより、以降のステップでリポジトリの内容にアクセスできます。
 
-      - name: Install Docker Compose
+      - name: Create .env file for testing
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
-        # Docker Composeをインストール
+          echo "PYTEST_MODE=true" > .env
+          echo "ENABLE_EMAIL_SENDING=false" >> .env
+        # テスト環境用の設定ファイルを作成
 
       - name: Set up Backend and DB Containers
         run: |
-          docker-compose up -d backend db
-        # docker-compose.ymlを使用して、backendコンテナのみ立ち上げる
+          docker compose up -d backend db
+          sleep 30
+        # docker-compose.ymlを使用して、backendとDBコンテナを立ち上げる
+        # データベース起動を待機
+
+      - name: Wait for database to be ready
+        run: |
+          timeout 60 bash -c 'until docker exec postgres_db pg_isready -U template_user; do sleep 2; done'
+        # PostgreSQLの準備完了を待機
 
       - name: List Running Containers
         run: |
           docker ps
         # 起動中のDockerコンテナを一覧表示します。
-        # backendコンテナが正しく起動しているかを確認
 
-
-      - name: Run Pytest in Backend Container (Skip Specific Tests)
+      - name: Update Dependencies
         run: |
-          docker exec template_backend_container poetry run pytest -k "not test_send_verify_email and not test_send_reset_password_email"
-        # backendコンテナ内でpytestを実行
-        # NOTE: メール送信系のテストはメールサーバーに依存するためスキップ
+          docker exec backend_container poetry lock
+          docker exec backend_container poetry install --no-root
+        # 依存関係のロックファイル更新とインストール
+
+      - name: Run Database Migrations
+        run: |
+          docker exec backend_container poetry run alembic upgrade head
+        # データベースマイグレーションを実行
+
+      - name: Run All Tests with Coverage
+        run: |
+          docker exec backend_container poetry run pytest
+        # backendコンテナ内でpytestを実行（カバレッジ付き）
+        # メール送信は環境変数で無効化済み
+        # docker exec backend_container poetry run pytest --cov=api --cov-report=xml --cov-report=term-missing -v
+
+      - name: Upload coverage to Codecov (Optional)
+        if: always()
+        run: |
+          docker exec backend_container cat coverage.xml > coverage.xml || echo "No coverage file found"
+        # カバレッジファイルを取得（オプション）
+
+      - name: Show Container Logs on Failure
+        if: failure()
+        run: |
+          echo "=== Backend Container Logs ==="
+          docker logs backend_container
+          echo "=== Database Container Logs ==="
+          docker logs postgres_db
+        # 失敗時のコンテナログを表示

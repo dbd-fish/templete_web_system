@@ -1,0 +1,2 @@
+paths-ignore:
+  - backend\api\common\test_data.py

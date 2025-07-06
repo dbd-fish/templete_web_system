@@ -1,11 +1,10 @@
-name: mypy, ruff
+name: Backend Code Quality (Linting & Type Check)
 
 on:
   pull_request:
-  # プルリクエストにプッシュするたびに実行したい場合はtypesをコメントにする
-    # types: 
-    #   - closed
-    # プルリクエストがマージされるときにこのワークフローをトリガーします。
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
   workflow_dispatch:
     # 手動でこのワークフローをトリガーします。
 
@@ -22,29 +21,43 @@ jobs:
         # リポジトリのコードをチェックアウトします。
         # 後続のステップでコードベースにアクセスするための準備です。
 
-      - name: Install Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
-        # Docker Composeをインストール
-
       - name: Set up Backend Container
         run: |
-          docker-compose up -d backend
-        # docker-compose.ymlを使用して、backendコンテナのみ立ち上げる
+          docker compose up -d backend
+          sleep 15
+        # docker-compose.ymlを使用して、backendコンテナを立ち上げる
+        # 起動を待機
 
-      - name: Check Backend Container
+      - name: Check Backend Container Status
         run: |
           docker ps
-        # 起動中のDockerコンテナを一覧表示します。
-        # backendコンテナが正しく起動しているかを確認
+          docker exec backend_container poetry --version
+        # 起動中のDockerコンテナとPoetryの確認
 
-      - name: Run Ruff in Backend Container
+      - name: Update Dependencies
         run: |
-          docker exec template_backend_container poetry run ruff check
+          docker exec backend_container poetry lock
+          docker exec backend_container poetry install --no-root
+        # 依存関係のロックファイル更新とインストール
+
+      - name: Run Ruff Check
+        run: |
+          docker exec backend_container poetry run ruff check .
         # backendコンテナ内でruffを実行
 
-      - name: Run Mypy in Backend Container
+      - name: Run Ruff Format Check
         run: |
-          docker exec template_backend_container poetry run mypy .
+          docker exec backend_container poetry run ruff format --check .
+        # ruff formatでフォーマットチェック
+
+      - name: Run MyPy Type Check
+        run: |
+          docker exec backend_container poetry run mypy .
         # backendコンテナ内でmypyを実行
+
+      - name: Show Container Logs on Failure
+        if: failure()
+        run: |
+          echo "=== Backend Container Logs ==="
+          docker logs backend_container
+        # 失敗時のコンテナログを表示

@@ -1,8 +1,8 @@
 services:
   frontend:
     build:
-      context: .
-      dockerfile: infrastructure/docker/frontend.Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: frontend_container
     image: frontend_container
     deploy:
@@ -10,7 +10,7 @@ services:
         limits:
           memory: 4G
     volumes:
-      - ./apps/frontend:/app/frontend
+      - ./frontend:/app/frontend
     working_dir: /app/frontend
     ports:
       - "3000:3000" # 本番用
@@ -22,15 +22,16 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: infrastructure/docker/backend.Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: backend_container
     image: backend_container
     volumes:
-      - ./apps/backend:/app/backend
+      - ./backend:/app/backend
     working_dir: /app/backend
     ports:
-      - "8000:8000"
+      - "8000:8000"  # FastAPI アプリケーション
+      - "8001:8001"  # OpenTelemetry Prometheus メトリクス
     tty: true
     stdin_open: true
     depends_on:
@@ -58,24 +59,25 @@ services:
     networks:
       - backend-network # バックエンド専用のネットワーク
 
-  e2e:
+  # Cypress E2E Testing (Cypress公式推奨: run-and-exit パターン)
+  cypress:
     build:
-      context: .
-      dockerfile: infrastructure/docker/e2e.Dockerfile
-    container_name: e2e_container
-    image: e2e_container
+      context: ./cypress
+      dockerfile: Dockerfile
+    container_name: cypress_container
+    image: cypress_container
     volumes:
-      - ./apps/e2e:/e2e
-      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./cypress:/e2e
     depends_on:
       - frontend
       - backend
     networks:
       - frontend-network
-    tty: true
-    stdin_open: true
     environment:
       - CYPRESS_baseUrl=http://frontend:5173
+    # Cypress公式推奨: プロファイル使用でテスト実行時のみ起動
+    profiles:
+      - test
 
 networks:
   frontend-network:

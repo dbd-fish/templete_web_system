@@ -1,0 +1,67 @@
+# 本番環境用Docker Compose設定
+# 使用方法: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend_container_prod
+    image: backend_container_prod
+    volumes:
+      - ./backend:/app/backend
+    working_dir: /app/backend
+    ports:
+      - "8000:8000"  # APIのみ外部公開（メトリクスポートは非公開）
+    tty: true
+    stdin_open: true
+    depends_on:
+      - db
+    networks:
+      - app-network
+      - monitoring-network  # 将来の監視ツール用
+    environment:
+      - DATABASE_URL=postgresql://template_user:template_password@db:5432/template_db
+      - PROD_MODE=true  # 本番環境フラグ
+
+  db:
+    image: postgres:13
+    container_name: postgres_db_prod
+    environment:
+      POSTGRES_DB: template_db
+      POSTGRES_USER: template_user
+      POSTGRES_PASSWORD: template_password
+      TZ: Asia/Tokyo
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  # 将来実装予定の監視ツールスタック
+  # prometheus:
+  #   image: prom/prometheus
+  #   container_name: prometheus
+  #   networks:
+  #     - monitoring-network
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  # grafana:
+  #   image: grafana/grafana
+  #   container_name: grafana
+  #   networks:
+  #     - monitoring-network
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+
+networks:
+  app-network:
+    driver: bridge
+  monitoring-network:
+    driver: bridge
+    internal: true  # 外部アクセス禁止（監視ツール専用）
+
+volumes:
+  postgres_data_prod:
