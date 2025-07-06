@@ -6,7 +6,7 @@
 
 ## 🏗️ プロジェクト概要
 
-FastAPI + PostgreSQL を使用した高性能RESTful APIバックエンドです。
+FastAPI + PostgreSQL + OpenTelemetry を使用した高性能RESTful APIバックエンドです。
 
 ### 基本技術スタック
 - **フレームワーク**: FastAPI 0.115.5 + uvicorn
@@ -14,6 +14,7 @@ FastAPI + PostgreSQL を使用した高性能RESTful APIバックエンドです
 - **ORM**: SQLAlchemy 2.0（非同期モード）
 - **言語**: Python 3.13
 - **依存関係管理**: Poetry（package-mode = false）
+- **監視**: OpenTelemetry + Prometheus（ポート8001）
 - **開発ポート**: 8000
 
 ## 📁 ディレクトリ構成
@@ -32,7 +33,7 @@ backend/
 ├── api/                         # メインアプリケーション
 │   ├── common/                  # 共通機能
 │   │   ├── core/                # コア機能
-│   │   │   ├── log_config.py    # ログ設定（structlog + rich）
+│   │   │   ├── log_config.py    # ログ設定（structlog + OpenTelemetry）
 │   │   │   ├── http_exception_handler.py
 │   │   │   └── request_validation_error.py
 │   │   ├── middleware/          # カスタムミドルウェア
@@ -42,7 +43,7 @@ backend/
 │   │   ├── setting.py           # 設定管理（Pydantic BaseSettings）
 │   │   ├── exception_handlers.py # 統一エラーハンドリング
 │   │   ├── response_schemas.py  # レスポンス統一スキーマ
-│   │   └── test_data.py         # テストデータ生成
+│   │   └── test_data.py         # テストデータ（環境変数対応）
 │   ├── v1/                      # API v1
 │   │   └── features/            # 機能別モジュール
 │   │       ├── feature_auth/    # 認証機能
@@ -70,8 +71,11 @@ backend/
 
 ### Docker環境での開発
 ```bash
-# バックエンド + データベース起動
+# 開発環境（メトリクス外部アクセス可）
 docker compose up -d backend db
+
+# 本番環境（メトリクス内部ネットワークのみ）
+docker compose -f docker-compose.prod.yml up -d backend db
 
 # バックエンドコンテナ再ビルド
 docker compose build backend
@@ -152,9 +156,9 @@ uvicorn = {extras = ["standard"], version = "^0.32.0"}
 
 # データベース（非同期）
 sqlalchemy = "^2.0.36"
+databases = "^0.9.0"
 asyncpg = "^0.30.0"
 alembic = "^1.14.0"
-databases = "^0.9.0"
 
 # 認証・セキュリティ
 pyjwt = {extras = ["crypto"], version = "^2.8.0"}
@@ -166,7 +170,18 @@ pydantic-settings = "^2.6.1"
 
 # ログ・監視
 structlog = "^24.4.0"
-rich = "^13.9.4"
+
+# OpenTelemetry監視・メトリクス関連
+opentelemetry-distro = "^0.50b0"
+opentelemetry-api = "^1.29.0"
+opentelemetry-sdk = "^1.29.0"
+opentelemetry-instrumentation-fastapi = "^0.50b0"
+opentelemetry-instrumentation-sqlalchemy = "^0.50b0"
+opentelemetry-instrumentation-asyncpg = "^0.50b0"
+opentelemetry-instrumentation-logging = "^0.50b0"
+opentelemetry-exporter-prometheus = "^0.50b0"
+opentelemetry-exporter-otlp = "^1.29.0"
+opentelemetry-exporter-otlp-proto-grpc = "^1.29.0"
 
 # 開発・テスト
 pytest = "^8.3.3"
@@ -191,11 +206,14 @@ POSTGRES_PASSWORD = "template_password"
 TZ = "Asia/Tokyo"
 ```
 
-### ログ設定
-- **ライブラリ**: structlog + rich
+### ログ・監視設定
+- **ライブラリ**: structlog + OpenTelemetry
 - **出力先**: `logs/server/app/app_YYYY-MM-DD.log`
 - **SQL ログ**: `logs/server/sql/sqlalchemy_YYYY-MM-DD.log`
 - **コンソール出力**: 開発時のみ有効
+- **トレース情報**: OpenTelemetryトレースIDとスパンIDをログに自動追加
+- **メトリクス**: Prometheusメトリクス（ポート8001）
+- **自動計装**: FastAPIの自動監視、SQLAlchemy・AsyncPG計装済み（※メトリクス出力は要確認）
 
 ## 📚 API ドキュメント
 
@@ -203,6 +221,7 @@ TZ = "Asia/Tokyo"
 - **Swagger UI**: `http://localhost:8000/docs`
 - **ReDoc**: `http://localhost:8000/redoc`
 - **OpenAPI JSON**: `http://localhost:8000/openapi.json`
+- **Prometheusメトリクス**: `http://localhost:8001/metrics`
 
 ### API エンドポイント
 
@@ -252,16 +271,20 @@ GET  /api/v1/dev/health_db            # データベース接続確認
 ## 🧪 テスト構成
 
 ### テスト統計
-- **総テストケース数**: 35件
-- **カバレッジ**: 78%
-- **テスト実行時間**: 約13秒
+- **総テストケース数**: 92件
+- **カバレッジ**: 89%
+- **テスト実行時間**: 約15秒
 
 ### テスト分類
 ```
 api/tests/v1/features/feature_auth/
 ├── test_auth_controller.py          # 認証API統合テスト（20件）
 └── unit/
-    ├── test_email_sending.py        # メール送信単体テスト（6件）
+    ├── test_crud.py                 # CRUD操作単体テスト（24件）
+    ├── test_email_sending.py        # メール送信単体テスト（9件）
+    ├── test_exception_handlers.py   # 例外ハンドラー単体テスト（15件）
+    ├── test_response_schemas.py     # レスポンススキーマ単体テスト（21件）
+    ├── test_route_utils.py          # ルートユーティリティ単体テスト（12件）
     └── test_security.py             # セキュリティ単体テスト（9件）
 ```
 
@@ -321,7 +344,16 @@ exclude = [
     "**/__pycache__/**",
     "alembic/versions/**"
 ]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = false   # トレーリングカンマによる複数行維持
+split-on-trailing-comma = true      # isortとの互換性確保
 ```
+
+#### Ruff複数行フォーマット維持のコツ
+- **トレーリングカンマの活用**: 関数呼び出しの最後の引数の後にカンマを追加
+- **例**: `Field(..., description="説明", examples=["例"],)` ← 最後のカンマが重要
+- **効果**: `ruff format`実行時に複数行フォーマットが保持される
 
 ### pytest設定
 ```toml
@@ -354,6 +386,10 @@ backend_container → postgres_db:5432
 DATABASE_URL="postgresql://template_user:template_password@db:5432/template_db"
 PYTEST_MODE=false
 ENABLE_EMAIL_SENDING=false
+
+# API仕様書用のサンプルJWTトークン（実際のトークンではない）
+DOC_JWT_TOKEN_EXAMPLE="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzI1NTM2ODAwfQ.example_signature"
+DOC_RESET_TOKEN_EXAMPLE="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNldEBleGFtcGxlLmNvbSIsImV4cCI6MTcyNTU0MDQwMH0.reset_signature"
 ```
 
 ## 🚨 トラブルシューティング
@@ -424,10 +460,11 @@ tail -f backend/logs/server/sql/sqlalchemy_$(date +%Y-%m-%d).log
 ## 📈 CI/CD対応
 
 ### GitHub Actions
-- **テスト自動実行**: 35テストケース
+- **テスト自動実行**: 92テストケース（89%カバレッジ）
 - **コード品質チェック**: Ruff + MyPy
 - **カバレッジレポート**: pytest-cov
 - **依存関係管理**: Poetry + package-mode = false
+- **セキュリティスキャン**: GitGuardian対応
 
 ### デプロイ準備
 - **Docker対応**: マルチステージビルド対応
@@ -448,6 +485,72 @@ tail -f backend/logs/server/sql/sqlalchemy_$(date +%Y-%m-%d).log
 ### コード品質
 - **行長制限**: 200文字
 - **型ヒント**: MyPy での型チェック必須
-- **テストカバレッジ**: 78%以上を維持
+- **テストカバレッジ**: 89%（継続的改善）
+- **AAA Pattern**: テストコードはArrange-Act-Assertパターンに準拠
+- **データ管理**: テストデータは`api/common/test_data.py`で一元管理
 
-この構成により、高品質で保守性の高いFastAPIバックエンドアプリケーションの開発が可能です。
+### Pydanticスキーマ設計
+- **詳細なバリデーション**: パスワード複雑性、メール形式等の厳密チェック
+- **豊富な例示**: API仕様書用の包括的なexamplesを提供
+- **フィールドバリデータ**: カスタムバリデーションロジックによる入力値検証
+- **GitGuardian対応**: テストデータは環境変数から読み取り、秘匿情報の誤コミットを防止
+
+## 🔍 監視・メトリクス詳細
+
+### OpenTelemetry統合状況
+- **自動計装**: FastAPIリクエスト監視、SQLAlchemy・AsyncPG計装済み（※データベースメトリクス要確認）
+- **トレース情報**: すべてのログにトレースID・スパンIDを自動追加
+- **Prometheus連携**: メトリクスをポート8001で公開（開発環境のみ）
+
+### 📊 利用可能なメトリクス
+```bash
+# 開発環境でのメトリクス確認
+curl http://localhost:8001/metrics
+
+# 確認済みメトリクス
+- http_server_duration_milliseconds  # HTTPリクエスト処理時間
+- http_server_active_requests        # 同時実行中のリクエスト数
+- http_server_response_size_bytes    # レスポンスサイズ
+- process_virtual_memory_bytes       # メモリ使用量
+- python_gc_objects_collected_total  # ガベージコレクション統計
+```
+
+### 🚨 セキュリティ・運用上の制限
+
+#### 現在の実装状況
+- **開発環境**: `http://localhost:8001/metrics` でテキスト形式のメトリクス閲覧可能
+- **本番環境**: セキュリティ上の理由により8001ポートは外部公開不可
+- **運用状態**: OpenTelemetryは実装済みだが、本番環境での安全な閲覧方法が未確立
+
+#### セキュリティリスク（本番環境）
+- **システム内部情報の漏洩**: メモリ使用量、CPU使用率、プロセス情報
+- **アプリケーション構造の露出**: エンドポイント一覧、処理時間統計
+- **攻撃の手がかり提供**: パフォーマンス特性、負荷状況の詳細情報
+
+#### 本番環境での推奨構成（将来実装予定）
+```yaml
+# 本番環境用設定例
+backend:
+  ports:
+    - "8000:8000"  # APIのみ外部公開
+    # - "8001:8001"  # メトリクスポートは公開しない
+  networks:
+    - app_network
+    - monitoring_network  # 監視専用内部ネットワーク
+
+# 監視ツールスタック（内部ネットワークのみ）
+prometheus:
+  networks:
+    - monitoring_network
+grafana:
+  networks:
+    - monitoring_network
+```
+
+### 📈 将来の監視環境拡張予定
+- **Prometheus Server**: メトリクス収集・保存
+- **Grafana**: ダッシュボード・可視化
+- **AlertManager**: アラート通知
+- **VPN/Bastion経由**: 安全な管理者アクセス
+
+この構成により、高品質で保守性の高く、可観測性に優れたFastAPIバックエンドアプリケーションの開発が可能です。
