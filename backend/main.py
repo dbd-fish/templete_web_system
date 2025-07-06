@@ -42,8 +42,8 @@ def setup_opentelemetry():
     try:
         # Resourceの設定（アプリケーション識別情報）
         resource = Resource.create({
-            "service.name": "template-web-system-backend", 
-            "service.version": "1.0.0", 
+            "service.name": "template-web-system-backend",
+            "service.version": "1.0.0",
             "deployment.environment": "development" if setting.DEV_MODE else "production"
         })
 
@@ -74,7 +74,7 @@ def setup_opentelemetry():
             # 開発環境: 外部アクセス可能（0.0.0.0）
             start_http_server(8001, addr='0.0.0.0')
             logger.info("OpenTelemetry initialized (Development)", service_name="template-web-system-backend", metrics_port="8001 (external access)", dev_mode=setting.DEV_MODE)
-            
+
             # 開発環境のみポート確認
             import socket
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -96,7 +96,7 @@ async def lifespan(app: FastAPI):
 
     # OpenTelemetryの初期化
     setup_opentelemetry()
-    
+
     # データベースとWebフレームワークの自動instrumentation
     SQLAlchemyInstrumentor().instrument()
     AsyncPGInstrumentor().instrument()

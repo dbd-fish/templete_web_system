@@ -43,7 +43,7 @@ class Setting(BaseSettings):
     TEST_SMTP_SERVER: str = "localhost"
     TEST_SMTP_PORT: int = 1025
     PYTEST_MODE: bool = False
-    
+
     # 本番環境モード（監視ポート制限用）
     PROD_MODE: bool = False
 
