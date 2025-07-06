@@ -41,12 +41,13 @@ def setup_opentelemetry():
     """OpenTelemetryの初期化設定"""
     try:
         # Resourceの設定（アプリケーション識別情報）
-        resource = Resource.create({
-            "service.name": "template-web-system-backend",
-            "service.version": "1.0.0",
-            "deployment.environment": "development" if setting.DEV_MODE else "production"
-        })
-
+        resource = Resource.create(
+            {
+                "service.name": "template-web-system-backend",
+                "service.version": "1.0.0",
+                "deployment.environment": "development" if setting.DEV_MODE else "production",
+            }
+        )
         # Tracer Providerの設定
         tracer_provider = TracerProvider(resource=resource)
         trace.set_tracer_provider(tracer_provider)
@@ -68,17 +69,18 @@ def setup_opentelemetry():
         # Prometheusメトリクスサーバー起動（環境別制御）
         if setting.PROD_MODE:
             # 本番環境: 内部ネットワークのみ（127.0.0.1）
-            start_http_server(8001, addr='127.0.0.1')
+            start_http_server(8001, addr="127.0.0.1")
             logger.info("OpenTelemetry initialized (Production)", service_name="template-web-system-backend", metrics_port="8001 (internal only)", prod_mode=True)
         else:
             # 開発環境: 外部アクセス可能（0.0.0.0）
-            start_http_server(8001, addr='0.0.0.0')
+            start_http_server(8001, addr="0.0.0.0")
             logger.info("OpenTelemetry initialized (Development)", service_name="template-web-system-backend", metrics_port="8001 (external access)", dev_mode=setting.DEV_MODE)
 
             # 開発環境のみポート確認
             import socket
+
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                result = s.connect_ex(('0.0.0.0', 8001))
+                result = s.connect_ex(("0.0.0.0", 8001))
                 if result == 0:
                     logger.info("Prometheus metrics server confirmed listening on port 8001")
                 else:
