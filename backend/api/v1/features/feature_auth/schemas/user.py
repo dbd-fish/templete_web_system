@@ -92,8 +92,8 @@ class UserCreate(BaseModel):
                     "user_role": User.ROLE_ADMIN,
                     "user_status": User.STATUS_ACTIVE,
                 },
-            ]
-        }
+            ],
+        },
     )
 
 

@@ -63,10 +63,10 @@ router = APIRouter()
                             "password": {"type": "string", "title": "Password", "description": "パスワード", "default": "Password123456+-", "example": "Password123456+-"},
                         },
                         "required": ["username", "password"],
-                    }
-                }
-            }
-        }
+                    },
+                },
+            },
+        },
     },
 )
 async def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):

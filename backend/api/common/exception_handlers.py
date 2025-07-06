@@ -65,7 +65,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         validation_errors.append({"field": ".".join(str(loc) for loc in error["loc"]), "message": error["msg"], "type": error["type"], "input": error.get("input")})
 
     error_response = create_error_response(
-        message="入力データの検証に失敗しました", error_code=ErrorCodes.VALIDATION_ERROR, details={"validation_errors": validation_errors, "path": request.url.path, "method": request.method}
+        message="入力データの検証に失敗しました", error_code=ErrorCodes.VALIDATION_ERROR, details={"validation_errors": validation_errors, "path": request.url.path, "method": request.method},
     )
 
     return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response)

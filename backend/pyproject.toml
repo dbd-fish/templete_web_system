@@ -54,14 +54,14 @@ asyncio_default_fixture_loop_scope = "session"
 
 [tool.ruff]
 # 適用するルールの選択
-# 適用するルールの選択
 # F: Pyflakesによるエラー検出
 # E: pycodestyleのエラー
 # W: pycodestyleの警告
 # I: isortによるインポート順序の整理
 # B: flake8-bugbearによる潜在的なバグ検出
 # UP: pyupgradeによる最新のPython構文へのアップグレード
-lint.select = ["F", "E", "W", "I", "B", "UP"]
+# COM: カンマ関連のルール（配列・辞書の末尾カンマ）
+lint.select = ["F", "E", "W", "I", "B", "UP", "COM"]
 
 # 除外するルールの指定（必要に応じて）
 lint.ignore = ["B008"]

@@ -46,7 +46,7 @@ def setup_opentelemetry():
                 "service.name": "template-web-system-backend",
                 "service.version": "1.0.0",
                 "deployment.environment": "development" if setting.DEV_MODE else "production",
-            }
+            },
         )
         # Tracer Providerの設定
         tracer_provider = TracerProvider(resource=resource)
