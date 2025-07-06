@@ -697,5 +697,5 @@ async def test_update_user_with_schema_success():
             username=TestData.TEST_NEW_USERNAME,
             email=None,
             contact_number=TestData.DOC_CONTACT_NUMBER,
-            date_of_birth=None
+            date_of_birth=None,
         )
