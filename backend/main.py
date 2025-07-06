@@ -39,35 +39,54 @@ time.tzset()
 
 def setup_opentelemetry():
     """OpenTelemetryの初期化設定"""
-    # Resourceの設定（アプリケーション識別情報）
-    resource = Resource.create({"service.name": "template-web-system-backend", "service.version": "1.0.0", "deployment.environment": "development" if setting.DEV_MODE else "production"})
+    try:
+        # Resourceの設定（アプリケーション識別情報）
+        resource = Resource.create({
+            "service.name": "template-web-system-backend", 
+            "service.version": "1.0.0", 
+            "deployment.environment": "development" if setting.DEV_MODE else "production"
+        })
 
-    # Tracer Providerの設定
-    tracer_provider = TracerProvider(resource=resource)
-    trace.set_tracer_provider(tracer_provider)
+        # Tracer Providerの設定
+        tracer_provider = TracerProvider(resource=resource)
+        trace.set_tracer_provider(tracer_provider)
 
-    # OTLP Exporterの設定（本番環境用）
-    if not setting.DEV_MODE:
-        otlp_exporter = OTLPSpanExporter(
-            endpoint="http://localhost:4317",  # OTLPコレクターのエンドポイント
-            insecure=True,
-        )
-        span_processor = BatchSpanProcessor(otlp_exporter)
-        tracer_provider.add_span_processor(span_processor)
+        # OTLP Exporterの設定（本番環境用）
+        if not setting.DEV_MODE:
+            otlp_exporter = OTLPSpanExporter(
+                endpoint="http://localhost:4317",  # OTLPコレクターのエンドポイント
+                insecure=True,
+            )
+            span_processor = BatchSpanProcessor(otlp_exporter)
+            tracer_provider.add_span_processor(span_processor)
 
-    # Prometheusメトリクスの設定
-    prometheus_reader = PrometheusMetricReader()
-    meter_provider = MeterProvider(resource=resource, metric_readers=[prometheus_reader])
-    metrics.set_meter_provider(meter_provider)
+        # Prometheusメトリクスの設定
+        prometheus_reader = PrometheusMetricReader()
+        meter_provider = MeterProvider(resource=resource, metric_readers=[prometheus_reader])
+        metrics.set_meter_provider(meter_provider)
 
-    # Prometheusメトリクスサーバー起動（ポート8001）
-    start_http_server(8001)
+        # Prometheusメトリクスサーバー起動（環境別制御）
+        if setting.PROD_MODE:
+            # 本番環境: 内部ネットワークのみ（127.0.0.1）
+            start_http_server(8001, addr='127.0.0.1')
+            logger.info("OpenTelemetry initialized (Production)", service_name="template-web-system-backend", metrics_port="8001 (internal only)", prod_mode=True)
+        else:
+            # 開発環境: 外部アクセス可能（0.0.0.0）
+            start_http_server(8001, addr='0.0.0.0')
+            logger.info("OpenTelemetry initialized (Development)", service_name="template-web-system-backend", metrics_port="8001 (external access)", dev_mode=setting.DEV_MODE)
+            
+            # 開発環境のみポート確認
+            import socket
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                result = s.connect_ex(('0.0.0.0', 8001))
+                if result == 0:
+                    logger.info("Prometheus metrics server confirmed listening on port 8001")
+                else:
+                    logger.warning("Prometheus metrics server may not be listening on port 8001", result=result)
 
-    # データベースとWebフレームワークの自動instrumentation
-    SQLAlchemyInstrumentor().instrument()
-    AsyncPGInstrumentor().instrument()
-
-    logger.info("OpenTelemetry initialized", service_name="template-web-system-backend", metrics_port=8001, dev_mode=setting.DEV_MODE)
+    except Exception as e:
+        logger.error("Failed to initialize OpenTelemetry", error=str(e), error_type=type(e).__name__)
+        raise
 
 
 @asynccontextmanager
@@ -77,6 +96,10 @@ async def lifespan(app: FastAPI):
 
     # OpenTelemetryの初期化
     setup_opentelemetry()
+    
+    # データベースとWebフレームワークの自動instrumentation
+    SQLAlchemyInstrumentor().instrument()
+    AsyncPGInstrumentor().instrument()
 
     # 明示的にイベントループを設定（最新バージョンでも安全）
     # loop = asyncio.get_running_loop()

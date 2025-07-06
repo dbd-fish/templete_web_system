@@ -30,7 +30,8 @@ services:
       - ./backend:/app/backend
     working_dir: /app/backend
     ports:
-      - "8000:8000"
+      - "8000:8000"  # FastAPI アプリケーション
+      - "8001:8001"  # OpenTelemetry Prometheus メトリクス
     tty: true
     stdin_open: true
     depends_on:
