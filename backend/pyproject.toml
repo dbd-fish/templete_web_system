@@ -90,9 +90,33 @@ exclude = [
     "alembic/versions/**"
 ]
 
+# フォーマット設定
+[tool.ruff.format]
+# 文字列の引用符設定（ダブルクォート優先）
+quote-style = "double"
+
+# 複数行の関数呼び出しを維持（falseにすると複数行を維持）
+skip-magic-trailing-comma = false
+
+# インデントスタイル（スペース使用）
+indent-style = "space"
+
+# 行の終端設定（自動検出）
+line-ending = "auto"
+
+# docstring のフォーマットを無効化
+docstring-code-format = false
+
+# docstring の行長制限を無効化  
+docstring-code-line-length = "dynamic"
+
 [tool.ruff.lint.per-file-ignores]
 # ファイルごとのエラー除外
 "__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+# isort設定：trailingカンマで分割する
+split-on-trailing-comma = true
 
 # [tool.poetry.packages]
 # include = ["app"]
