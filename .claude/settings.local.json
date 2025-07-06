@@ -19,7 +19,10 @@
       "Bash(curl:*)",
       "Bash(docker exec:*)",
       "Bash(rm:*)",
-      "Bash(poetry run:*)"
+      "Bash(poetry run:*)",
+      "Bash(python:*)",
+      "Bash(PYTHONPATH=/mnt/c/Users/kokai/Documents/github/templete_web_system/templete_web_system/backend python3 test_pydantic_validation.py)",
+      "Bash(docker:*)"
     ],
     "deny": [
       "Bash(git commit:*)",
