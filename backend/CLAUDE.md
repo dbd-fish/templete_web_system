@@ -4,6 +4,7 @@
 日本語で回答してください。
 また提供するコーディングはRuffやmypyに準拠したコーディングを提供してください。
 
+
 ## 🏗️ プロジェクト概要
 
 FastAPI + PostgreSQL + OpenTelemetry を使用した高性能RESTful APIバックエンドです。
