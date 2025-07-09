@@ -33,6 +33,7 @@ backend/
 │   └── versions/                # マイグレーションファイル
 ├── api/                         # メインアプリケーション
 │   ├── common/                  # 共通機能
+│   │   ├── common.py            # 共通ユーティリティ
 │   │   ├── core/                # コア機能
 │   │   │   ├── log_config.py    # ログ設定（structlog + OpenTelemetry）
 │   │   │   ├── http_exception_handler.py
@@ -49,7 +50,9 @@ backend/
 │   │   └── features/            # 機能別モジュール
 │   │       ├── feature_auth/    # 認証機能
 │   │       │   ├── models/      # データモデル
+│   │       │   │   └── user.py  # ユーザーモデル
 │   │       │   ├── schemas/     # Pydantic スキーマ
+│   │       │   │   └── user.py  # ユーザースキーマ
 │   │       │   ├── crud.py      # CRUD 操作
 │   │       │   ├── route.py     # API エンドポイント
 │   │       │   ├── security.py  # セキュリティ機能
@@ -62,8 +65,21 @@ backend/
 │   └── tests/                   # テストコード
 │       ├── conftest.py          # pytest 設定
 │       ├── fixtures/            # テストフィクスチャ
+│       │   ├── authenticate_fixture.py  # 認証済みテストクライアント
+│       │   ├── db_fixture.py            # データベーステスト環境
+│       │   ├── logging_fixture.py       # ログ設定
+│       │   └── mock_email_fixture.py    # メール送信モック
 │       └── v1/features/         # 機能別テスト
+│           └── feature_auth/    # 認証機能テスト
+│               ├── test_auth_controller.py
+│               └── unit/        # 単体テスト
 ├── logs/                        # ログファイル（日付別）
+│   └── server/
+│       ├── app/                 # アプリケーションログ
+│       │   └── app_YYYY-MM-DD.log
+│       └── sql/                 # SQLログ
+│           └── sqlalchemy_YYYY-MM-DD.log
+├── htmlcov/                     # テストカバレッジレポート（HTML）
 ├── certs/                       # SSL証明書（必要に応じて）
 └── CLAUDE.md                    # このファイル
 ```
