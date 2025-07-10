@@ -4,7 +4,6 @@ import { LoaderFunction, redirect, ActionFunction } from 'react-router';
 import { userDataLoader } from '~/features/feature_auth/loaders/userDataLoader';
 import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';
 import { logoutAction } from '~/features/feature_auth/actions/logoutAction';
-// import logger from '~/commons/utils/logger';
 import { Form } from 'react-router';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
@@ -17,14 +16,11 @@ import { Textarea } from '~/components/ui/textarea';
  * - 失敗時: 401エラーをスロー
  */
 export const loader: LoaderFunction = async ({ request }) => {
-  // logger.info('[Home Loader] start');
   try {
     const userData = await userDataLoader(request, false);
     const responseBody = {
       user: userData,
     };
-    // logger.info('[Home Loader] Successfully retrieved user data');
-    // logger.debug('[Home Loader] User data', { userData });
 
     // 正常なレスポンスを返す
     return new Response(JSON.stringify(responseBody), {
@@ -32,19 +28,14 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      // logger.warn('[Home Loader] AuthenticationError occurred');
       return redirect('/login');
     }
 
-    // logger.error('[Home Loader] Unexpected error occurred', {
-    //   error: error,
-    // });
 
     throw new Response('ユーザーデータの取得に失敗しました。', {
       status: 400,
     });
   } finally {
-    // logger.info('[Home Loader] end');
   }
 };
 
@@ -55,33 +46,25 @@ export const loader: LoaderFunction = async ({ request }) => {
  * - ログアウトやその他のアクションを処理
  */
 export const action: ActionFunction = async ({ request }) => {
-  // logger.info('[Home Action] start');
   try {
     const formData = await request.formData();
     const actionType = formData.get('_action');
 
-    // logger.debug('[Home Action] Received actionType', { actionType });
 
     if (actionType === 'logout') {
       const response = await logoutAction(request);
-      // logger.info('[Home Action] Logout action processed successfully');
       return response;
     }
 
-    // logger.warn('[Home Action] No valid actionType provided');
     throw new Response('サーバー上で不具合が発生しました', {
       status: 400,
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    // logger.error('[Home Action] Unexpected error occurred', {
-    //   error: error
-    // });
     throw new Response('サーバー上で予期しないエラーが発生しました', {
       status: 400,
     });
   } finally {
-    // logger.info('[Home Action] end');
   }
 };
 

@@ -14,7 +14,6 @@ import SimpleCard from '~/commons/components/SimpleCard';
  * - 失敗時: 401エラーをスロー
  */
 export const loader: LoaderFunction = async ({ request }) => {
-  // logger.info('[SignupVerifyCompete Loader] start');
   try {
     // GetクエリからTokenを取得
     const url = new URL(request.url);
@@ -38,7 +37,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     const responseBody = {
       signupData: signupData,
     };
-    // logger.info('[SignupVerifyCompete Loader] Successfully retrieved user data');
 
     // 正常なレスポンスを返す
     return new Response(JSON.stringify(responseBody), {
@@ -46,15 +44,11 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    // logger.error('[SignupVerifyCompete Loader] Unexpected error occurred', {
-    //   error: error,
-    // });
 
     throw new Response('本登録に失敗しました。', {
       status: 400,
     });
   } finally {
-    // logger.info('[SignupVerifyCompete Loader] end');
   }
 };
 

@@ -1,6 +1,5 @@
 // MSW（Mock Service Worker）から必要なモジュールをインポート
 import { http, HttpResponse } from 'msw';
-// import logger from '.~/commons/utils/logger';
 
 // ログインリクエストのボディの型定義
 export interface LoginRequestBody {
@@ -17,7 +16,6 @@ export const loginHandler = http.post(
   'http://localhost:5173/api/login',
   async ({ request }) => {
     try {
-      // logger.info(`[loginHandler] start`);
 
       // NOTE: リクエストのクローンを作成して、非同期でリクエストボディを取得
       const clonedRequest = request.clone();
@@ -27,10 +25,6 @@ export const loginHandler = http.post(
       const { email, password } = body;
 
       // 受け取ったメールアドレスとパスワードをログに記録
-      // logger.debug(`[loginHandler] Received email`, { email: email });
-      // logger.debug(`[loginHandler] Received password`, {
-      //   password: password,
-      // });
 
       // メールアドレスとパスワードの検証
       if (email === VALID_EMAIL && password === VALID_PASSWORD) {
@@ -40,7 +34,6 @@ export const loginHandler = http.post(
         // クッキーの設定を定義
         const setCookieHeader = `authToken=${jwt}; HttpOnly; Secure; SameSite=Lax; Path=/`;
 
-        // logger.info(`[loginHandler] Authentication successful, returning JWT`);
 
         // 成功レスポンスを返す
         return new HttpResponse(
@@ -57,7 +50,6 @@ export const loginHandler = http.post(
         );
       } else {
         // 認証情報が無効な場合のエラーレスポンス
-        // logger.warn(`[loginHandler] Invalid credentials`, { email: email });
 
         return new HttpResponse(
           JSON.stringify({ message: 'ユーザ名またはパスワードが違います' }),
@@ -72,9 +64,6 @@ export const loginHandler = http.post(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // リクエストボディのパース中にエラーが発生した場合の処理
-      // logger.error(`[loginHandler] Error parsing request body`, {
-      //   error: error,
-      // });
 
       // エラーレスポンスを返す
       return new HttpResponse(
@@ -87,7 +76,6 @@ export const loginHandler = http.post(
         },
       );
     } finally {
-      // logger.info(`[loginHandler] end`);
     }
   },
 );

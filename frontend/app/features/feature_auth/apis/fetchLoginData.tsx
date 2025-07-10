@@ -1,4 +1,3 @@
-// import logger from '~/commons/utils/logger';
 
 /**
  * ユーザーのログインを処理する非同期関数
@@ -10,9 +9,7 @@
  * @param password - ユーザーのパスワード
  */
 export const fetchLoginData = async (email: string, password: string) => {
-  // logger.info('[fetchLoginData] start');
   const apiUrl = process.env.API_URL; // 環境変数からURLを取得
-  // logger.debug('[fetchLoginData] API URL', { apiUrl });
 
   try {
     const response = await fetch(`${apiUrl}/api/auth/login`, {
@@ -28,23 +25,16 @@ export const fetchLoginData = async (email: string, password: string) => {
     if (response.ok) {
       // レスポンスヘッダーからSet-Cookieヘッダーを取得
       // const setCookieHeader = response.headers.get('set-cookie');
-      // logger.info('[fetchLoginData] Login successful');
-      // logger.debug('[fetchLoginData] Set-Cookie header', { setCookieHeader: setCookieHeader });
 
       return response; // 必要に応じてデータを返す
     } else {
       const errorData = await response.json();
-      // logger.warn('[fetchLoginData] Login failed', { errorData: errorData });
 
       throw new Error(errorData.message || 'ログインに失敗しました');
     }
   } catch (error) {
-    // logger.error('[fetchLoginData] Unexpected error occurred', {
-    //   error: error,
-    // });
 
     throw error;
   } finally {
-    // logger.info('[fetchLoginData] end');
   }
 };

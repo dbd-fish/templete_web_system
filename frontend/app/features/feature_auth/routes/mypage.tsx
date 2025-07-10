@@ -16,14 +16,11 @@ import Main from '~/commons/components/Main';
  * - 失敗時: 401エラーをスロー
  */
 export const loader: LoaderFunction = async ({ request }) => {
-  // logger.info('[MyPage Loader] start');
   try {
     // throw new Error('Error occurred in MyPage Loader');
     await authTokenLoader(request);
     const userData = await userDataLoader(request);
 
-    // logger.info('[MyPage Loader] Successfully retrieved user data');
-    // logger.debug('[MyPage Loader] User data', { userData: userData });
 
     const responseBody = {
       user: userData,
@@ -34,19 +31,14 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      // logger.warn('[MyPage Loader] AuthenticationError occurred');
       return redirect('/login');
     }
 
-    // logger.error('[MyPage Loader] Unexpected error occurred', {
-    //   error: error,
-    // });
 
     throw new Response('ユーザーデータの取得に失敗しました。', {
       status: 400,
     });
   } finally {
-    // logger.info('[MyPage Loader] end');
   }
 };
 
@@ -56,35 +48,25 @@ export const loader: LoaderFunction = async ({ request }) => {
  * - ログアウトやその他のアクションを処理
  */
 export const action: ActionFunction = async ({ request }) => {
-  // logger.info('[MyPage Action] start');
   try {
     const formData = await request.formData();
     const actionType = formData.get('_action');
 
-    // logger.debug('[MyPage Action] Received actionType', {
-    //   actionType: actionType,
-    // });
 
     if (actionType === 'logout') {
       const response = await logoutAction(request);
-      // logger.info('[MyPage Action] Logout action processed successfully');
       return response;
     }
 
-    // logger.warn('[MyPage Action] No valid actionType provided');
     throw new Response('サーバー上で不具合が発生しました', {
       status: 400,
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    // logger.error('[MyPage Action] Unexpected error occurred', {
-    //   error: error,
-    // });
     throw new Response('サーバー上で予期しないエラーが発生しました', {
       status: 400,
     });
   } finally {
-    // logger.info('[MyPage Action] end');
   }
 };
 

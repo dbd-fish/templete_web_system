@@ -1,4 +1,3 @@
-// import logger from '~/commons/utils/logger';
 
 /**
  * ユーザーのログアウトを処理する非同期関数
@@ -7,15 +6,12 @@
  * - 失敗時: エラーメッセージをスロー
  */
 export const fetchLogoutData = async (request: Request) => {
-  // logger.info('[fetchLogoutData] start');
 
   // NOTE: processが使用できないため、API URLを直接指定
   const apiUrl = process.env.API_URL; // 環境変数からURLを取得
-  // logger.debug('[fetchLogoutData] API URL', { apiUrl: apiUrl });
 
   try {
     const cookieHeader = request.headers.get('Cookie');
-    // logger.info('[fetchLogoutData] Cookie header', { cookieHeader: cookieHeader });
     const response = await fetch(`${apiUrl}/api/auth/logout`, {
       method: 'POST',
       headers: {
@@ -35,12 +31,8 @@ export const fetchLogoutData = async (request: Request) => {
       throw new Error(errorData.message || 'ログアウトに失敗しました');
     }
   } catch (error) {
-    // logger.error('[fetchLogoutData] Unexpected error occurred', {
-    //   error: error,
-    // });
 
     throw error;
   } finally {
-    // logger.info('[fetchLogoutData] end');
   }
 };
