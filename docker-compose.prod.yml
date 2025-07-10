@@ -2,27 +2,51 @@
 # 使用方法: docker-compose -f docker-compose.prod.yml up -d
 
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production  # 本番用ステージを指定
+    container_name: frontend_container_prod
+    image: frontend_container_prod
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    ports:
+      - "3000:3000"  # 本番用ポートのみ
+    networks:
+      - app-network
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: backend_container_prod
     image: backend_container_prod
-    volumes:
-      - ./backend:/app/backend
-    working_dir: /app/backend
     ports:
       - "8000:8000"  # APIのみ外部公開（メトリクスポートは非公開）
-    tty: true
-    stdin_open: true
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - app-network
       - monitoring-network  # 将来の監視ツール用
     environment:
       - DATABASE_URL=postgresql://template_user:template_password@db:5432/template_db
-      - PROD_MODE=true  # 本番環境フラグ
+      - ENVIRONMENT=production
+      - CORS_ORIGINS=http://frontend:3000
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
   db:
     image: postgres:13
@@ -34,10 +58,21 @@ services:
       TZ: Asia/Tokyo
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # 本番環境ではポートを外部公開しない（セキュリティ向上）
+    # ports:
+    #   - "5432:5432"
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U template_user -d template_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   # 将来実装予定の監視ツールスタック
   # prometheus:
