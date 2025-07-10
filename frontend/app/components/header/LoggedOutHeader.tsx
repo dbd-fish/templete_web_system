@@ -1,5 +1,5 @@
 import { Button } from '~/components/ui/button';
-import SiteTitle from '~/commons/components/SiteTitle';
+import SiteTitle from '~/components/common/SiteTitle';
 
 export default function Header() {
   return (

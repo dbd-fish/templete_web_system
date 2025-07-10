@@ -3,7 +3,7 @@ import { userDataLoader } from '~/features/feature_auth/loaders/userDataLoader';
 import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';
 import { logoutAction } from '~/features/feature_auth/actions/logoutAction';
 import { Button } from '~/components/ui/button';
-import Layout from '~/commons/components/Layout';
+import Layout from '~/components/layout/Layout';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '~/components/ui/tabs';
 import {
   Accordion,
@@ -25,7 +25,7 @@ import { Switch } from '~/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Textarea } from '~/components/ui/textarea';
-import Main from '~/commons/components/Main';
+import Main from '~/components/layout/Main';
 
 /**
  * ローダー関数:

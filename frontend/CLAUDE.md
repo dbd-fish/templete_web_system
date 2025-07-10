@@ -45,7 +45,6 @@ app/
 │   ├── routes/                # 静的ページ（利用規約など）
 │   └── utils/                 # ユーティリティ
 │       ├── errors/            # エラー関連
-│       ├── logger.ts          # ログ
 │       └── types.ts           # 型定義
 ├── components/                # shadcn/ui コンポーネント
 │   └── ui/                    # UIコンポーネント

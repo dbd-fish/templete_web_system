@@ -1,9 +1,9 @@
 import { useActionData, redirect, ActionFunction } from 'react-router';
 import SendResetPasswordForm from '~/features/feature_auth/components/SendResetPasswordForm';
 import { fetchSendResetPasswordData } from '~/features/feature_auth/apis/fetchSendResetPasswordData';
-import Layout from '~/commons/components/Layout';
-import Main from '~/commons/components/Main';
-import SimpleCard from '~/commons/components/SimpleCard';
+import Layout from '~/components/layout/Layout';
+import Main from '~/components/layout/Main';
+import SimpleCard from '~/components/common/SimpleCard';
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();

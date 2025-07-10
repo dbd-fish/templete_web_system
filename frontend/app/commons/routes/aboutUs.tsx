@@ -1,5 +1,5 @@
-import Header from '~/commons/components/Header';
-import Footer from '~/commons/components/Footer';
+import Header from '~/components/layout/Header';
+import Footer from '~/components/layout/Footer';
 import { LoaderFunction, redirect, ActionFunction } from 'react-router';
 import { userDataLoader } from '~/features/feature_auth/loaders/userDataLoader';
 import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';

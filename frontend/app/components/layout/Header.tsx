@@ -1,6 +1,6 @@
 // NOTE: バックエンド連携するときに見直す必要あり
-import LoggedInHeader from '~/commons/components/header/LoggedInHeade';
-import LoggedOutHeader from '~/commons/components/header/LoggedOutHeader';
+import LoggedInHeader from '~/components/header/LoggedInHeade';
+import LoggedOutHeader from '~/components/header/LoggedOutHeader';
 import { useLoaderData } from 'react-router';
 import { LoaderDataType } from '~/commons/utils/types';
 

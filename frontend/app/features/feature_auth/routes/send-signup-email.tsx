@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
-import Layout from '~/commons/components/Layout';
-import Main from '~/commons/components/Main';
-import SimpleCard from '~/commons/components/SimpleCard';
+import Layout from '~/components/layout/Layout';
+import Main from '~/components/layout/Main';
+import SimpleCard from '~/components/common/SimpleCard';
 
 export default function SendSignUpEmail() {
   return (

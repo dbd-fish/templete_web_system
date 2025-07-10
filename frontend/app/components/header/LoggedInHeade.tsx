@@ -1,4 +1,4 @@
-import SiteTitle from '~/commons/components/SiteTitle';
+import SiteTitle from '~/components/common/SiteTitle';
 import { useState, useRef, useCallback } from 'react';
 import { useLoaderData, useSubmit } from 'react-router';
 import { LoaderDataType } from '~/commons/utils/types';
