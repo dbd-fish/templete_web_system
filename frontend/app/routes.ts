@@ -34,10 +34,10 @@ export default [
     './features/feature_auth/routes/reset-password-complete.tsx',
   ),
 
-  // フッター情報
-  route('privacy-policy', './commons/routes/privacyPolicy.tsx'), // プライバシーポリシー
-  route('terms-of-service', './commons/routes/termsOfService.tsx'), // 利用規約
-  route('e-commerce-law', './commons/routes/eCommerceLaw.tsx'), // 特定商取引法に基づく表記
-  route('about-us', './commons/routes/aboutUs.tsx'), // 運営者情報
-  route('contact', './commons/routes/contact.tsx'), // お問い合わせ
+  // 静的ページ情報
+  route('privacy-policy', './features/feature_pages/routes/privacyPolicy.tsx'), // プライバシーポリシー
+  route('terms-of-service', './features/feature_pages/routes/termsOfService.tsx'), // 利用規約
+  route('e-commerce-law', './features/feature_pages/routes/eCommerceLaw.tsx'), // 特定商取引法に基づく表記
+  route('about-us', './features/feature_pages/routes/aboutUs.tsx'), // 運営者情報
+  route('contact', './features/feature_pages/routes/contact.tsx'), // お問い合わせ
 ] satisfies RouteConfig;
