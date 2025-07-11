@@ -18,8 +18,8 @@ import {
   PasswordResetRequest,
   UserUpdate,
   ErrorResponse 
-} from '~/commons/utils/types';
-import { apiRequest, apiFormRequest } from '~/commons/utils/apiErrorHandler';
+} from '~/utils/types';
+import { apiRequest, apiFormRequest } from '~/utils/apiErrorHandler';
 
 // ==================== 認証関連 ====================
 

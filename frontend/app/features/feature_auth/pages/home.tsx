@@ -1,6 +1,6 @@
 import { LoaderFunction, redirect, ActionFunction } from 'react-router';
 import { userDataLoader } from '~/features/feature_auth/loaders/userDataLoader';
-import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';
+import { AuthenticationError } from '~/utils/errors/AuthenticationError';
 import { logoutAction } from '~/features/feature_auth/actions/logoutAction';
 import { Button } from '~/components/ui/button';
 import Layout from '~/components/layout/Layout';

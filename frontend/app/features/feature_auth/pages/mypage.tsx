@@ -3,9 +3,9 @@ import { useLoaderData } from 'react-router';
 import ProfileCard from '~/features/feature_auth/components/ProfileCard';
 import { userDataLoader } from '~/features/feature_auth/loaders/userDataLoader';
 import { authTokenLoader } from '~/features/feature_auth/loaders/authTokenLoader';
-import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';
+import { AuthenticationError } from '~/utils/errors/AuthenticationError';
 import { logoutAction } from '~/features/feature_auth/actions/logoutAction';
-import { LoaderDataType } from '~/commons/utils/types';
+import { LoaderDataType } from '~/utils/types';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 

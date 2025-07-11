@@ -7,7 +7,7 @@
  */
 
 import { findUserByEmailOrUsername, MOCK_USER, MOCK_ADMIN_USER, AUTH_CREDENTIALS } from './users';
-import type { UserResponse } from '../../commons/utils/types';
+import type { UserResponse } from '../../utils/types';
 
 // ==================== JWTトークン ====================
 

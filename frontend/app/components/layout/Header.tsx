@@ -2,7 +2,7 @@
 import LoggedInHeader from '~/components/header/LoggedInHeade';
 import LoggedOutHeader from '~/components/header/LoggedOutHeader';
 import { useLoaderData } from 'react-router';
-import { LoaderDataType } from '~/commons/utils/types';
+import { LoaderDataType } from '~/utils/types';
 
 export default function Header() {
   // ローダー関数で取得したユーザー情報を取得

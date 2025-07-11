@@ -1,4 +1,4 @@
-import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';
+import { AuthenticationError } from '~/utils/errors/AuthenticationError';
 
 /**
  * リクエストヘッダーから認証トークンを取得して検証します。

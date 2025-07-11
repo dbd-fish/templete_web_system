@@ -2,7 +2,7 @@ import Header from '~/components/layout/Header';
 import Footer from '~/components/layout/Footer';
 import { LoaderFunction, redirect, ActionFunction } from 'react-router';
 import { userDataLoader } from '~/features/feature_auth/loaders/userDataLoader';
-import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';
+import { AuthenticationError } from '~/utils/errors/AuthenticationError';
 import { logoutAction } from '~/features/feature_auth/actions/logoutAction';
 import { Form } from 'react-router';
 import { Input } from '~/components/ui/input';

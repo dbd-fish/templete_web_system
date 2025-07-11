@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { LoaderFunction } from 'react-router';
 import { signup } from '~/features/feature_auth/apis/authApi';
 import { useLoaderData } from 'react-router';
-import { LoaderDataType } from '~/commons/utils/types';
+import { LoaderDataType } from '~/utils/types';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 import SimpleCard from '~/components/common/SimpleCard';

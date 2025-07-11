@@ -1,8 +1,8 @@
 import SiteTitle from '~/components/common/SiteTitle';
 import { useState, useRef, useCallback } from 'react';
 import { useLoaderData, useSubmit } from 'react-router';
-import { LoaderDataType } from '~/commons/utils/types';
-import useClickOutside from '~/commons/hooks/useClickOutside';
+import { LoaderDataType } from '~/utils/types';
+import useClickOutside from '~/hooks/useClickOutside';
 
 export default function Header() {
   const loaderData = useLoaderData<LoaderDataType>();
