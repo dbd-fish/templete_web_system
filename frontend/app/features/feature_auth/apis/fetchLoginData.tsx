@@ -1,9 +1,12 @@
 
+import { LoginRequest, TokenData, ErrorResponse } from '../../../commons/utils/types';
+import { apiFormRequest } from '../../../commons/utils/apiErrorHandler';
+
 /**
  * ユーザーのログインを処理する非同期関数
- * - '/api/login' エンドポイントを使用してログインリクエストを送信
- * - 成功時: 空オブジェクトを返す（または必要な情報を返す）
- * - 失敗時: エラーメッセージをスロー
+ * - '/api/v1/auth/login' エンドポイントを使用してログインリクエストを送信
+ * - 成功時: Responseオブジェクトを返す
+ * - 失敗時: ApiErrorをスロー
  *
  * @param email - ユーザーのメールアドレス
  * @param password - ユーザーのパスワード
@@ -12,29 +15,16 @@ export const fetchLoginData = async (email: string, password: string) => {
   const apiUrl = process.env.API_URL; // 環境変数からURLを取得
 
   try {
-    const response = await fetch(`${apiUrl}/api/auth/login`, {
-      method: 'POST',
-      // NOTE: OAuth2PasswordRequestFormは application/x-www-form-urlencodedを指定
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
+    const response = await apiFormRequest(
+      `${apiUrl}/api/v1/auth/login`,
+      {
         username: email, // OAuth2PasswordRequestFormは "username" フィールドを期待
         password: password,
-      }).toString(),
-      credentials: 'include', // HTTP-only Cookieを送信
-    });
-    if (response.ok) {
-      // レスポンスヘッダーからSet-Cookieヘッダーを取得
-      // const setCookieHeader = response.headers.get('set-cookie');
+      }
+    );
 
-      return response; // 必要に応じてデータを返す
-    } else {
-      const errorData = await response.json();
-
-      throw new Error(errorData.message || 'ログインに失敗しました');
-    }
+    return response;
   } catch (error) {
-
     throw error;
-  } finally {
   }
 };

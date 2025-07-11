@@ -1,7 +1,10 @@
 
+import { UserResponse, ErrorResponse } from '../../../commons/utils/types';
+import { apiRequest } from '../../../commons/utils/apiErrorHandler';
+
 /**
  * ユーザー情報を取得する非同期関数
- * - '/api/get/me' エンドポイントからユーザー情報を取得
+ * - '/api/v1/auth/me' エンドポイントからユーザー情報を取得
  * - 成功時: ユーザー情報オブジェクトを返す
  * - 失敗時: null を返す
  */
@@ -12,25 +15,21 @@ export const fetchUserData = async (request: Request) => {
   const cookieHeader = request.headers.get('Cookie');
 
   try {
-    const response = await fetch(`${apiUrl}/api/auth/me`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // NOTE: credentials: 'include'だけではなく下記のようにクッキーを明示的に渡さないとCookieが送信されない
-        Cookie: cookieHeader || '', // 明示的にクッキーを渡す
+    const response = await apiRequest(
+      `${apiUrl}/api/v1/auth/me`,
+      {
+        method: 'POST',
       },
-      credentials: 'include', // Cookieを送信
-    });
+      cookieHeader || ''
+    );
 
-    if (response.ok) {
-      const data = await response.json();
-
-      return { username: data.username, email: data.email };
-    } else {
+    const data = await response.json() as UserResponse;
+    return { username: data.username, email: data.email };
+  } catch (error) {
+    // 認証エラーの場合はnullを返す
+    if (error instanceof Error && error.message.includes('401')) {
       return null;
     }
-  } catch (error) {
     throw error;
-  } finally {
   }
 };

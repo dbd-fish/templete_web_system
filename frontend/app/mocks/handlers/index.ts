@@ -1,13 +1,22 @@
 import { loginHandler } from './loginHandler';
 import { getMeHandler } from './getMeHandler';
 import { logoutHandler } from './logoutHandler';
-// 他のハンドラーもここでインポート
-// import { exampleHandler } from './exampleHandler';
+import { signupHandler } from './signupHandler';
+import { sendVerifyEmailHandler } from './sendVerifyEmailHandler';
+import { sendPasswordResetEmailHandler } from './sendPasswordResetEmailHandler';
+import { resetPasswordHandler } from './resetPasswordHandler';
+import { updateUserHandler } from './updateUserHandler';
+import { deleteUserHandler } from './deleteUserHandler';
 
 export const handlers = [
+  // 認証関連のハンドラー
   loginHandler,
   getMeHandler,
   logoutHandler,
-  // 他のハンドラーもここに追加
-  // exampleHandler,
+  signupHandler,
+  sendVerifyEmailHandler,
+  sendPasswordResetEmailHandler,
+  resetPasswordHandler,
+  updateUserHandler,
+  deleteUserHandler,
 ];

@@ -1,3 +1,6 @@
+import { SendVerifyEmailRequest, SuccessResponse, ErrorResponse } from '../../../commons/utils/types';
+import { apiRequest } from '../../../commons/utils/apiErrorHandler';
+
 export const fetchSendVerifyEmailData = async (
   email: string,
   password: string,
@@ -20,20 +23,15 @@ export const fetchSendVerifyEmailData = async (
       }
     });
 
-    const response = await fetch(`${apiUrl}/api/auth/send-verify-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(signupData),
-    });
+    const response = await apiRequest(
+      `${apiUrl}/api/v1/auth/send-verify-email`,
+      {
+        method: 'POST',
+        body: JSON.stringify(signupData),
+      }
+    );
 
-    if (!response.ok) {
-      const errorResponse = await response.json();
-      throw new Error(errorResponse.message || '会員登録に失敗しました');
-    }
-
-    return response.json();
+    return response.json() as Promise<SuccessResponse>;
   } catch (error) {
     console.error('[fetchSendVerifyEmailData] Error:', error);
     throw error;

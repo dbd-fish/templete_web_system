@@ -1,3 +1,6 @@
+import { PasswordResetRequest, SuccessResponse, ErrorResponse } from '../../../commons/utils/types';
+import { apiRequest } from '../../../commons/utils/apiErrorHandler';
+
 export const fetchResetPasswordData = async (
   token: string,
   newPassword: string,
@@ -9,19 +12,15 @@ export const fetchResetPasswordData = async (
   };
 
   try {
-    const response = await fetch(`${apiUrl}/api/auth/reset-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(resetPasswordData),
-    });
+    const response = await apiRequest(
+      `${apiUrl}/api/v1/auth/reset-password`,
+      {
+        method: 'POST',
+        body: JSON.stringify(resetPasswordData),
+      }
+    );
 
-    if (!response.ok) {
-      throw new Error('パスワードリセットに失敗しました');
-    }
-
-    return response.json();
+    return response.json() as Promise<SuccessResponse>;
   } catch (error) {
     console.error('[fetchResetPasswordData] Error:', error);
     throw error;

@@ -1,3 +1,6 @@
+import { SendPasswordResetEmailRequest, SuccessResponse, ErrorResponse } from '../../../commons/utils/types';
+import { apiRequest } from '../../../commons/utils/apiErrorHandler';
+
 export const fetchSendResetPasswordData = async (email: string) => {
   const apiUrl = process.env.API_URL;
 
@@ -14,26 +17,15 @@ export const fetchSendResetPasswordData = async (email: string) => {
       }
     });
 
-    const response = await fetch(
-      `${apiUrl}/api/auth/send-password-reset-email`,
+    const response = await apiRequest(
+      `${apiUrl}/api/v1/auth/send-password-reset-email`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(sendResetEmailData),
-      },
+      }
     );
 
-    console.log('res', response);
-    if (!response.ok) {
-      const errorResponse = await response.json();
-      throw new Error(
-        errorResponse.message || 'パスワード再設定に失敗しました',
-      );
-    }
-
-    return response.json();
+    return response.json() as Promise<SuccessResponse>;
   } catch (error) {
     console.error('[fetchSendResetPasswordData] Error:', error);
     throw error;
