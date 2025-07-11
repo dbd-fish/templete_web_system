@@ -1,6 +1,6 @@
 import { useActionData, redirect, ActionFunction } from 'react-router';
 import SignupForm from '~/features/feature_auth/components/SignupForm';
-import { fetchSendVerifyEmailData } from '~/features/feature_auth/apis/fetchSendVerifyEmailData';
+import { sendVerifyEmail } from '~/features/feature_auth/apis/authApi';
 import {
   isPasswordValid,
   getAllowedSymbols,
@@ -32,7 +32,7 @@ export const action: ActionFunction = async ({ request }) => {
 
     // 会員登録用の確認メール送信
     // 確認メール送信をバックグラウンドで処理
-    Promise.resolve(fetchSendVerifyEmailData(email, password, username)).catch(
+    Promise.resolve(sendVerifyEmail(email, password, username)).catch(
       (error) => {
         console.error('Error sending verification email:', error);
       },

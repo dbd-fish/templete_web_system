@@ -1,6 +1,6 @@
 import { useActionData, redirect, ActionFunction } from 'react-router';
 import SendResetPasswordForm from '~/features/feature_auth/components/SendResetPasswordForm';
-import { fetchSendResetPasswordData } from '~/features/feature_auth/apis/fetchSendResetPasswordData';
+import { sendPasswordResetEmail } from '~/features/feature_auth/apis/authApi';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 import SimpleCard from '~/components/common/SimpleCard';
@@ -11,7 +11,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   try {
     // パスワードリセットメール送信処理
-    Promise.resolve(fetchSendResetPasswordData(email)).catch((error) => {
+    Promise.resolve(sendPasswordResetEmail(email)).catch((error) => {
       console.error('Error sending password-reset email:', error);
     });
 

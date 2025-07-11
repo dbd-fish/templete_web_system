@@ -1,7 +1,7 @@
 import { ActionFunction, redirect, Link } from 'react-router';
 import { useActionData } from 'react-router';
 import LoginForm from '~/features/feature_auth/components/LoginForm';
-import { fetchLoginData } from '~/features/feature_auth/apis/fetchLoginData';
+import { login } from '~/features/feature_auth/apis/authApi';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 import SimpleCard from '~/components/common/SimpleCard';
@@ -14,7 +14,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   try {
     // fetchLoginDataを呼び出して認証処理
-    const response = await fetchLoginData(email, password);
+    const response = await login(email, password);
     const responseCookieHeader = response.headers.get('set-Cookie');
     if (!responseCookieHeader) {
       throw new Error('Cookieが見つかりません');

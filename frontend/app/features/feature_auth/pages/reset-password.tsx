@@ -5,7 +5,7 @@ import {
   LoaderFunction,
 } from 'react-router';
 import ResetPasswordForm from '~/features/feature_auth/components/ResetPasswordForm';
-import { fetchResetPasswordData } from '~/features/feature_auth/apis/fetchResetPasswordData';
+import { resetPassword } from '~/features/feature_auth/apis/authApi';
 import {
   isPasswordValid,
   getAllowedSymbols,
@@ -50,7 +50,7 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     // パスワードリセット処理
-    await fetchResetPasswordData(token, newPassword);
+    await resetPassword(token, newPassword);
     return redirect('/reset-password-complete');
   } catch {
     return new Response(

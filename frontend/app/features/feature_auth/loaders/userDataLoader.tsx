@@ -1,5 +1,5 @@
 import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';
-import { fetchUserData } from '~/features/feature_auth/apis/fetchUserData';
+import { getUser } from '~/features/feature_auth/apis/authApi';
 
 /**
  * 外部APIから認証情報を取得します。
@@ -16,7 +16,7 @@ export async function userDataLoader(
 ) {
   try {
     // 外部API呼び出し
-    const userData = await fetchUserData(request);
+    const userData = await getUser(request);
 
     // ログインが必須の画面では下記でエラーがスローされる
     if (loginRequired && !userData) {

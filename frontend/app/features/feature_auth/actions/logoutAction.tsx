@@ -1,5 +1,5 @@
 import { redirect } from 'react-router';
-import { fetchLogoutData } from '~/features/feature_auth/apis/fetchLogoutData';
+import { logout } from '~/features/feature_auth/apis/authApi';
 import { authTokenCookie } from '~/features/feature_auth/cookies';
 
 /**
@@ -19,7 +19,7 @@ export async function logoutAction(request: Request) {
 
     // ログアウトAPIを呼び出し
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const response = await fetchLogoutData(request);
+    const response = await logout(request);
 
     // デバッグ用: レスポンスの内容をコンソールに出力
     // const authToken = response.headers.get('set-cookie'); // 仮定: fetchLoginDataがauthTokenを返す

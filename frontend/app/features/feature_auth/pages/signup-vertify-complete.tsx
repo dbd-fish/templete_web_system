@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { LoaderFunction } from 'react-router';
-import { fetchSignupData } from '~/features/feature_auth/apis/fetchSignupData';
+import { signup } from '~/features/feature_auth/apis/authApi';
 import { useLoaderData } from 'react-router';
 import { LoaderDataType } from '~/commons/utils/types';
 import Layout from '~/components/layout/Layout';
@@ -22,7 +22,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw new Response('トークンが見つかりません', { status: 400 });
     }
 
-    const response = await fetchSignupData(token);
+    const response = await signup(token);
     // レスポンスステータスに応じてメッセージを設定
     let signupData;
     if (response) {
