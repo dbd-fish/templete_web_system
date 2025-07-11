@@ -40,4 +40,7 @@ export default [
   route('e-commerce-law', './features/feature_pages/routes/eCommerceLaw.tsx'), // 特定商取引法に基づく表記
   route('about-us', './features/feature_pages/routes/aboutUs.tsx'), // 運営者情報
   route('contact', './features/feature_pages/routes/contact.tsx'), // お問い合わせ
+
+  // 404 NotFoundページ（開発ツールやその他のマッチしないパスをキャッチ）
+  route('*', './components/common/NotFound.tsx'),
 ] satisfies RouteConfig;
