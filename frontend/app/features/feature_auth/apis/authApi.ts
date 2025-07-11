@@ -36,6 +36,7 @@ export const login = async (email: string, password: string) => {
   const apiUrl = process.env.API_URL; // 環境変数からURLを取得
 
   try {
+    
     const response = await apiFormRequest(
       `${apiUrl}/api/v1/auth/login`,
       {
@@ -43,6 +44,7 @@ export const login = async (email: string, password: string) => {
         password: password,
       }
     );
+
 
     return response;
   } catch (error) {
