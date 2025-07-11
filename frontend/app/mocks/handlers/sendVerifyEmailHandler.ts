@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { SendVerifyEmailRequest, SuccessResponse, ErrorResponse } from '../../commons/utils/types';
-import { emailExists } from '../data/auth';
-import { MSG_VERIFY_EMAIL_SUCCESS, MSG_USER_ALREADY_EXISTS } from '../data/constants';
+import { emailExists, MSG_VERIFY_EMAIL_SUCCESS, MSG_USER_ALREADY_EXISTS } from '../data/auth';
 import { createSuccessResponse, createErrorResponse, addDefaultDelay, logMockHandler, logMockResponse, isValidEmail, validateRequiredFields } from '../utils/mockHelpers';
 
 // /api/v1/auth/send-verify-email エンドポイントへのPOSTリクエストを処理するハンドラー

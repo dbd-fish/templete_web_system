@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { SignupRequest, SuccessResponse, ErrorResponse } from '../../commons/utils/types';
-import { getTokenType } from '../data/auth';
-import { MSG_SIGNUP_SUCCESS, MSG_INVALID_TOKEN, MOCK_VERIFY_TOKEN } from '../data/constants';
+import { getTokenType, MSG_SIGNUP_SUCCESS, MSG_INVALID_TOKEN, MOCK_VERIFY_TOKEN } from '../data/auth';
 import { createSuccessResponse, createErrorResponse, addDefaultDelay, logMockHandler, logMockResponse } from '../utils/mockHelpers';
 
 // /api/v1/auth/signup エンドポイントへのPOSTリクエストを処理するハンドラー

@@ -7,7 +7,17 @@
  */
 
 import { delay } from 'msw';
-import { MOCK_DELAY_MS, MOCK_DELAY_FAST_MS, MOCK_DELAY_SLOW_MS } from '../data/constants';
+
+// ==================== 遅延設定 ====================
+
+/** API レスポンスの遅延時間（ミリ秒） */
+export const MOCK_DELAY_MS = 800;
+
+/** 高速レスポンス用の遅延時間（ミリ秒） */
+export const MOCK_DELAY_FAST_MS = 200;
+
+/** 低速レスポンス用の遅延時間（ミリ秒） */
+export const MOCK_DELAY_SLOW_MS = 2000;
 
 // ==================== 遅延処理 ====================
 

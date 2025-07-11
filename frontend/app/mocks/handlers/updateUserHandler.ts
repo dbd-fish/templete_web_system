@@ -1,8 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { UserUpdate, UserResponse, ErrorResponse } from '../../commons/utils/types';
-import { getUserFromToken } from '../data/auth';
+import { getUserFromToken, MSG_USER_UPDATE_SUCCESS, MSG_INVALID_TOKEN, COOKIE_AUTH_TOKEN } from '../data/auth';
 import { updateMockUser, MOCK_USER } from '../data/users';
-import { MSG_USER_UPDATE_SUCCESS, MSG_INVALID_TOKEN, COOKIE_AUTH_TOKEN } from '../data/constants';
 import { createSuccessResponse, createErrorResponse, addDefaultDelay, logMockHandler, logMockResponse, isValidEmail, isValidPassword } from '../utils/mockHelpers';
 
 // /api/v1/auth/me エンドポイントへのPATCHリクエストを処理するハンドラー（ユーザー情報更新）

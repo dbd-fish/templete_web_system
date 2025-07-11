@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { PasswordResetRequest, SuccessResponse, ErrorResponse } from '../../commons/utils/types';
-import { getTokenType } from '../data/auth';
-import { MSG_PASSWORD_RESET_SUCCESS, MSG_INVALID_TOKEN } from '../data/constants';
+import { getTokenType, MSG_PASSWORD_RESET_SUCCESS, MSG_INVALID_TOKEN } from '../data/auth';
 import { createSuccessResponse, createErrorResponse, addDefaultDelay, logMockHandler, logMockResponse, isValidPassword, validateRequiredFields } from '../utils/mockHelpers';
 
 // /api/v1/auth/reset-password エンドポイントへのPOSTリクエストを処理するハンドラー

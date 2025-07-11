@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { MessageResponse, ErrorResponse } from '../../commons/utils/types';
-import { getUserFromToken, deleteAuthCookie } from '../data/auth';
-import { MSG_ACCOUNT_DELETE_SUCCESS, MSG_INVALID_TOKEN, COOKIE_AUTH_TOKEN } from '../data/constants';
+import { getUserFromToken, deleteAuthCookie, MSG_ACCOUNT_DELETE_SUCCESS, MSG_INVALID_TOKEN, COOKIE_AUTH_TOKEN } from '../data/auth';
 import { createResponseWithCookie, createErrorResponse, addDefaultDelay, logMockHandler, logMockResponse } from '../utils/mockHelpers';
 
 // /api/v1/auth/me エンドポイントへのDELETEリクエストを処理するハンドラー（アカウント削除）

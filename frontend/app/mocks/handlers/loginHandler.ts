@@ -1,8 +1,7 @@
 // MSW（Mock Service Worker）から必要なモジュールをインポート
 import { http, HttpResponse } from 'msw';
 import { LoginRequest, TokenData, ErrorResponse } from '../../commons/utils/types';
-import { authenticateUser } from '../data/auth';
-import { MOCK_ACCESS_TOKEN, MSG_LOGIN_SUCCESS, MSG_AUTH_FAILED } from '../data/constants';
+import { authenticateUser, MOCK_ACCESS_TOKEN, MSG_LOGIN_SUCCESS, MSG_AUTH_FAILED } from '../data/auth';
 import { createResponseWithCookie, createErrorResponse, formDataToObject, addDefaultDelay, logMockHandler, logMockResponse } from '../utils/mockHelpers';
 
 // ログインリクエストのボディの型定義（form-urlencoded用）

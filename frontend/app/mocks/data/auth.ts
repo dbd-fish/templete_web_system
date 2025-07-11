@@ -6,16 +6,70 @@
  * レスポンス生成機能を提供
  */
 
-import { 
-  MOCK_ACCESS_TOKEN,
-  MOCK_RESET_TOKEN,
-  MOCK_VERIFY_TOKEN,
-  MSG_AUTH_FAILED,
-  COOKIE_AUTH_TOKEN,
-  COOKIE_MAX_AGE
-} from './constants';
 import { findUserByEmailOrUsername, MOCK_USER, MOCK_ADMIN_USER, AUTH_CREDENTIALS } from './users';
 import type { UserResponse } from '../../commons/utils/types';
+
+// ==================== JWTトークン ====================
+
+/** モック用のJWTアクセストークン */
+export const MOCK_ACCESS_TOKEN = 'mock-jwt-access-token-12345';
+
+/** パスワードリセット用のモックトークン */
+export const MOCK_RESET_TOKEN = 'mock-password-reset-token-abcde';
+
+/** 認証メール用のモックトークン */
+export const MOCK_VERIFY_TOKEN = 'mock-email-verify-token-fghij';
+
+// ==================== APIレスポンスメッセージ ====================
+
+/** ログイン成功メッセージ */
+export const MSG_LOGIN_SUCCESS = 'ログインに成功しました';
+
+/** ログアウト成功メッセージ */
+export const MSG_LOGOUT_SUCCESS = 'ログアウトしました';
+
+/** ユーザー情報取得成功メッセージ */
+export const MSG_USER_INFO_SUCCESS = 'ユーザー情報を取得しました';
+
+/** ユーザー情報更新成功メッセージ */
+export const MSG_USER_UPDATE_SUCCESS = 'ユーザー情報が正常に更新されました';
+
+/** アカウント削除成功メッセージ */
+export const MSG_ACCOUNT_DELETE_SUCCESS = 'ユーザーアカウントが正常に削除されました';
+
+/** ユーザー登録成功メッセージ */
+export const MSG_SIGNUP_SUCCESS = 'ユーザー登録が完了しました';
+
+/** 認証メール送信成功メッセージ */
+export const MSG_VERIFY_EMAIL_SUCCESS = '認証メールを送信しました。メールをご確認ください';
+
+/** パスワードリセットメール送信成功メッセージ */
+export const MSG_RESET_EMAIL_SUCCESS = 'パスワードリセットメールを送信しました';
+
+/** パスワードリセット成功メッセージ */
+export const MSG_PASSWORD_RESET_SUCCESS = 'パスワードが正常にリセットされました';
+
+// ==================== エラーメッセージ ====================
+
+/** 認証失敗メッセージ */
+export const MSG_AUTH_FAILED = 'メールアドレスまたはパスワードが正しくありません';
+
+/** 無効なトークンメッセージ */
+export const MSG_INVALID_TOKEN = '無効なトークンです';
+
+/** ユーザーが見つからないメッセージ */
+export const MSG_USER_NOT_FOUND = 'ユーザーが見つかりません';
+
+/** ユーザーが既に存在するメッセージ */
+export const MSG_USER_ALREADY_EXISTS = 'このメールアドレスは既に登録されています';
+
+// ==================== Cookie設定 ====================
+
+/** Cookie名: 認証トークン */
+export const COOKIE_AUTH_TOKEN = 'authToken';
+
+/** Cookie有効期限（秒） */
+export const COOKIE_MAX_AGE = 60 * 60 * 3; // 3時間
 
 // ==================== 認証情報の定義 ====================
 

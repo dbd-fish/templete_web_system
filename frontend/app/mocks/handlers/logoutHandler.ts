@@ -1,8 +1,7 @@
 // MSW（Mock Service Worker）から必要なモジュールをインポート
 import { http, HttpResponse } from 'msw';
 import { MessageResponse, ErrorResponse } from '../../commons/utils/types';
-import { deleteAuthCookie } from '../data/auth';
-import { MSG_LOGOUT_SUCCESS } from '../data/constants';
+import { deleteAuthCookie, MSG_LOGOUT_SUCCESS } from '../data/auth';
 import { createResponseWithCookie, createErrorResponse, addDefaultDelay, logMockHandler, logMockResponse } from '../utils/mockHelpers';
 
 // /api/v1/auth/logout エンドポイントへのPOSTリクエストを処理するハンドラーを定義

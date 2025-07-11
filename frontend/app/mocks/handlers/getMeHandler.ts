@@ -1,8 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { UserResponse, ErrorResponse } from '../../commons/utils/types';
-import { getUserFromToken } from '../data/auth';
+import { getUserFromToken, MOCK_ACCESS_TOKEN, MSG_USER_INFO_SUCCESS, MSG_INVALID_TOKEN, COOKIE_AUTH_TOKEN } from '../data/auth';
 import { MOCK_USER } from '../data/users';
-import { MOCK_ACCESS_TOKEN, MSG_USER_INFO_SUCCESS, MSG_INVALID_TOKEN, COOKIE_AUTH_TOKEN } from '../data/constants';
 import { createSuccessResponse, createErrorResponse, addDefaultDelay, logMockHandler, logMockResponse } from '../utils/mockHelpers';
 
 // /api/v1/auth/me エンドポイントへのPOSTリクエストを処理するハンドラー

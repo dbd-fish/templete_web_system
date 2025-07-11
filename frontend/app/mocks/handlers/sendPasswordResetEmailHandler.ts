@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { SendPasswordResetEmailRequest, SuccessResponse, ErrorResponse } from '../../commons/utils/types';
-import { emailExists } from '../data/auth';
-import { MSG_RESET_EMAIL_SUCCESS, MSG_USER_NOT_FOUND } from '../data/constants';
+import { emailExists, MSG_RESET_EMAIL_SUCCESS, MSG_USER_NOT_FOUND } from '../data/auth';
 import { createSuccessResponse, createErrorResponse, addDefaultDelay, logMockHandler, logMockResponse, isValidEmail, validateRequiredFields } from '../utils/mockHelpers';
 
 // /api/v1/auth/send-password-reset-email エンドポイントへのPOSTリクエストを処理するハンドラー
