@@ -1,22 +1,16 @@
-import { loginHandler } from './loginHandler';
-import { getMeHandler } from './getMeHandler';
-import { logoutHandler } from './logoutHandler';
-import { signupHandler } from './signupHandler';
-import { sendVerifyEmailHandler } from './sendVerifyEmailHandler';
-import { sendPasswordResetEmailHandler } from './sendPasswordResetEmailHandler';
-import { resetPasswordHandler } from './resetPasswordHandler';
-import { updateUserHandler } from './updateUserHandler';
-import { deleteUserHandler } from './deleteUserHandler';
+/**
+ * MSW ハンドラー統合エクスポート
+ * 
+ * @description
+ * 機能別に統合されたハンドラーを集約し、MSWで使用するハンドラー配列を提供
+ */
 
+import { authHandlers } from './authHandlers';
+
+// 全ハンドラーを統合
 export const handlers = [
-  // 認証関連のハンドラー
-  loginHandler,
-  getMeHandler,
-  logoutHandler,
-  signupHandler,
-  sendVerifyEmailHandler,
-  sendPasswordResetEmailHandler,
-  resetPasswordHandler,
-  updateUserHandler,
-  deleteUserHandler,
+  ...authHandlers,
 ];
+
+// 個別のハンドラーグループもエクスポート
+export { authHandlers } from './authHandlers';
