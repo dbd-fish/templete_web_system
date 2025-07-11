@@ -1,8 +1,8 @@
 import { AuthenticationError } from '~/commons/utils/errors/AuthenticationError';
-import { getUser } from '~/features/feature_auth/apis/authApi';
+import { getUserFromToken, MOCK_ACCESS_TOKEN } from '~/mocks/data/auth';
 
 /**
- * 外部APIから認証情報を取得します。
+ * 認証情報を取得します。
  *
  * @param {Request} request - 必要なヘッダーやクッキーを含むHTTPリクエストオブジェクト。
  * @param {boolean} [loginRequired=true] - 呼び出し元がログインを必須とするかどうかを示すフラグ。
@@ -15,9 +15,23 @@ export async function userDataLoader(
   loginRequired: boolean = true,
 ) {
   try {
-    // 外部API呼び出し
-    const userData = await getUser(request);
-
+    // Cookieから認証トークンを取得
+    const cookieHeader = request.headers.get('Cookie');
+    let authToken = null;
+    
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      authToken = cookies.authToken;
+    }
+        
+    // トークンからユーザー情報を取得
+    const userData = authToken ? getUserFromToken(authToken) : null;
+    
     // ログインが必須の画面では下記でエラーがスローされる
     if (loginRequired && !userData) {
       throw new AuthenticationError('認証情報の取得に失敗しました。');
