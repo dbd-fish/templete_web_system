@@ -1,4 +1,4 @@
-import { LoaderDataType } from '~/commons/utils/types';
+import { LoaderDataType } from '~/utils/types';
 import { useLoaderData } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Button } from '~/components/ui/button';

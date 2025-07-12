@@ -3,6 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: development  # 開発用ステージを指定
     container_name: frontend_container
     image: frontend_container
     deploy:
@@ -11,6 +12,7 @@ services:
           memory: 4G
     volumes:
       - ./frontend:/app/frontend
+      - /app/frontend/node_modules  # node_modulesのマウント除外
     working_dir: /app/frontend
     ports:
       - "3000:3000" # 本番用
@@ -19,6 +21,10 @@ services:
     stdin_open: true
     networks:
       - frontend-network
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_API_URL=http://backend:8000
 
   backend:
     build:
@@ -41,6 +47,8 @@ services:
       - backend-network
     environment:
       - DATABASE_URL=postgresql://template_user:template_password@db:5432/template_db
+      - ENVIRONMENT=development
+      - CORS_ORIGINS=http://localhost:5173,https://localhost:5173
 
   db:
     image: postgres:13
@@ -58,6 +66,11 @@ services:
       - "5432:5432"
     networks:
       - backend-network # バックエンド専用のネットワーク
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U template_user -d template_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Cypress E2E Testing (Cypress公式推奨: run-and-exit パターン)
   cypress:
