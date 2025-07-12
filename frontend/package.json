@@ -8,7 +8,7 @@
     "dev": "npx vite --host",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint ./app",
     "start": "npx @react-router/serve ./build/server/index.js",
-    "typecheck": "npx @react-router/dev typegen && tsc",
+    "typecheck": "npx @react-router/dev typegen && npx tsc --noEmit",
     "format": "prettier --write ./app",
     "format:check": "prettier --check ./app"
   },
