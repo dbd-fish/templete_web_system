@@ -1,41 +1,47 @@
-# 旧フロー　削除予定
-# name: Lint and Format Check
+name: Frontend Lint and Format Check
 
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/github-actions_frontend_prettier_eslint.yml'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
 
-# on:
-#   pull_request:
-#   workflow_dispatch:
+jobs:
+  lint_and_format:
+    name: ESLint・Prettier・TypeScript Check
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./frontend
 
-# jobs:
-#   lint_and_format:
-#     name: ESLintとPrettierの実行
-#     runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
 
-#     steps:
-#       - name: リポジトリをチェックアウト
-#         uses: actions/checkout@v4
+      - name: Node.js をセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
 
-#       - name: Node.jsをセットアップ
-#         uses: actions/setup-node@v3
-#         with:
-#           node-version: '20'
+      - name: 依存関係をインストール
+        run: npm ci
 
-#       - name: 必要な依存関係をインストール
-#         run: |
-#           cd template_frontend_container/template_react-router
-#           npm install
+      - name: ESLint チェック
+        run: npm run lint
 
-#       - name: ESLintを実行
-#         run: |
-#           cd template_frontend_container/template_react-router
-#           npm run lint
+      - name: Prettier フォーマットチェック
+        run: npm run format:check
 
-#       - name: Prettierのフォーマット確認
-#         run: |
-#           cd template_frontend_container/template_react-router
-#           npm run format:check
+      - name: TypeScript 型チェック
+        run: npm run typecheck
 
-#       - name: TypeScript型チェックを実行
-#         run: |
-#           cd template_frontend_container/template_react-router
-#           npm run typecheck
+      - name: ビルドテスト
+        run: npm run build
