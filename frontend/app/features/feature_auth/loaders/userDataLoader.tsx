@@ -1,5 +1,5 @@
 import { AuthenticationError } from '../errors/AuthenticationError';
-import { getUserFromToken, MOCK_ACCESS_TOKEN } from '~/mocks/data/auth';
+import { getUserFromToken } from '~/mocks/data/auth';
 
 /**
  * 認証情報を取得します。

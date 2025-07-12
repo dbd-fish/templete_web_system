@@ -7,17 +7,10 @@
  */
 
 import {
-  LoginRequest,
-  TokenData,
   UserResponse,
   MessageResponse,
-  SignupRequest,
   SuccessResponse,
-  SendVerifyEmailRequest,
-  SendPasswordResetEmailRequest,
-  PasswordResetRequest,
   UserUpdate,
-  ErrorResponse,
 } from '~/utils/types';
 import { apiRequest, apiFormRequest } from '~/utils/apiErrorHandler';
 

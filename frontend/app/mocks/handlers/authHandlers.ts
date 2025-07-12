@@ -8,16 +8,10 @@
 
 import { http, HttpResponse } from 'msw';
 import {
-  LoginRequest,
-  TokenData,
   ErrorResponse,
   UserResponse,
   MessageResponse,
-  SignupRequest,
   SuccessResponse,
-  SendVerifyEmailRequest,
-  SendPasswordResetEmailRequest,
-  PasswordResetRequest,
   UserUpdate,
 } from '../../utils/types';
 import {
@@ -41,9 +35,8 @@ import {
   MSG_USER_UPDATE_SUCCESS,
   MSG_ACCOUNT_DELETE_SUCCESS,
   COOKIE_AUTH_TOKEN,
-  MOCK_VERIFY_TOKEN,
 } from '../data/auth';
-import { MOCK_USER, updateMockUser } from '../data/users';
+import { updateMockUser } from '../data/users';
 import {
   createResponseWithCookie,
   createSuccessResponse,
@@ -120,7 +113,7 @@ export const loginHandler = http.post(
           },
         });
       }
-    } catch (error) {
+    } catch {
       // リクエストボディのパース中にエラーが発生した場合の処理
       const errorResponse: ErrorResponse = {
         detail: 'Invalid request body',
@@ -160,7 +153,7 @@ export const logoutHandler = http.post(
         deleteCookieHeader,
         messageResponse,
       );
-    } catch (error) {
+    } catch {
       // リクエストボディのパース中にエラーが発生した場合の処理
       const errorResponse: ErrorResponse = {
         detail: 'Invalid request body',
@@ -261,7 +254,7 @@ export const signupHandler = http.post(
 
       logMockResponse('signupHandler', 200, { success: true });
       return createSuccessResponse(MSG_SIGNUP_SUCCESS, successResponse);
-    } catch (error) {
+    } catch {
       const errorResponse: ErrorResponse = {
         detail: 'Invalid request body',
         status_code: 400,
@@ -335,7 +328,7 @@ export const sendVerifyEmailHandler = http.post(
 
       logMockResponse('sendVerifyEmailHandler', 200, { success: true });
       return createSuccessResponse(MSG_VERIFY_EMAIL_SUCCESS, successResponse);
-    } catch (error) {
+    } catch {
       const errorResponse: ErrorResponse = {
         detail: 'Invalid request body',
         status_code: 400,
@@ -405,7 +398,7 @@ export const sendPasswordResetEmailHandler = http.post(
 
       logMockResponse('sendPasswordResetEmailHandler', 200, { success: true });
       return createSuccessResponse(MSG_RESET_EMAIL_SUCCESS, successResponse);
-    } catch (error) {
+    } catch {
       const errorResponse: ErrorResponse = {
         detail: 'Invalid request body',
         status_code: 400,
@@ -480,7 +473,7 @@ export const resetPasswordHandler = http.post(
 
       logMockResponse('resetPasswordHandler', 200, { success: true });
       return createSuccessResponse(MSG_PASSWORD_RESET_SUCCESS, successResponse);
-    } catch (error) {
+    } catch {
       const errorResponse: ErrorResponse = {
         detail: 'Invalid request body',
         status_code: 400,
@@ -579,7 +572,7 @@ export const updateUserHandler = http.patch(
         user: updatedUser.email,
       });
       return createSuccessResponse(MSG_USER_UPDATE_SUCCESS, updatedUser);
-    } catch (error) {
+    } catch {
       const errorResponse: ErrorResponse = {
         detail: 'Invalid request body',
         status_code: 400,
@@ -643,7 +636,7 @@ export const deleteUserHandler = http.delete(
         deleteCookieHeader,
         messageResponse,
       );
-    } catch (error) {
+    } catch {
       const errorResponse: ErrorResponse = {
         detail: 'Internal server error',
         status_code: 500,

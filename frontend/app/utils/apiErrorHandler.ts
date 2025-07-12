@@ -26,7 +26,7 @@ export const handleApiError = async (response: Response): Promise<never> => {
       response.status,
       errorData.detail || 'Unknown error occurred',
     );
-  } catch (parseError) {
+  } catch {
     // JSON解析に失敗した場合
     throw new ApiError(
       response.status,

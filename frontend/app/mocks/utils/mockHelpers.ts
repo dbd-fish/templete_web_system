@@ -106,7 +106,7 @@ export const getCookieFromRequest = (
  */
 export const createSuccessResponse = (
   message: string,
-  data?: any,
+  data?: unknown,
   status: number = 200,
 ): Response => {
   const responseBody = {
@@ -134,7 +134,7 @@ export const createSuccessResponse = (
 export const createErrorResponse = (
   message: string,
   status: number = 400,
-  details?: any,
+  details?: unknown,
 ): Response => {
   const responseBody = {
     success: false,
@@ -162,7 +162,7 @@ export const createErrorResponse = (
 export const createResponseWithCookie = (
   message: string,
   cookieString: string,
-  data?: any,
+  data?: unknown,
   status: number = 200,
 ): Response => {
   const responseBody = {
@@ -210,13 +210,14 @@ export const isValidPassword = (password: string): boolean => {
  * @returns 不足しているフィールドの配列
  */
 export const validateRequiredFields = (
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   requiredFields: string[],
 ): string[] => {
   const missingFields: string[] = [];
 
   for (const field of requiredFields) {
-    if (!data[field] || data[field].toString().trim() === '') {
+    const value = data[field];
+    if (!value || (typeof value === 'string' && value.trim() === '')) {
       missingFields.push(field);
     }
   }
@@ -237,7 +238,7 @@ export const logMockHandler = (
   handlerName: string,
   method: string,
   url: string,
-  data?: any,
+  data?: unknown,
 ): void => {
   console.log(`🔥 [MSW] ${handlerName}:`, {
     method,
@@ -256,7 +257,7 @@ export const logMockHandler = (
 export const logMockResponse = (
   handlerName: string,
   status: number,
-  response: any,
+  response: unknown,
 ): void => {
   console.log(`✅ [MSW] ${handlerName} Response:`, {
     status,
