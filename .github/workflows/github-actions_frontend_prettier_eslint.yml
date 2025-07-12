@@ -29,7 +29,19 @@ jobs:
         with:
           node-version: '22'
 
-      - name: NPM キャッシュ
+      - name: package-lock.json の存在確認とキャッシュ
+        id: cache-check
+        run: |
+          if [ -f "package-lock.json" ]; then
+            echo "lockfile-exists=true" >> $GITHUB_OUTPUT
+            echo "Package-lock.json found, using npm ci"
+          else
+            echo "lockfile-exists=false" >> $GITHUB_OUTPUT
+            echo "Package-lock.json not found, using npm install"
+          fi
+
+      - name: NPM キャッシュ (package-lock.json 存在時)
+        if: steps.cache-check.outputs.lockfile-exists == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.npm
@@ -37,8 +49,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: 依存関係をインストール
+      - name: NPM キャッシュ (package-lock.json 不存在時)
+        if: steps.cache-check.outputs.lockfile-exists == 'false'
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: 依存関係をインストール (npm ci)
+        if: steps.cache-check.outputs.lockfile-exists == 'true'
         run: npm ci
+
+      - name: 依存関係をインストール (npm install)
+        if: steps.cache-check.outputs.lockfile-exists == 'false'
+        run: npm install
+
+      - name: package-lock.json 生成確認
+        if: steps.cache-check.outputs.lockfile-exists == 'false'
+        run: |
+          if [ -f "package-lock.json" ]; then
+            echo "⚠️ package-lock.json が新しく生成されました。リポジトリにコミットすることを推奨します。"
+            echo "Generated package-lock.json should be committed to repository"
+          fi
 
       - name: ESLint チェック
         run: npm run lint
