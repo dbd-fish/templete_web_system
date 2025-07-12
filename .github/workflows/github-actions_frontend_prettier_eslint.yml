@@ -1,87 +1,60 @@
-name: Frontend Lint and Format Check
+name: Frontend Code Quality (Linting & Type Check)
 
 on:
   pull_request:
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/github-actions_frontend_prettier_eslint.yml'
+    branches: [ main, develop ]
   push:
-    branches: [main, develop]
-    paths:
-      - 'frontend/**'
+    branches: [ main, develop ]
   workflow_dispatch:
+    # 手動でこのワークフローをトリガーします。
 
 jobs:
   lint_and_format:
-    name: ESLint・Prettier・TypeScript Check
+    name: Lint and Type Check
     runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./frontend
+    # ジョブをUbuntu最新環境で実行します。
 
     steps:
-      - name: リポジトリをチェックアウト
+      - name: Checkout repository
         uses: actions/checkout@v4
+        # リポジトリのコードをチェックアウトします。
+        # 後続のステップでコードベースにアクセスするための準備です。
 
-      - name: Node.js をセットアップ
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: package-lock.json の存在確認とキャッシュ
-        id: cache-check
+      - name: Set up Frontend Container
         run: |
-          if [ -f "package-lock.json" ]; then
-            echo "lockfile-exists=true" >> $GITHUB_OUTPUT
-            echo "Package-lock.json found, using npm ci"
-          else
-            echo "lockfile-exists=false" >> $GITHUB_OUTPUT
-            echo "Package-lock.json not found, using npm install"
-          fi
+          docker compose build frontend
+          docker compose run --rm frontend npm install
+        # docker-compose.ymlを使用して、frontendコンテナをビルドし、依存関係をインストール
 
-      - name: NPM キャッシュ (package-lock.json 存在時)
-        if: steps.cache-check.outputs.lockfile-exists == 'true'
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: NPM キャッシュ (package-lock.json 不存在時)
-        if: steps.cache-check.outputs.lockfile-exists == 'false'
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: 依存関係をインストール (npm ci)
-        if: steps.cache-check.outputs.lockfile-exists == 'true'
-        run: npm ci
-
-      - name: 依存関係をインストール (npm install)
-        if: steps.cache-check.outputs.lockfile-exists == 'false'
-        run: npm install
-
-      - name: package-lock.json 生成確認
-        if: steps.cache-check.outputs.lockfile-exists == 'false'
+      - name: Check Frontend Container Status
         run: |
-          if [ -f "package-lock.json" ]; then
-            echo "⚠️ package-lock.json が新しく生成されました。リポジトリにコミットすることを推奨します。"
-            echo "Generated package-lock.json should be committed to repository"
-          fi
+          docker compose run --rm frontend node --version
+          docker compose run --rm frontend npm --version
+        # Node.jsとnpmのバージョンを確認
 
-      - name: ESLint チェック
-        run: npm run lint
+      - name: Run ESLint Check
+        run: |
+          docker compose run --rm frontend npm run lint
+        # frontendコンテナ内でESLintを実行
 
-      - name: Prettier フォーマットチェック
-        run: npm run format:check
+      - name: Run Prettier Format Check
+        run: |
+          docker compose run --rm frontend npm run format:check
+        # Prettierでフォーマットチェック
 
-      - name: TypeScript 型チェック
-        run: npm run typecheck
+      - name: Run TypeScript Type Check
+        run: |
+          docker compose run --rm frontend npm run typecheck
+        # frontendコンテナ内でTypeScript型チェックを実行
 
-      - name: ビルドテスト
-        run: npm run build
+      - name: Run Build Test
+        run: |
+          docker compose run --rm frontend npm run build
+        # ビルドテストを実行
+
+      - name: Show Container Logs on Failure
+        if: failure()
+        run: |
+          echo "=== Frontend Container Logs ==="
+          docker logs frontend_container || echo "No frontend container found"
+        # 失敗時のコンテナログを表示
