@@ -28,6 +28,5 @@ export async function authTokenLoader(request: Request) {
     }
   } catch (error) {
     throw error;
-  } finally {
   }
 }

@@ -47,7 +47,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     throw new Response('本登録に失敗しました。', {
       status: 400,
     });
-  } finally {
   }
 };
 

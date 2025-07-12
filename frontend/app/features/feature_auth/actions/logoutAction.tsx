@@ -36,6 +36,5 @@ export async function logoutAction(request: Request) {
     });
   } catch (error) {
     throw error;
-  } finally {
   }
 }

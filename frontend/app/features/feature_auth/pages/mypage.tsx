@@ -36,7 +36,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     throw new Response('ユーザーデータの取得に失敗しました。', {
       status: 400,
     });
-  } finally {
   }
 };
 
@@ -63,7 +62,6 @@ export const action: ActionFunction = async ({ request }) => {
     throw new Response('サーバー上で予期しないエラーが発生しました', {
       status: 400,
     });
-  } finally {
   }
 };
 

@@ -19,7 +19,7 @@ import {
   SendPasswordResetEmailRequest,
   PasswordResetRequest,
   UserUpdate,
-} from '../../commons/utils/types';
+} from '../../utils/types';
 import {
   authenticateUser,
   getUserFromToken,

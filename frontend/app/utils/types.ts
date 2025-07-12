@@ -7,12 +7,12 @@ export type LoaderDataType = {
 
 // OpenAPI仕様に基づく認証関連の型定義
 export interface UserResponse {
-  id: number;
   email: string;
   username: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  contact_number: string | null;
+  date_of_birth: string | null;
+  user_role: number;
+  user_status: number;
 }
 
 export interface UserCreate {

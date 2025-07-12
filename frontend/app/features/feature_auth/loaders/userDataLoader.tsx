@@ -40,6 +40,5 @@ export async function userDataLoader(
     return userData;
   } catch (error) {
     throw error;
-  } finally {
   }
 }

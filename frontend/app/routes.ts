@@ -45,5 +45,5 @@ export default [
   route('contact', './features/feature_pages/routes/contact.tsx'), // お問い合わせ
 
   // 404 NotFoundページ（開発ツールやその他のマッチしないパスをキャッチ）
-  route('*', './components/common/NotFound.tsx'),
+  route('*', './features/feature_pages/pages/NotFound.tsx'),
 ] satisfies RouteConfig;
