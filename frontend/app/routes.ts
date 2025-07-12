@@ -35,14 +35,14 @@ export default [
   ),
 
   // 静的ページ情報
-  route('privacy-policy', './features/feature_pages/routes/privacyPolicy.tsx'), // プライバシーポリシー
+  route('privacy-policy', './features/feature_pages/pages/privacyPolicy.tsx'), // プライバシーポリシー
   route(
     'terms-of-service',
-    './features/feature_pages/routes/termsOfService.tsx',
+    './features/feature_pages/pages/termsOfService.tsx',
   ), // 利用規約
-  route('e-commerce-law', './features/feature_pages/routes/eCommerceLaw.tsx'), // 特定商取引法に基づく表記
-  route('about-us', './features/feature_pages/routes/aboutUs.tsx'), // 運営者情報
-  route('contact', './features/feature_pages/routes/contact.tsx'), // お問い合わせ
+  route('e-commerce-law', './features/feature_pages/pages/eCommerceLaw.tsx'), // 特定商取引法に基づく表記
+  route('about-us', './features/feature_pages/pages/aboutUs.tsx'), // 運営者情報
+  route('contact', './features/feature_pages/pages/contact.tsx'), // お問い合わせ
 
   // 404 NotFoundページ（開発ツールやその他のマッチしないパスをキャッチ）
   route('*', './features/feature_pages/pages/NotFound.tsx'),

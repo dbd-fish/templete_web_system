@@ -80,7 +80,7 @@ export const loginHandler = http.post(
 
       if (user) {
         // 成功レスポンスを返す（OpenAPI仕様に準拠）
-        const tokenData: TokenData = {
+        const tokenData = {
           access_token: MOCK_ACCESS_TOKEN,
           token_type: 'bearer',
         };
@@ -218,7 +218,7 @@ export const signupHandler = http.post(
     await addDefaultDelay();
 
     try {
-      const body = (await request.json()) as SignupRequest;
+      const body = (await request.json()) as { token: string };
       const { token } = body;
 
       logMockHandler('signupHandler', 'POST', request.url, { token: '***' });
@@ -275,7 +275,7 @@ export const sendVerifyEmailHandler = http.post(
     await addDefaultDelay();
 
     try {
-      const body = (await request.json()) as SendVerifyEmailRequest;
+      const body = (await request.json()) as { email: string; username: string; password: string };
       const { email, username } = body;
 
       logMockHandler('sendVerifyEmailHandler', 'POST', request.url, {
@@ -349,7 +349,7 @@ export const sendPasswordResetEmailHandler = http.post(
     await addDefaultDelay();
 
     try {
-      const body = (await request.json()) as SendPasswordResetEmailRequest;
+      const body = (await request.json()) as { email: string };
       const { email } = body;
 
       logMockHandler('sendPasswordResetEmailHandler', 'POST', request.url, {
@@ -419,7 +419,7 @@ export const resetPasswordHandler = http.post(
     await addDefaultDelay();
 
     try {
-      const body = (await request.json()) as PasswordResetRequest;
+      const body = (await request.json()) as { token: string; new_password: string };
       const { token, new_password } = body;
 
       logMockHandler('resetPasswordHandler', 'POST', request.url, {

@@ -136,12 +136,15 @@ export const createErrorResponse = (
   status: number = 400,
   details?: unknown,
 ): Response => {
-  const responseBody = {
+  const responseBody: Record<string, unknown> = {
     success: false,
     message,
     timestamp: new Date().toISOString(),
-    ...(details && { details }),
   };
+  
+  if (details) {
+    responseBody.details = details;
+  }
 
   return new Response(JSON.stringify(responseBody), {
     status,
