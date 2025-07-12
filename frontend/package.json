@@ -7,8 +7,8 @@
     "build": "npx vite build",
     "dev": "npx vite --host",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint ./app",
-    "start": "npx --node-options=\"--loader ts-node/esm\" @react-router/serve ./build/server/index.js",
-    "typecheck": "npx --node-options=\"--loader ts-node/esm\" @react-router/dev typegen && tsc",
+    "start": "npx @react-router/serve ./build/server/index.js",
+    "typecheck": "npx @react-router/dev typegen && tsc",
     "format": "prettier --write ./app",
     "format:check": "prettier --check ./app"
   },
