@@ -1,68 +1,6 @@
 import Header from '~/components/layout/Header';
 import Footer from '~/components/layout/Footer';
-import { LoaderFunction, redirect, ActionFunction } from 'react-router';
-import { userDataLoader } from '~/features/feature_auth/loaders/userDataLoader';
-import { AuthenticationError } from '~/utils/errors/AuthenticationError';
-import { logoutAction } from '~/features/feature_auth/actions/logoutAction';
 
-/**
- * ローダー関数:
- * - サーバーサイドで実行され、ユーザー情報を取得
- * - 成功時: ユーザー情報を返す
- * - 失敗時: 401エラーをスロー
- */
-export const loader: LoaderFunction = async ({ request }) => {
-  try {
-    const userData = await userDataLoader(request, false);
-    const responseBody = {
-      user: userData,
-    };
-
-    // 正常なレスポンスを返す
-    return new Response(JSON.stringify(responseBody), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return redirect('/login');
-    }
-
-
-    throw new Response('ユーザーデータの取得に失敗しました。', {
-      status: 400,
-    });
-  } finally {
-  }
-};
-
-// NOTE: ログアウトが必要な画面ではこれと似たAction関数を実装する必要あり
-/**
- * アクション関数:
- * - クライアントからのアクションを処理
- * - ログアウトやその他のアクションを処理
- */
-export const action: ActionFunction = async ({ request }) => {
-  try {
-    const formData = await request.formData();
-    const actionType = formData.get('_action');
-
-
-    if (actionType === 'logout') {
-      const response = await logoutAction(request);
-      return response;
-    }
-
-    throw new Response('サーバー上で不具合が発生しました', {
-      status: 400,
-    });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    throw new Response('サーバー上で予期しないエラーが発生しました', {
-      status: 400,
-    });
-  } finally {
-  }
-};
 
 export default function termsOfService() {
   return (

@@ -1,4 +1,4 @@
-import { AuthenticationError } from '~/utils/errors/AuthenticationError';
+import { AuthenticationError } from '../errors/AuthenticationError';
 import { getUserFromToken, MOCK_ACCESS_TOKEN } from '~/mocks/data/auth';
 
 /**
