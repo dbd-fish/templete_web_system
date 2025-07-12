@@ -11,7 +11,7 @@ from main import app
 
 
 @pytest_asyncio.fixture(scope="function")
-async def authenticated_client() -> AsyncGenerator[AsyncClient, None]:
+async def authenticated_client() -> AsyncGenerator[AsyncClient]:
     """認証済みのクライアントを提供するフィクスチャ。
 
     依存性注入でget_current_userをオーバーライドし、モックユーザーを提供します。
