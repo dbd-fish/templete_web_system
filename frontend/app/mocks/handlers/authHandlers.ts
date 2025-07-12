@@ -275,7 +275,11 @@ export const sendVerifyEmailHandler = http.post(
     await addDefaultDelay();
 
     try {
-      const body = (await request.json()) as { email: string; username: string; password: string };
+      const body = (await request.json()) as {
+        email: string;
+        username: string;
+        password: string;
+      };
       const { email, username } = body;
 
       logMockHandler('sendVerifyEmailHandler', 'POST', request.url, {
@@ -419,7 +423,10 @@ export const resetPasswordHandler = http.post(
     await addDefaultDelay();
 
     try {
-      const body = (await request.json()) as { token: string; new_password: string };
+      const body = (await request.json()) as {
+        token: string;
+        new_password: string;
+      };
       const { token, new_password } = body;
 
       logMockHandler('resetPasswordHandler', 'POST', request.url, {

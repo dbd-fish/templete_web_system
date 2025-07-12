@@ -141,7 +141,7 @@ export const createErrorResponse = (
     message,
     timestamp: new Date().toISOString(),
   };
-  
+
   if (details) {
     responseBody.details = details;
   }
