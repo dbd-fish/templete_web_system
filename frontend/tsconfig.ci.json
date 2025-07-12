@@ -1,11 +1,8 @@
 {
+  "extends": "./tsconfig.json",
   "include": [
     "app/**/*.ts",
     "app/**/*.tsx",
-    "**/.server/**/*.ts",
-    "**/.server/**/*.tsx",
-    "**/.client/**/*.ts",
-    "**/.client/**/*.tsx",
     ".react-router/types/**/*"
   ],
   "compilerOptions": {
@@ -27,17 +24,14 @@
       "~/*": ["./app/*"],
       "~/components/*": ["./app/components/*"],
       "~/lib/*": ["./app/lib/*"],
-      "~/lib/utils": ["./app/lib/utils"],
+      "~/lib/utils": ["./app/lib/utils.ts"],
       "~/utils/*": ["./app/utils/*"],
       "~/features/*": ["./app/features/*"],
       "~/hooks/*": ["./app/hooks/*"],
       "~/mocks/*": ["./app/mocks/*"]
     },
     "rootDirs": [".", "./.react-router/types"],
-
-    // Vite takes care of building everything, not tsc.
     "noEmit": true
   },
-  "exclude": ["node_modules", "dist"],
-
+  "exclude": ["node_modules", "dist"]
 }
