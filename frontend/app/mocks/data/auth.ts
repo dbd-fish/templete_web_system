@@ -1,12 +1,17 @@
 /**
  * MSWモック用の認証関連データ
- * 
+ *
  * @description
  * 認証・認可に関連するモックデータ、バリデーション、
  * レスポンス生成機能を提供
  */
 
-import { findUserByEmailOrUsername, MOCK_USER, MOCK_ADMIN_USER, AUTH_CREDENTIALS } from './users';
+import {
+  findUserByEmailOrUsername,
+  MOCK_USER,
+  MOCK_ADMIN_USER,
+  AUTH_CREDENTIALS,
+} from './users';
 import type { UserResponse } from '../../utils/types';
 
 // ==================== JWTトークン ====================
@@ -35,24 +40,28 @@ export const MSG_USER_INFO_SUCCESS = 'ユーザー情報を取得しました';
 export const MSG_USER_UPDATE_SUCCESS = 'ユーザー情報が正常に更新されました';
 
 /** アカウント削除成功メッセージ */
-export const MSG_ACCOUNT_DELETE_SUCCESS = 'ユーザーアカウントが正常に削除されました';
+export const MSG_ACCOUNT_DELETE_SUCCESS =
+  'ユーザーアカウントが正常に削除されました';
 
 /** ユーザー登録成功メッセージ */
 export const MSG_SIGNUP_SUCCESS = 'ユーザー登録が完了しました';
 
 /** 認証メール送信成功メッセージ */
-export const MSG_VERIFY_EMAIL_SUCCESS = '認証メールを送信しました。メールをご確認ください';
+export const MSG_VERIFY_EMAIL_SUCCESS =
+  '認証メールを送信しました。メールをご確認ください';
 
 /** パスワードリセットメール送信成功メッセージ */
 export const MSG_RESET_EMAIL_SUCCESS = 'パスワードリセットメールを送信しました';
 
 /** パスワードリセット成功メッセージ */
-export const MSG_PASSWORD_RESET_SUCCESS = 'パスワードが正常にリセットされました';
+export const MSG_PASSWORD_RESET_SUCCESS =
+  'パスワードが正常にリセットされました';
 
 // ==================== エラーメッセージ ====================
 
 /** 認証失敗メッセージ */
-export const MSG_AUTH_FAILED = 'メールアドレスまたはパスワードが正しくありません';
+export const MSG_AUTH_FAILED =
+  'メールアドレスまたはパスワードが正しくありません';
 
 /** 無効なトークンメッセージ */
 export const MSG_INVALID_TOKEN = '無効なトークンです';
@@ -61,7 +70,8 @@ export const MSG_INVALID_TOKEN = '無効なトークンです';
 export const MSG_USER_NOT_FOUND = 'ユーザーが見つかりません';
 
 /** ユーザーが既に存在するメッセージ */
-export const MSG_USER_ALREADY_EXISTS = 'このメールアドレスは既に登録されています';
+export const MSG_USER_ALREADY_EXISTS =
+  'このメールアドレスは既に登録されています';
 
 // ==================== Cookie設定 ====================
 
@@ -113,13 +123,14 @@ export const VALID_CREDENTIALS: ValidCredential[] = [
  * @returns 認証成功時はユーザー情報、失敗時はnull
  */
 export const authenticateUser = (
-  emailOrUsername: string, 
-  password: string
+  emailOrUsername: string,
+  password: string,
 ): UserResponse | null => {
   const credential = VALID_CREDENTIALS.find(
-    cred => cred.emailOrUsername === emailOrUsername && cred.password === password
+    (cred) =>
+      cred.emailOrUsername === emailOrUsername && cred.password === password,
   );
-  
+
   return credential ? credential.user : null;
 };
 
@@ -154,8 +165,8 @@ export const emailExists = (email: string): boolean => {
  * @returns 成功レスポンス
  */
 export const createAuthSuccessResponse = (
-  message: string, 
-  user?: UserResponse
+  message: string,
+  user?: UserResponse,
 ) => {
   return {
     success: true,
@@ -172,8 +183,8 @@ export const createAuthSuccessResponse = (
  * @returns エラーレスポンス
  */
 export const createAuthErrorResponse = (
-  message: string = MSG_AUTH_FAILED, 
-  statusCode: number = 401
+  message: string = MSG_AUTH_FAILED,
+  statusCode: number = 401,
 ) => {
   return {
     success: false,

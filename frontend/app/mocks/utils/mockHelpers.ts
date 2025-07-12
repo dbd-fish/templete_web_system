@@ -1,6 +1,6 @@
 /**
  * MSWモック用のユーティリティヘルパー
- * 
+ *
  * @description
  * モックハンドラーで共通して使用される機能、
  * レスポンス生成、遅延処理、リクエスト解析などを提供
@@ -49,7 +49,9 @@ export const addCustomDelay = (ms: number) => delay(ms);
  * @param formData - FormDataオブジェクト
  * @returns 変換されたオブジェクト
  */
-export const formDataToObject = (formData: FormData): Record<string, string> => {
+export const formDataToObject = (
+  formData: FormData,
+): Record<string, string> => {
   const obj: Record<string, string> = {};
   for (const [key, value] of formData.entries()) {
     obj[key] = value.toString();
@@ -62,7 +64,9 @@ export const formDataToObject = (formData: FormData): Record<string, string> => 
  * @param params - URLSearchParamsオブジェクト
  * @returns 変換されたオブジェクト
  */
-export const urlParamsToObject = (params: URLSearchParams): Record<string, string> => {
+export const urlParamsToObject = (
+  params: URLSearchParams,
+): Record<string, string> => {
   const obj: Record<string, string> = {};
   for (const [key, value] of params.entries()) {
     obj[key] = value;
@@ -76,13 +80,18 @@ export const urlParamsToObject = (params: URLSearchParams): Record<string, strin
  * @param cookieName - 取得するCookie名
  * @returns Cookie値 | null
  */
-export const getCookieFromRequest = (request: Request, cookieName: string): string | null => {
+export const getCookieFromRequest = (
+  request: Request,
+  cookieName: string,
+): string | null => {
   const cookieHeader = request.headers.get('Cookie');
   if (!cookieHeader) return null;
 
-  const cookies = cookieHeader.split(';').map(cookie => cookie.trim());
-  const targetCookie = cookies.find(cookie => cookie.startsWith(`${cookieName}=`));
-  
+  const cookies = cookieHeader.split(';').map((cookie) => cookie.trim());
+  const targetCookie = cookies.find((cookie) =>
+    cookie.startsWith(`${cookieName}=`),
+  );
+
   return targetCookie ? targetCookie.split('=')[1] : null;
 };
 
@@ -98,7 +107,7 @@ export const getCookieFromRequest = (request: Request, cookieName: string): stri
 export const createSuccessResponse = (
   message: string,
   data?: any,
-  status: number = 200
+  status: number = 200,
 ): Response => {
   const responseBody = {
     success: true,
@@ -125,7 +134,7 @@ export const createSuccessResponse = (
 export const createErrorResponse = (
   message: string,
   status: number = 400,
-  details?: any
+  details?: any,
 ): Response => {
   const responseBody = {
     success: false,
@@ -154,7 +163,7 @@ export const createResponseWithCookie = (
   message: string,
   cookieString: string,
   data?: any,
-  status: number = 200
+  status: number = 200,
 ): Response => {
   const responseBody = {
     success: true,
@@ -202,16 +211,16 @@ export const isValidPassword = (password: string): boolean => {
  */
 export const validateRequiredFields = (
   data: Record<string, any>,
-  requiredFields: string[]
+  requiredFields: string[],
 ): string[] => {
   const missingFields: string[] = [];
-  
+
   for (const field of requiredFields) {
     if (!data[field] || data[field].toString().trim() === '') {
       missingFields.push(field);
     }
   }
-  
+
   return missingFields;
 };
 
@@ -228,7 +237,7 @@ export const logMockHandler = (
   handlerName: string,
   method: string,
   url: string,
-  data?: any
+  data?: any,
 ): void => {
   console.log(`🔥 [MSW] ${handlerName}:`, {
     method,
@@ -247,7 +256,7 @@ export const logMockHandler = (
 export const logMockResponse = (
   handlerName: string,
   status: number,
-  response: any
+  response: any,
 ): void => {
   console.log(`✅ [MSW] ${handlerName} Response:`, {
     status,

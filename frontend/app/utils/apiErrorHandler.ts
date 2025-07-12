@@ -21,11 +21,17 @@ export class ApiError extends Error {
  */
 export const handleApiError = async (response: Response): Promise<never> => {
   try {
-    const errorData = await response.json() as ErrorResponse;
-    throw new ApiError(response.status, errorData.detail || 'Unknown error occurred');
+    const errorData = (await response.json()) as ErrorResponse;
+    throw new ApiError(
+      response.status,
+      errorData.detail || 'Unknown error occurred',
+    );
   } catch (parseError) {
     // JSON解析に失敗した場合
-    throw new ApiError(response.status, response.statusText || 'Unknown error occurred');
+    throw new ApiError(
+      response.status,
+      response.statusText || 'Unknown error occurred',
+    );
   }
 };
 
@@ -39,10 +45,10 @@ export const handleApiError = async (response: Response): Promise<never> => {
 export const apiRequest = async (
   url: string,
   options: RequestInit = {},
-  cookieHeader?: string
+  cookieHeader?: string,
 ): Promise<Response> => {
   const headers = new Headers(options.headers);
-  
+
   // デフォルトのContent-Typeを設定
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
@@ -76,7 +82,7 @@ export const apiRequest = async (
 export const apiFormRequest = async (
   url: string,
   data: Record<string, string>,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<Response> => {
   const headers = new Headers(options.headers);
   headers.set('Content-Type', 'application/x-www-form-urlencoded');

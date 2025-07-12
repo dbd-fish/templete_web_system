@@ -11,16 +11,15 @@ export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  
+
   try {
     // モック認証情報で直接認証
     const user = authenticateUser(email, password);
-    
+
     if (user) {
-      
       // 認証成功時はCookieを設定してリダイレクト
       const cookieString = `authToken=${MOCK_ACCESS_TOKEN}; HttpOnly; Secure; SameSite=Lax; Path=/`;
-      
+
       return redirect('/mypage', {
         headers: { 'Set-Cookie': cookieString },
       });

@@ -18,20 +18,20 @@ export async function userDataLoader(
     // Cookieから認証トークンを取得
     const cookieHeader = request.headers.get('Cookie');
     let authToken = null;
-    
+
     if (cookieHeader) {
       const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
         const [key, value] = cookie.trim().split('=');
         acc[key] = value;
         return acc;
       }, {} as Record<string, string>);
-      
+
       authToken = cookies.authToken;
     }
-        
+
     // トークンからユーザー情報を取得
     const userData = authToken ? getUserFromToken(authToken) : null;
-    
+
     // ログインが必須の画面では下記でエラーがスローされる
     if (loginRequired && !userData) {
       throw new AuthenticationError('認証情報の取得に失敗しました。');

@@ -21,7 +21,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     await authTokenLoader(request);
     const userData = await userDataLoader(request);
 
-
     const responseBody = {
       user: userData,
     };
@@ -33,7 +32,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     if (error instanceof AuthenticationError) {
       return redirect('/login');
     }
-
 
     throw new Response('ユーザーデータの取得に失敗しました。', {
       status: 400,
@@ -51,7 +49,6 @@ export const action: ActionFunction = async ({ request }) => {
   try {
     const formData = await request.formData();
     const actionType = formData.get('_action');
-
 
     if (actionType === 'logout') {
       const response = await logoutAction(request);

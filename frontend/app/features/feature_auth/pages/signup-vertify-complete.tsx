@@ -44,7 +44,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-
     throw new Response('本登録に失敗しました。', {
       status: 400,
     });

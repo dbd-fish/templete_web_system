@@ -22,12 +22,10 @@ export async function authTokenLoader(request: Request) {
     const authToken = authTokenMatch ? authTokenMatch[1] : null;
     // const csrfToken = csrfTokenMatch ? csrfTokenMatch[1] : null;
 
-
     // authToken が存在しない場合はログインページへリダイレクト
     if (!authToken) {
       throw new AuthenticationError('認証トークンが見つかりません。');
     }
-
   } catch (error) {
     throw error;
   } finally {

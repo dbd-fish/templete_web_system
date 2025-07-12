@@ -1,6 +1,6 @@
 /**
  * MSWモック用のユーザーデータ
- * 
+ *
  * @description
  * テスト用のユーザー情報、プロフィールデータなど
  * ユーザー関連のモックレスポンスで使用されるデータを定義
@@ -75,7 +75,7 @@ export const MOCK_USERS: UserResponse[] = [
  * @returns 見つかったユーザー情報 | undefined
  */
 export const findUserByEmail = (email: string): UserResponse | undefined => {
-  return MOCK_USERS.find(user => user.email === email);
+  return MOCK_USERS.find((user) => user.email === email);
 };
 
 /**
@@ -83,8 +83,10 @@ export const findUserByEmail = (email: string): UserResponse | undefined => {
  * @param username - 検索するユーザー名
  * @returns 見つかったユーザー情報 | undefined
  */
-export const findUserByUsername = (username: string): UserResponse | undefined => {
-  return MOCK_USERS.find(user => user.username === username);
+export const findUserByUsername = (
+  username: string,
+): UserResponse | undefined => {
+  return MOCK_USERS.find((user) => user.username === username);
 };
 
 /**
@@ -92,9 +94,12 @@ export const findUserByUsername = (username: string): UserResponse | undefined =
  * @param emailOrUsername - メールアドレスまたはユーザー名
  * @returns 見つかったユーザー情報 | undefined
  */
-export const findUserByEmailOrUsername = (emailOrUsername: string): UserResponse | undefined => {
-  return MOCK_USERS.find(user => 
-    user.email === emailOrUsername || user.username === emailOrUsername
+export const findUserByEmailOrUsername = (
+  emailOrUsername: string,
+): UserResponse | undefined => {
+  return MOCK_USERS.find(
+    (user) =>
+      user.email === emailOrUsername || user.username === emailOrUsername,
   );
 };
 
@@ -105,7 +110,9 @@ export const findUserByEmailOrUsername = (emailOrUsername: string): UserResponse
  * @param overrides - 上書きするプロパティ
  * @returns 新しいユーザーデータ
  */
-export const createMockUser = (overrides: Partial<UserResponse> = {}): UserResponse => {
+export const createMockUser = (
+  overrides: Partial<UserResponse> = {},
+): UserResponse => {
   return {
     ...MOCK_USER,
     ...overrides,
@@ -119,8 +126,8 @@ export const createMockUser = (overrides: Partial<UserResponse> = {}): UserRespo
  * @returns 更新されたユーザーデータ
  */
 export const updateMockUser = (
-  currentUser: UserResponse, 
-  updates: Partial<UserResponse>
+  currentUser: UserResponse,
+  updates: Partial<UserResponse>,
 ): UserResponse => {
   return {
     ...currentUser,

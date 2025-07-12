@@ -5,7 +5,6 @@ import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
 import { Textarea } from '~/components/ui/textarea';
 
-
 export default function Contact() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -70,10 +69,7 @@ export default function Contact() {
               ></Textarea>
             </div>
             <div className="text-center">
-              <Button
-                type="submit"
-                className="w-full"
-              >
+              <Button type="submit" className="w-full">
                 送信する
               </Button>
             </div>

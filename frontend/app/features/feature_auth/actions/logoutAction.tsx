@@ -16,7 +16,6 @@ import { authTokenCookie } from '~/features/feature_auth/cookies';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function logoutAction(request: Request) {
   try {
-
     // ログアウトAPIを呼び出し
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const response = await logout(request);
