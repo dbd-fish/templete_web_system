@@ -1,70 +1,36 @@
-// NOTE: 全loader関数共通の返り値の型を定義。
+/**
+ * アプリケーション共通の型定義
+ * 
+ * @description
+ * 複数の機能で使用される共通の型定義のみを含む
+ * 機能固有の型は各featureディレクトリ内のtypes.tsに定義する
+ */
+
+// ==================== Loader共通型 ====================
+
+/**
+ * 全loader関数共通の返り値の型
+ * React Router v7のLoader関数で使用
+ */
 export type LoaderDataType = {
-  user?: { email: string; username: string }; // 必要なプロパティを定義
+  user?: { email: string; username: string };
   signupData?: { success: boolean };
-  test?: { test1: number; test2: string }; // 必要なプロパティを定義
+  test?: { test1: number; test2: string };
 };
 
-// OpenAPI仕様に基づく認証関連の型定義
-export interface UserResponse {
-  email: string;
-  username: string;
-  contact_number: string | null;
-  date_of_birth: string | null;
-  user_role: number;
-  user_status: number;
-}
+// ==================== 共通UI型 ====================
 
-export interface UserCreate {
-  email: string;
-  username: string;
-  password: string;
-}
+/**
+ * 共通のサイズバリアント
+ */
+export type SizeVariant = 'sm' | 'md' | 'lg';
 
-export interface UserUpdate {
-  email?: string;
-  username?: string;
-  password?: string;
-}
+/**
+ * 共通のカラーバリアント  
+ */
+export type ColorVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'error';
 
-export interface LoginRequest {
-  username: string; // OAuth2PasswordRequestFormでは"username"フィールドを使用
-  password: string;
-}
-
-export interface TokenData {
-  access_token: string;
-  token_type: string;
-}
-
-export interface MessageResponse {
-  message: string;
-}
-
-export interface SuccessResponse {
-  success: boolean;
-  message?: string;
-}
-
-export interface SendVerifyEmailRequest {
-  email: string;
-  username: string;
-}
-
-export interface SignupRequest {
-  token: string;
-}
-
-export interface SendPasswordResetEmailRequest {
-  email: string;
-}
-
-export interface PasswordResetRequest {
-  token: string;
-  new_password: string;
-}
-
-export interface ErrorResponse {
-  detail: string;
-  status_code: number;
-}
+/**
+ * 共通のステータス型
+ */
+export type Status = 'idle' | 'loading' | 'success' | 'error';

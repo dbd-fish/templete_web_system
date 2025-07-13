@@ -12,7 +12,7 @@ import {
   MOCK_ADMIN_USER,
   AUTH_CREDENTIALS,
 } from './users';
-import type { UserResponse } from '../../utils/types';
+import type { UserResponse } from '../../features/feature_auth/types';
 
 // ==================== JWTトークン ====================
 

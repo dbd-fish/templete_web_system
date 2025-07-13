@@ -6,7 +6,7 @@
  * ユーザー関連のモックレスポンスで使用されるデータを定義
  */
 
-import type { UserResponse } from '../../utils/types';
+import type { UserResponse } from '../../features/feature_auth/types';
 
 // ==================== テストユーザーデータ ====================
 

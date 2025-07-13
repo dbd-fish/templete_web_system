@@ -11,7 +11,7 @@ import {
   MessageResponse,
   SuccessResponse,
   UserUpdate,
-} from '~/utils/types';
+} from '../types';
 import { apiRequest, apiFormRequest } from '~/utils/apiErrorHandler';
 
 // ==================== 認証関連 ====================

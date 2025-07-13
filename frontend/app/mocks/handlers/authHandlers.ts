@@ -13,7 +13,7 @@ import {
   MessageResponse,
   SuccessResponse,
   UserUpdate,
-} from '../../utils/types';
+} from '../../features/feature_auth/types';
 import {
   authenticateUser,
   getUserFromToken,
