@@ -35,15 +35,15 @@ npm run format:check
 ## 技術スタック
 
 ### **フロントエンド**
-- **React 18.2** + **React Router v7.0**（SSR対応）
-- **Vite 5.1**（高速開発サーバー・ビルドツール）
-- **TypeScript 5.1**（strict mode有効）
-- **Tailwind CSS 3.4** + **shadcn/ui**（12コンポーネント実装済み）
+- **React 18.3** + **React Router v7.6**（SSR対応）
+- **Vite 5.4**（高速開発サーバー・ビルドツール）
+- **TypeScript 5.8**（strict mode有効）
+- **Tailwind CSS 3.4** + **shadcn/ui**（12コンポーネント実装済み・最新版）
 
 ### **開発ツール**
-- **ESLint 8.57** + **@typescript-eslint 8.18**
+- **ESLint 8.57** + **@typescript-eslint 8.36**
 - **Prettier**（コードフォーマット）
-- **MSW 2.7**（モックサーバー）
+- **MSW 2.10**（モックサーバー）
 - **ts-node**（TypeScript実行環境）
 
 ### **要求環境**
@@ -593,5 +593,18 @@ npx shadcn-ui@latest add [component-name]
 2. **型定義再編成**: Feature-based architecture に沿った型分離
 3. **CI環境対応**: shadcn/ui デフォルト命名維持で互換性確保
 4. **ディレクトリ構造最適化**: より保守しやすい構造に統一
+5. **依存関係最適化**: 未使用ライブラリ削除と最新バージョン更新
+
+### **🔄 最新の依存関係最適化**
+**削除した未使用ライブラリ**:
+- `@headlessui/react` - 未使用UIライブラリ
+- `@heroicons/react` - 未使用アイコンライブラリ（lucide-react使用）
+- `eslint-config-react-app` - 未使用ESLint設定
+
+**最新バージョン更新**:
+- React Router: v7.0 → v7.6（SSR・型生成機能強化）
+- Radix UI: 全コンポーネント最新版（shadcn/ui基盤強化）
+- TypeScript: v5.1 → v5.8（型システム改善）
+- MSW: v2.7 → v2.10（モック機能向上）
 
 このアーキテクチャにより、大規模Webアプリケーションでも保守しやすく、型安全で高性能なフロントエンドを構築できます。
