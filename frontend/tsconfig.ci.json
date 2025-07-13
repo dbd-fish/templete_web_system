@@ -1,5 +1,4 @@
 {
-  "extends": "./tsconfig.json",
   "include": [
     "app/**/*.ts",
     "app/**/*.tsx",
@@ -12,7 +11,7 @@
     "esModuleInterop": true,
     "jsx": "react-jsx",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "target": "ES2022",
     "strict": true,
@@ -21,16 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "~/*": ["./app/*"],
-      "~/components/*": ["./app/components/*"],
-      "~/lib/*": ["./app/lib/*"],
-      "~/lib/utils": ["./app/lib/utils.ts"],
-      "~/utils/*": ["./app/utils/*"],
-      "~/features/*": ["./app/features/*"],
-      "~/hooks/*": ["./app/hooks/*"],
-      "~/mocks/*": ["./app/mocks/*"]
+      "~/*": ["./app/*"]
     },
-    "rootDirs": [".", "./.react-router/types"],
     "noEmit": true
   },
   "exclude": ["node_modules", "dist"]
