@@ -322,9 +322,10 @@ npx shadcn-ui@latest add button  # コンポーネント追加時も参照
 - **TypeScriptエラーの主要原因**（`Cannot find module '~/lib/utils'`）
 - **カスタムコンポーネント作成時の必須ツール**
 
-## モックAPI システム（MSW）
+## MSWモックシステム
 
-### **開発環境での自動モック**
+開発環境では**MSW（Mock Service Worker）**により、バックエンドAPIをモック化しています。`.env`ファイルの`ENV_MODE`設定により、モックAPIと実際のバックエンドAPIを柔軟に切り替えることができます。`ENV_MODE='development'`の場合はMSWモックAPIが起動し、`ENV_MODE='production'`の場合は`API_URL`で指定された実際のバックエンドAPIに接続します。
+
 ```typescript
 // app/entry.client.tsx
 if (process.env.NODE_ENV === 'development') {
@@ -333,9 +334,10 @@ if (process.env.NODE_ENV === 'development') {
 }
 ```
 
-### **認証モックデータ**
+この仕組みにより、開発時はモック環境で独立した開発を行い、統合テスト時は実際のバックエンドAPI（`API_URL=http://backend:8000`）、本番環境では本番API（`API_URL=https://api.example.com`）と、状況に応じて適切なAPIを使用できます。
+
+開発時に使用可能な認証情報：
 ```typescript
-// 開発時に使用可能な認証情報
 const MOCK_CREDENTIALS = {
   USER: {
     email: 'testuser@example.com',
@@ -350,18 +352,18 @@ const MOCK_CREDENTIALS = {
 };
 ```
 
-### **モックAPIエンドポイント**
-- `POST /api/v1/auth/login` - ログイン
-- `POST /api/v1/auth/logout` - ログアウト
-- `POST /api/v1/auth/me` - ユーザー情報取得
-- `POST /api/v1/auth/signup` - ユーザー登録
-- `POST /api/v1/auth/send-verify-email` - 認証メール送信
-- `POST /api/v1/auth/send-password-reset-email` - パスワードリセットメール
-- `POST /api/v1/auth/reset-password` - パスワードリセット
+モックAPIエンドポイント：
+- POST /api/v1/auth/login - ログイン
+- POST /api/v1/auth/logout - ログアウト
+- POST /api/v1/auth/me - ユーザー情報取得
+- POST /api/v1/auth/signup - ユーザー登録
+- POST /api/v1/auth/send-verify-email - 認証メール送信
+- POST /api/v1/auth/send-password-reset-email - パスワードリセットメール
+- POST /api/v1/auth/reset-password - パスワードリセット
 
 ## コード品質・型安全性
 
-### **ESLint設定（最新対応済み）**
+### ESLint設定
 ```javascript
 // .eslintrc.cjs
 {
@@ -383,16 +385,16 @@ const MOCK_CREDENTIALS = {
 }
 ```
 
-### **型安全性の確保**
-- **strict mode**有効（TypeScript）
-- **未使用変数エラー**の適切な処理
-- **any型の使用禁止** → `unknown`型の積極活用
-- **catch句での型安全な処理**
-- **Feature-based 型定義**: 機能ごとに型を分離
+### 型安全性の確保
+- strict mode有効（TypeScript）
+- 未使用変数エラーの適切な処理
+- any型の使用禁止 → `unknown`型の積極活用
+- catch句での型安全な処理
+- Feature-based 型定義: 機能ごとに型を分離
 
 ## 開発時の注意点
 
-### **React Router v7 開発パターン**
+### React Router v7 開発パターン
 ```typescript
 // Loader使用例
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -412,12 +414,12 @@ export default function Login() {
 }
 ```
 
-### **認証システム**
-- **Cookie ベース認証**（httpOnly、secure対応）
-- **AuthenticationError**による統一エラーハンドリング
-- **userDataLoader**による認証状態管理
+### 認証システム
+- Cookie ベース認証（httpOnly、secure対応）
+- AuthenticationErrorによる統一エラーハンドリング
+- userDataLoaderによる認証状態管理
 
-### **スタイリング（cn関数の活用）**
+### スタイリング（cn関数の活用）
 ```typescript
 // app/lib/utils.ts の cn関数使用例
 import { cn } from '~/lib/utils';
@@ -445,7 +447,7 @@ import { cn } from '~/lib/utils';
 )} />
 ```
 
-### **型安全なAPI呼び出し**
+### 型安全なAPI呼び出し
 ```typescript
 // app/features/auth/apis/authApi.ts
 export const login = async (email: string, password: string) => {
@@ -459,7 +461,7 @@ export const login = async (email: string, password: string) => {
 
 ## GitHub Actions対応
 
-### **TypeScriptエラー解決**
+### TypeScriptエラー解決
 ```yaml
 # .github/workflows/github-actions_frontend_prettier_eslint.yml
 - name: Run TypeScript Type Check
@@ -471,7 +473,7 @@ export const login = async (email: string, password: string) => {
 - **Node.js型定義**: `types: ["node"]`で対応
 - **CI環境対応**: shadcn/ui デフォルト命名維持でLinux/Windows互換性確保
 
-### **型チェックコマンド**
+### 型チェックコマンド
 ```json
 {
   "scripts": {
@@ -484,7 +486,7 @@ export const login = async (email: string, password: string) => {
 
 ## トラブルシューティング
 
-### **よくある問題**
+### よくある問題
 
 #### **`Cannot find module '~/lib/utils'`**
 - **原因**: 
@@ -527,7 +529,7 @@ export const login = async (email: string, password: string) => {
 - **原因**: public/mockServiceWorker.js不在
 - **解決**: `npx msw init public/`で初期化
 
-### **Docker環境の問題**
+### Docker環境の問題
 ```bash
 # コンテナ再ビルド
 docker compose build frontend
@@ -541,13 +543,13 @@ docker compose run --rm frontend npm run dev -- --force
 
 ## パフォーマンス
 
-### **最適化機能**
-- **React Router v7 SSR**（サーバーサイドレンダリング）
-- **Vite HMR**（Hot Module Replacement）
-- **Tailwind CSS最適化**（未使用クラス削除）
-- **shadcn/ui Tree Shaking**（使用コンポーネントのみ）
+### 最適化機能
+- React Router v7 SSR（サーバーサイドレンダリング）
+- Vite HMR（Hot Module Replacement）
+- Tailwind CSS最適化（未使用クラス削除）
+- shadcn/ui Tree Shaking（使用コンポーネントのみ）
 
-### **ビルド最適化**
+### ビルド最適化
 ```typescript
 // vite.config.ts
 export default defineConfig({
@@ -567,7 +569,7 @@ export default defineConfig({
 
 ## 拡張性
 
-### **新機能追加パターン**
+### 新機能追加パターン
 ```
 app/features/新機能/
 ├── actions/     # React Router アクション
@@ -579,7 +581,7 @@ app/features/新機能/
 └── utils/       # 機能専用ユーティリティ
 ```
 
-### **shadcn/ui コンポーネント追加**
+### shadcn/ui コンポーネント追加
 ```bash
 # 新しいUIコンポーネント追加
 npx shadcn-ui@latest add [component-name]
@@ -588,20 +590,20 @@ npx shadcn-ui@latest add [component-name]
 
 ## 最新の改善点
 
-### **✅ 実施済み改善**
+### 実施済み改善
 1. **命名規則統一**: feature prefix削除、header統合、typo修正
 2. **型定義再編成**: Feature-based architecture に沿った型分離
 3. **CI環境対応**: shadcn/ui デフォルト命名維持で互換性確保
 4. **ディレクトリ構造最適化**: より保守しやすい構造に統一
 5. **依存関係最適化**: 未使用ライブラリ削除と最新バージョン更新
 
-### **🔄 最新の依存関係最適化**
-**削除した未使用ライブラリ**:
+### 最新の依存関係最適化
+削除した未使用ライブラリ:
 - `@headlessui/react` - 未使用UIライブラリ
 - `@heroicons/react` - 未使用アイコンライブラリ（lucide-react使用）
 - `eslint-config-react-app` - 未使用ESLint設定
 
-**最新バージョン更新**:
+最新バージョン更新:
 - React Router: v7.0 → v7.6（SSR・型生成機能強化）
 - Radix UI: 全コンポーネント最新版（shadcn/ui基盤強化）
 - TypeScript: v5.1 → v5.8（型システム改善）
