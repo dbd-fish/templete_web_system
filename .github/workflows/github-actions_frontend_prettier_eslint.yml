@@ -1,41 +1,60 @@
-# 旧フロー　削除予定
-# name: Lint and Format Check
+name: Frontend Code Quality (Linting & Type Check)
 
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    # 手動でこのワークフローをトリガーします。
 
-# on:
-#   pull_request:
-#   workflow_dispatch:
+jobs:
+  lint_and_format:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    # ジョブをUbuntu最新環境で実行します。
 
-# jobs:
-#   lint_and_format:
-#     name: ESLintとPrettierの実行
-#     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        # リポジトリのコードをチェックアウトします。
+        # 後続のステップでコードベースにアクセスするための準備です。
 
-#     steps:
-#       - name: リポジトリをチェックアウト
-#         uses: actions/checkout@v4
+      - name: Set up Frontend Container
+        run: |
+          docker compose build frontend
+          docker compose run --rm frontend npm install
+        # docker-compose.ymlを使用して、frontendコンテナをビルドし、依存関係をインストール
 
-#       - name: Node.jsをセットアップ
-#         uses: actions/setup-node@v3
-#         with:
-#           node-version: '20'
+      - name: Check Frontend Container Status
+        run: |
+          docker compose run --rm frontend node --version
+          docker compose run --rm frontend npm --version
+        # Node.jsとnpmのバージョンを確認
 
-#       - name: 必要な依存関係をインストール
-#         run: |
-#           cd template_frontend_container/template_react-router
-#           npm install
+      - name: Run ESLint Check
+        run: |
+          docker compose run --rm frontend npm run lint
+        # frontendコンテナ内でESLintを実行
 
-#       - name: ESLintを実行
-#         run: |
-#           cd template_frontend_container/template_react-router
-#           npm run lint
+      - name: Run Prettier Format Check
+        run: |
+          docker compose run --rm frontend npm run format:check
+        # Prettierでフォーマットチェック
 
-#       - name: Prettierのフォーマット確認
-#         run: |
-#           cd template_frontend_container/template_react-router
-#           npm run format:check
+      - name: Run TypeScript Type Check
+        run: |
+          docker compose run --rm frontend npm run typecheck
+        # frontendコンテナ内でTypeScript型チェックを実行
 
-#       - name: TypeScript型チェックを実行
-#         run: |
-#           cd template_frontend_container/template_react-router
-#           npm run typecheck
+      - name: Run Build Test
+        run: |
+          docker compose run --rm frontend npm run build
+        # ビルドテストを実行
+
+      - name: Show Container Logs on Failure
+        if: failure()
+        run: |
+          echo "=== Frontend Container Logs ==="
+          docker logs frontend_container || echo "No frontend container found"
+        # 失敗時のコンテナログを表示

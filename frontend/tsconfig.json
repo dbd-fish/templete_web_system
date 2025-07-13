@@ -1,7 +1,7 @@
 {
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
     "**/.server/**/*.ts",
     "**/.server/**/*.tsx",
     "**/.client/**/*.ts",
@@ -10,7 +10,7 @@
   ],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "types": ["@react-router/node", "vite/client"],
+    "types": ["@react-router/node", "vite/client", "node"],
     "isolatedModules": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
@@ -31,6 +31,6 @@
     // Vite takes care of building everything, not tsc.
     "noEmit": true
   },
-  "exclude": ["node_modules", "dist", "components/**/*"],
+  "exclude": ["node_modules", "dist"],
 
 }
