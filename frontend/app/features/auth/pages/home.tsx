@@ -2,29 +2,29 @@ import { LoaderFunction, redirect, ActionFunction } from 'react-router';
 import { userDataLoader } from '~/features/auth/loaders/userDataLoader';
 import { AuthenticationError } from '../errors/AuthenticationError';
 import { logoutAction } from '~/features/auth/actions/logoutAction';
-import { Button } from '~/components/ui/Button';
+import { Button } from '~/components/ui/button';
 import Layout from '~/components/layout/Layout';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '~/components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '~/components/ui/tabs';
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from '~/components/ui/Accordion';
-import { Badge } from '~/components/ui/Badge';
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/Card';
-import { Input } from '~/components/ui/Input';
+} from '~/components/ui/accordion';
+import { Badge } from '~/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Input } from '~/components/ui/input';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '~/components/ui/Select';
-import { Switch } from '~/components/ui/Switch';
-import { RadioGroup, RadioGroupItem } from '~/components/ui/RadioGroup';
-import { Checkbox } from '~/components/ui/Checkbox';
-import { Textarea } from '~/components/ui/Textarea';
+} from '~/components/ui/select';
+import { Switch } from '~/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
+import { Checkbox } from '~/components/ui/checkbox';
+import { Textarea } from '~/components/ui/textarea';
 import Main from '~/components/layout/Main';
 
 /**

@@ -1,6 +1,6 @@
 import { Form } from 'react-router';
-import { Input } from '~/components/ui/Input';
-import { Button } from '~/components/ui/Button';
+import { Input } from '~/components/ui/input';
+import { Button } from '~/components/ui/button';
 
 export default function SignupForm() {
   return (
