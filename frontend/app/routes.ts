@@ -10,10 +10,7 @@ export default [
 
   // 会員登録
   route('signup', './features/auth/pages/signup.tsx'),
-  route(
-    'send-signup-email',
-    './features/auth/pages/send-signup-email.tsx',
-  ),
+  route('send-signup-email', './features/auth/pages/send-signup-email.tsx'),
   route(
     'signup-vertify-complete',
     './features/auth/pages/signup-vertify-complete.tsx',
@@ -36,10 +33,7 @@ export default [
 
   // 静的ページ情報
   route('privacy-policy', './features/pages/pages/privacyPolicy.tsx'), // プライバシーポリシー
-  route(
-    'terms-of-service',
-    './features/pages/pages/termsOfService.tsx',
-  ), // 利用規約
+  route('terms-of-service', './features/pages/pages/termsOfService.tsx'), // 利用規約
   route('e-commerce-law', './features/pages/pages/eCommerceLaw.tsx'), // 特定商取引法に基づく表記
   route('about-us', './features/pages/pages/aboutUs.tsx'), // 運営者情報
   route('contact', './features/pages/pages/contact.tsx'), // お問い合わせ

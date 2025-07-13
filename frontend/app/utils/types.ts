@@ -1,6 +1,6 @@
 /**
  * アプリケーション共通の型定義
- * 
+ *
  * @description
  * 複数の機能で使用される共通の型定義のみを含む
  * 機能固有の型は各featureディレクトリ内のtypes.tsに定義する
@@ -26,9 +26,14 @@ export type LoaderDataType = {
 export type SizeVariant = 'sm' | 'md' | 'lg';
 
 /**
- * 共通のカラーバリアント  
+ * 共通のカラーバリアント
  */
-export type ColorVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+export type ColorVariant =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'warning'
+  | 'error';
 
 /**
  * 共通のステータス型
