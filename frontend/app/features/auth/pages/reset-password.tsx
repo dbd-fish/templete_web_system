@@ -4,12 +4,12 @@ import {
   ActionFunction,
   LoaderFunction,
 } from 'react-router';
-import ResetPasswordForm from '~/features/feature_auth/components/ResetPasswordForm';
-import { resetPassword } from '~/features/feature_auth/apis/authApi';
+import ResetPasswordForm from '~/features/auth/components/ResetPasswordForm';
+import { resetPassword } from '~/features/auth/apis/authApi';
 import {
   isPasswordValid,
   getAllowedSymbols,
-} from '~/features/feature_auth/passwordValidation';
+} from '~/features/auth/passwordValidation';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 import SimpleCard from '~/components/common/SimpleCard';

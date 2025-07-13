@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { LoaderFunction } from 'react-router';
-import { signup } from '~/features/feature_auth/apis/authApi';
+import { signup } from '~/features/auth/apis/authApi';
 import { useLoaderData } from 'react-router';
 import { LoaderDataType } from '~/utils/types';
 import Layout from '~/components/layout/Layout';

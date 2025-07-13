@@ -1,9 +1,9 @@
 import Header from '~/components/layout/Header';
 import Footer from '~/components/layout/Footer';
 import { Form } from 'react-router';
-import { Input } from '~/components/ui/input';
-import { Button } from '~/components/ui/button';
-import { Textarea } from '~/components/ui/textarea';
+import { Input } from '~/components/ui/Input';
+import { Button } from '~/components/ui/Button';
+import { Textarea } from '~/components/ui/Textarea';
 
 export default function Contact() {
   return (

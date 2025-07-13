@@ -1,10 +1,10 @@
 import { useActionData, redirect, ActionFunction } from 'react-router';
-import SignupForm from '~/features/feature_auth/components/SignupForm';
-import { sendVerifyEmail } from '~/features/feature_auth/apis/authApi';
+import SignupForm from '~/features/auth/components/SignupForm';
+import { sendVerifyEmail } from '~/features/auth/apis/authApi';
 import {
   isPasswordValid,
   getAllowedSymbols,
-} from '~/features/feature_auth/passwordValidation';
+} from '~/features/auth/passwordValidation';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 import SimpleCard from '~/components/common/SimpleCard';

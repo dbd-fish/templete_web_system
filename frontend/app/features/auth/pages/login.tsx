@@ -1,6 +1,6 @@
 import { ActionFunction, redirect, Link } from 'react-router';
 import { useActionData } from 'react-router';
-import LoginForm from '~/features/feature_auth/components/LoginForm';
+import LoginForm from '~/features/auth/components/LoginForm';
 import { authenticateUser, MOCK_ACCESS_TOKEN } from '~/mocks/data/auth';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';

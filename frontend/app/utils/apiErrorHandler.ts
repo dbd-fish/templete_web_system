@@ -1,4 +1,4 @@
-import { ErrorResponse } from '../features/feature_auth/types';
+import { ErrorResponse } from '../features/auth/types';
 
 /**
  * API呼び出しで発生するエラーを統一的に処理するクラス

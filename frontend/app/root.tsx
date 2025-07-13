@@ -10,7 +10,7 @@ import {
 import type { LinksFunction } from 'react-router';
 
 import './tailwind.css';
-import Header from '~/components/header/LoggedOutHeader';
+import Header from '~/components/layout/LoggedOutHeader';
 import Footer from './components/layout/Footer';
 
 // NOTE:暫定的にここにエラー画面を記載

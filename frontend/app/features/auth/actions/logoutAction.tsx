@@ -1,6 +1,6 @@
 import { redirect } from 'react-router';
-import { logout } from '~/features/feature_auth/apis/authApi';
-import { authTokenCookie } from '~/features/feature_auth/cookies';
+import { logout } from '~/features/auth/apis/authApi';
+import { authTokenCookie } from '~/features/auth/cookies';
 
 /**
  * ログアウト処理を実行するアクション関数。

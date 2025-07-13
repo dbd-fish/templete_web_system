@@ -1,4 +1,4 @@
-import { Button } from '~/components/ui/button';
+import { Button } from '~/components/ui/Button';
 import SiteTitle from '~/components/common/SiteTitle';
 
 export default function Header() {
