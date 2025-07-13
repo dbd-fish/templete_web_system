@@ -8,10 +8,7 @@
     "dev": "npx vite --host",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint ./app",
     "start": "npx @react-router/serve ./build/server/index.js",
-    "typecheck": "npm run typegen:ensure && npx tsc --noEmit",
-    "typecheck:ci": "npm run typegen:ensure && npx tsc --noEmit --project tsconfig.ci.json",
-    "typegen": "npx @react-router/dev typegen",
-    "typegen:ensure": "node -e \"require('fs').mkdirSync('.react-router/types', {recursive: true})\" && npx @react-router/dev typegen",
+    "typecheck": "npx --node-options=\"--loader ts-node/esm\" @react-router/dev typegen && tsc", 
     "format": "prettier --write ./app",
     "format:check": "prettier --check ./app"
   },

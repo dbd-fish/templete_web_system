@@ -44,7 +44,7 @@ jobs:
 
       - name: Run TypeScript Type Check
         run: |
-          docker compose run --rm frontend npm run typecheck:ci
+          docker compose run --rm frontend npm run typecheck
         # frontendコンテナ内でTypeScript型チェックを実行
 
       - name: Run Build Test
