@@ -1,0 +1,18 @@
+tmux a -t セッション名
+で既存セッションを開始
+
+tmux a
+で最後のセッションを開始
+
+tmux ls
+でセッション一覧を確認
+
+tmux detach
+でセッションから抜ける。
+これで画面分割から抜ける。
+
+tmux kill-session -t セッション名
+で既存セッションを削除
+
+tmux kill-server
+で全セッション削除

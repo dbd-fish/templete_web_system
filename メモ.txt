@@ -1,0 +1,48 @@
+sudo apt install tmux
+でWSL上にインストール
+
+tmux kill-session -t claude-co
+で既存セッションを削除
+
+tmux new -s claude-co \
+  \; split-window -h \
+  \; split-window -v \
+  \; select-pane -t 0 \; split-window -v
+でCLIを四分割
+
+
+tmux a -t セッション名
+で既存セッションを開始
+
+tmux a
+で最後のセッションを開始
+
+tmux ls
+でっしょん一覧を確認
+
+tmux detach
+でセッションから抜ける。
+これで画面分割から抜ける。
+
+tmux kill-session -t セッション名
+で既存セッションを削除
+
+tmux kill-server
+で全セッション削除
+
+vim ~/.tmux.conf
+で下記を設定
+
+# --- プレフィクスを Ctrl + ] に変更 ---
+  unbind C-b                 # 旧デフォルトを解除
+  set -g prefix C-]          # 新しいプレフィクス
+  bind C-] send-prefix       # Ctrl + ] 自身を送信キーとして使う
+  
+  # --- 操作を快適にする最小設定 ---
+  set -g escape-time 0       # プレフィクス後の待ち時間をゼロに
+  set -g mouse on            # マウスでペイン選択・リサイズ可（任意）
+tmux source-file ~/.tmux.conf
+
+tmux source-file ~/.tmux.conf
+で設定を反映
+

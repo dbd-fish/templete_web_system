@@ -1,0 +1,74 @@
+root権限でclaude --dangerously-skip-permissionsが使えないので、新しいＵｂｕｎｔｕユーザを作成
+su - claudeuser
+でログイン。パスワードはPass
+
+usermod -aG sudo claudeuser
+をrootユーザーで実行して、ユーザをRooｔ権限を持たせる
+groups claudeuser
+で確認
+
+```nodejsのインストール手順(自信ない)
+  curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+  sudo rm /etc/apt/sources.list.d/nodesource.list
+  sudo apt install nodejs
+  sudo apt install npm
+  nvm install --lts
+```
+
+npm install -g @anthropic-ai/claude-code
+でClaude codeをインストール
+
+sudo apt install tmux
+でWSL上にtmuxをインストール
+
+tmux kill-session -t claude-co
+で既存セッションを削除
+
+cd /mnt/c/Users/{user_name}/Documents/github/sample_claude-code
+でカレントディレクトリをプロジェクトに移動させる
+
+tmux new -s claude-co \
+  \; split-window -h \
+  \; split-window -v \
+  \; select-pane -t 0 \; split-window -v
+でCLIを四分割して新しいセッションを開始
+
+
+tmux new -s claude-co \
+\; split-window -h \
+\; split-window -v \
+\; select-pane -t 0 \
+\; split-window -v \
+\; select-pane -t 0 -T "PM" \
+\; select-pane -t 1 -T "メンバー　フロントエンドエンジニア" \
+\; select-pane -t 2 -T "メンバー　バックエンドエンジニア" \
+\; select-pane -t 3 -T "メンバー　フルスタックエンジニア" \
+\; send-keys -t 0 'claude --dangerously-skip-permissions' Enter \
+\; send-keys -t 1 'claude --dangerously-skip-permissions' Enter \
+\; send-keys -t 2 'claude --dangerously-skip-permissions' Enter \
+\; send-keys -t 3 'claude --dangerously-skip-permissions' Enter
+
+
+
+vim ~/.tmux.conf
+で下記を設定
+
+# --- プレフィクスを Ctrl + ] に変更 ---
+  unbind C-b                 # 旧デフォルトを解除
+  set -g prefix C-]          # 新しいプレフィクス
+  bind C-] send-prefix       # Ctrl + ] 自身を送信キーとして使う
+  
+  # --- 操作を快適にする最小設定 ---
+  set -g escape-time 0       # プレフィクス後の待ち時間をゼロに
+  set -g mouse on            # マウスでペイン選択・リサイズ可（任意）
+
+tmux source-file ~/.tmux.conf
+で設定を反映
+
+claude --dangerously-skip-permissions
+でClaude Codeが許可なくコマンド実行してくれる
+
+PM役に下記メッセージを入力する
+```
+claude-tmux_pm.mdを読み込んでシステム開発に着手してください。
+```
