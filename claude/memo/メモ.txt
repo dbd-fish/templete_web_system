@@ -1,0 +1,104 @@
+## 没
+
+sudo apt install tmux
+でWSL上にインストール
+
+tmux kill-session -t claude-co
+で既存セッションを削除
+
+tmux new -s claude-co \
+  \; split-window -h \
+  \; split-window -v \
+  \; select-pane -t 0 \; split-window -v
+でCLIを四分割
+
+tmux new -s claude-co \
+\; split-window -h \
+\; split-window -v \
+\; select-pane -t 0 \
+\; split-window -v \
+\; select-pane -t 0 -T "PM" \
+\; select-pane -t 1 -T "フロントエンドエンジニア" \
+\; select-pane -t 2 -T "バックエンドエンジニア" \
+\; select-pane -t 3 -T "フルスタックエンジニア" \
+\; send-keys -t 0 'claude --dangerously-skip-permissions' Enter \
+\; send-keys -t 1 'claude --dangerously-skip-permissions' Enter \
+\; send-keys -t 2 'claude --dangerously-skip-permissions' Enter \
+\; send-keys -t 3 'claude --dangerously-skip-permissions' Enter
+これでペインに名前を付けられる？？
+
+
+
+vim ~/.tmux.conf
+で下記を設定
+
+# --- プレフィクスを Ctrl + ] に変更 ---
+  unbind C-b                 # 旧デフォルトを解除
+  set -g prefix C-]          # 新しいプレフィクス
+  bind C-] send-prefix       # Ctrl + ] 自身を送信キーとして使う
+  
+  # --- 操作を快適にする最小設定 ---
+  set -g escape-time 0       # プレフィクス後の待ち時間をゼロに
+  set -g mouse on            # マウスでペイン選択・リサイズ可（任意）
+tmux source-file ~/.tmux.conf
+
+tmux source-file ~/.tmux.conf
+で設定を反映
+
+
+
+
+
+claude --dangerously-skip-permissions
+でClaude Codeが許可なくコマンド実行してくれる
+
+root権限でclaude --dangerously-skip-permissionsが使えないので、新しいＵｂｕｎｔｕユーザを作成
+su - claudeuser
+でログイン。パスワードはPass
+
+usermod -aG sudo claudeuser
+をrootユーザーで実行して、ユーザをRooｔ権限を持たせる
+groups claudeuser
+で確認
+
+
+```nodejsのインストール手順(自信ない)
+  curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+  sudo rm /etc/apt/sources.list.d/nodesource.list
+  sudo apt install nodejs
+  sudo apt install npm
+  nvm install --lts
+```
+
+
+
+
+
+## 最初の命令
+
+ claude-tmux.mdに沿ってシステム開発を実施してください
+
+### 問題リスト
+部下が返信してるのにPMが動かない
+  設計終了時点で止まった。
+
+
+導入手順書でDocker環境でエラーが発生するので何度か問い合わせをしないと改善しなかった
+制限しているトークン数を超過しても命令を実行し続けてしまう。
+作成されるドキュメントのパスやファイル名を明示したほうが綺麗になる
+  ./claudeに生成したドキュメントを格納
+  動作方法.md
+
+ドキュメントなどのアウトプットは具体的に明記しないと余計なファイルを作ってくる。
+
+LinuxでDockerを起動していないためのエラーが複数発生
+
+### 疑問リスト
+レート制限に達した場合の挙動
+Git操作の禁止
+  現状はGit操作をしてない
+
+単体テストをちゃんと作っているのだろうか？
+  作っているが実行環境が整っていない
+
+なぜかタスクが途中で中断して、こちらが催促しないと実行しない現象
