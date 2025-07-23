@@ -6,7 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 機能開発の指示がある場合は下記ドキュメントに準拠してください
 - PM役の場合→claude\claude-tmux_pm.md
 - メンバー役の場合→claude\claude-tmux_member.md
-- 特に役割がない場合→ドキュメント読み込みはスキップ
 
 ## プロジェクト概要
 
