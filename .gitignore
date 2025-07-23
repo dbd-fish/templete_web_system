@@ -182,3 +182,10 @@ local_settings.py
 .claude/settings.local.json
 frontend/certs/cert.pem
 frontend/certs/key.pem
+
+# HTTP Cookie files (may contain sensitive authentication data)
+cookies.txt
+*.cookies
+curl-cookies.txt
+claude/temp_doc
+claude/reports
