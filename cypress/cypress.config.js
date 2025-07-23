@@ -8,6 +8,8 @@ module.exports = defineConfig({
       'front_st/**/*.cy.js',  //画面単位のテスト
     ], 
     // NOTE: supportFileでエラーのスキップや汎用操作のコマンド化を取り込む
-    supportFile: 'cypress/support/index.js', 
+    supportFile: 'cypress/support/index.js',
+    // HTTPS証明書エラーを無視（コンテナ間通信の自己署名証明書対応）
+    chromeWebSecurity: false,
   },
 });

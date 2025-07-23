@@ -8,7 +8,7 @@
  */
 describe('基本画面テスト', () => {
   beforeEach(() => {
-    // HTTPS証明書エラーを無視
+    // フロントエンドにHTTPでアクセス
     cy.visit('https://frontend:5173', { 
       failOnStatusCode: false,
       timeout: 30000
