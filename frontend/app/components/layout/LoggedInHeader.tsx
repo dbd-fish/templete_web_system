@@ -69,11 +69,13 @@ export default function Header() {
             <button
               onClick={() => setShowUserMenu((prev) => !prev)}
               className="flex items-center space-x-2 bg-gray-700 text-white text-sm sm:text-base px-3 py-2 rounded-md hover:bg-gray-600"
+              data-cy="user-menu-button"
             >
               <img
                 src="https://via.placeholder.com/40"
                 alt="User Avatar"
                 className="w-6 h-6 sm:w-8 sm:h-8 rounded-full"
+                data-cy="user-avatar"
               />
               <span className="hidden sm:block">
                 {user?.username || 'ゲスト'}
@@ -96,6 +98,7 @@ export default function Header() {
                     <button
                       onClick={handleLogout}
                       className="w-full text-left text-red-500 hover:underline"
+                      data-cy="logout-button"
                     >
                       ログアウト
                     </button>

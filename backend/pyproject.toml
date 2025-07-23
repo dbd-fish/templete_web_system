@@ -24,6 +24,18 @@ bcrypt = "==4.0.1"
 pydantic-settings = "^2.6.1"
 structlog = "^24.4.0"
 
+# Google OAuth 2.0関連
+authlib = "^1.3.0"
+google-auth = "^2.25.0"
+google-auth-oauthlib = "^1.1.0"
+google-auth-httplib2 = "^0.2.0"
+# starlette = "^0.32.0"  # FastAPIに含まれるため削除
+python-multipart = ">=0.0.18"
+
+# Redis関連
+redis = "^5.1.1"
+# aioredis = "^2.0.1"  # Python 3.13非対応のため一時的に無効化
+
 # OpenTelemetry監視・メトリクス関連
 opentelemetry-distro = "^0.50b0"
 opentelemetry-api = "^1.29.0"

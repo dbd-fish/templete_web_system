@@ -8,6 +8,7 @@ import structlog
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from jwt.exceptions import InvalidTokenError as JWTError
 from sqlalchemy.exc import SQLAlchemyError
 
 from .response_schemas import ErrorCodes, create_error_response
@@ -26,6 +27,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     Returns:
         JSONResponse: 統一フォーマットのエラーレスポンス
     """
+    # structlogロガーでHTTP例外の警告ログを出力
     logger.warning("HTTP exception occurred", status_code=exc.status_code, detail=exc.detail, path=request.url.path, method=request.method)
 
     # ステータスコードに応じてエラーコードを決定
@@ -39,10 +41,13 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         status.HTTP_501_NOT_IMPLEMENTED: ErrorCodes.OPERATION_NOT_ALLOWED,
     }
 
+    # dict.get()でステータスコードからエラーコードを取得（デフォルトは"HTTP_ERROR"）
     error_code = error_code_map.get(exc.status_code, "HTTP_ERROR")
 
+    # 統一エラーレスポンスを作成
     error_response = create_error_response(message=str(exc.detail), error_code=error_code, details={"status_code": exc.status_code, "path": request.url.path, "method": request.method})
 
+    # FastAPIのJSONResponseで統一フォーマットのエラーレスポンスを返却
     return JSONResponse(status_code=exc.status_code, content=error_response)
 
 
@@ -57,19 +62,23 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     Returns:
         JSONResponse: 統一フォーマットのエラーレスポンス
     """
+    # structlogロガーでバリデーションエラーの警告ログを出力
     logger.warning("Validation error occurred", errors=exc.errors(), path=request.url.path, method=request.method)
 
     # Format validation error details
     validation_errors = []
+    # exc.errors()でPydanticのバリデーションエラー情報を取得し、フォーマットしてリスト化
     for error in exc.errors():
         validation_errors.append({"field": ".".join(str(loc) for loc in error["loc"]), "message": error["msg"], "type": error["type"], "input": error.get("input")})
 
+    # 統一エラーレスポンスを作成
     error_response = create_error_response(
         message="入力データの検証に失敗しました",
         error_code=ErrorCodes.VALIDATION_ERROR,
         details={"validation_errors": validation_errors, "path": request.url.path, "method": request.method},
     )
 
+    # FastAPIのJSONResponseでバリデーションエラーレスポンスを返却
     return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response)
 
 
@@ -84,8 +93,10 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -
     Returns:
         JSONResponse: 統一フォーマットのエラーレスポンス
     """
+    # structlogロガーでSQLAlchemyデータベースエラーのエラーログを出力
     logger.error("Database error occurred", error=str(exc), path=request.url.path, method=request.method)
 
+    # 統一エラーレスポンスを作成
     error_response = create_error_response(
         message="データベースエラーが発生しました",
         error_code=ErrorCodes.DATABASE_ERROR,
@@ -97,7 +108,36 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -
         },
     )
 
+    # FastAPIのJSONResponseでデータベースエラーレスポンスを返却
     return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response)
+
+
+async def jwt_exception_handler(request: Request, exc: JWTError) -> JSONResponse:
+    """
+    JWTエラー用の統一エラーハンドラー
+
+    Args:
+        request: FastAPIリクエストオブジェクト
+        exc: JWTError
+
+    Returns:
+        JSONResponse: 統一フォーマットのエラーレスポンス
+    """
+    # structlogロガーでJWTエラーの警告ログを出力
+    logger.warning("JWT error occurred", error=str(exc), path=request.url.path, method=request.method)
+
+    # 統一エラーレスポンスを作成
+    error_response = create_error_response(
+        message="無効または期限切れのトークンです",
+        error_code=ErrorCodes.TOKEN_INVALID,
+        details={
+            "path": request.url.path,
+            "method": request.method,
+        },
+    )
+
+    # FastAPIのJSONResponseでJWTエラーレスポンスを返却
+    return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=error_response)
 
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -111,8 +151,10 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     Returns:
         JSONResponse: 統一フォーマットのエラーレスポンス
     """
+    # structlogロガーで予期しない例外のエラーログを出力（exc_info=Trueでスタックトレースも記録）
     logger.error("Unexpected error occurred", error=str(exc), error_type=type(exc).__name__, path=request.url.path, method=request.method, exc_info=True)
 
+    # 統一エラーレスポンスを作成
     error_response = create_error_response(
         message="予期しないエラーが発生しました",
         error_code=ErrorCodes.INTERNAL_SERVER_ERROR,
@@ -124,6 +166,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         },
     )
 
+    # FastAPIのJSONResponseで予期しないエラーレスポンスを返却
     return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response)
 
 
@@ -151,8 +194,11 @@ async def business_logic_exception_handler(request: Request, exc: BusinessLogicE
     Returns:
         JSONResponse: 統一フォーマットのエラーレスポンス
     """
+    # structlogロガーでビジネスロジックエラーの情報ログを出力
     logger.info("Business logic error occurred", message=exc.message, error_code=exc.error_code, path=request.url.path, method=request.method)
 
+    # 統一エラーレスポンスを作成（辞書展開**でカスタム詳細情報と標準情報をマージ）
     error_response = create_error_response(message=exc.message, error_code=exc.error_code, details={**exc.details, "path": request.url.path, "method": request.method})
 
+    # FastAPIのJSONResponseでビジネスロジックエラーレスポンスを返却
     return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=error_response)

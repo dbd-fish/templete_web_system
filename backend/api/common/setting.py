@@ -17,7 +17,8 @@ class Setting(BaseSettings):
     # セキュリティ設定
     SECRET_KEY: str = "your-secret-key-here-change-in-production-please"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # アクセストークンは短期間（15分）
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # リフレッシュトークンは長期間（30日）
 
     # データベース設定
     DATABASE_HOST: str = "db"
@@ -54,6 +55,22 @@ class Setting(BaseSettings):
 
     # ログ出力設定
     ENABLE_CONSOLE_LOG: bool = False
+
+    # Redis設定
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: str = ""
+
+    @property
+    def REDIS_SESSION_EXPIRE_SECONDS(self) -> int:
+        """Redisセッション期限をREFRESH_TOKEN_EXPIRE_DAYSに同期"""
+        return 60 * 60 * 24 * self.REFRESH_TOKEN_EXPIRE_DAYS
+
+    # Google OAuth 2.0設定
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
 
     # API仕様書用のサンプルJWTトークン（実際のトークンではない）
     DOC_JWT_TOKEN_EXAMPLE: str = "test"

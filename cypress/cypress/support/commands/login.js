@@ -1,19 +1,59 @@
-// NOTE: ログイン処理をコマンド化
-// Cypress.Commands.add('login', (email, password) => {
-//   cy.visit('/login');
+// ログイン処理をコマンド化
+Cypress.Commands.add('login', (email = 'test@example.com', password = 'TestPass123!') => {
+  cy.visit('/login');
 
-//   // NOTE: これがないと以降の操作ができない
-//   // ページの読み込みを待つ
-//   cy.wait(1000); // または適切な時間
+  // ページの読み込みを待つ
+  cy.get('[data-cy="login-title"]').should('be.visible');
+  
+  // メールとパスワードを入力
+  cy.get('[data-cy="email-input"]')
+    .should('be.enabled')
+    .clear()
+    .type(email);
 
-//   // NOTE: ここで正しいemailとパスワードの組み合わせは別コンテナを参照する必要がある
-//   cy.get('input#email')
-//     .should('be.enabled') // 要素が有効になるまで待機
-//     .type(email);
+  cy.get('[data-cy="password-input"]')
+    .should('be.enabled')
+    .clear()
+    .type(password);
 
-//   cy.get('input#password')
-//     .should('be.enabled')
-//     .type(password);
+  // ログインボタンをクリック
+  cy.get('[data-cy="login-submit-button"]').click();
+  
+  // ログイン成功を待つ
+  cy.url().should('not.include', '/login', { timeout: 10000 });
+});
 
-//   cy.get('button[type="submit"]').click();
-// });
+// Googleログインのモックコマンド
+Cypress.Commands.add('loginWithGoogle', () => {
+  cy.visit('/login');
+  
+  // Googleログインボタンが表示されるまで待つ
+  cy.get('[data-cy="google-login-button"]').should('be.visible');
+  
+  // Google認証のモック処理
+  cy.window().then((win) => {
+    // Google認証サービスをモック
+    win.google = {
+      accounts: {
+        id: {
+          initialize: cy.stub(),
+          prompt: cy.stub(),
+          renderButton: cy.stub()
+        }
+      }
+    };
+  });
+  
+  // Googleログインボタンをクリック
+  cy.get('[data-cy="google-login-button"]').click();
+});
+
+// 管理者としてログインするコマンド
+Cypress.Commands.add('loginAsAdmin', () => {
+  cy.login('admin@example.com', 'AdminPass123!');
+});
+
+// 一般ユーザーとしてログインするコマンド
+Cypress.Commands.add('loginAsUser', () => {
+  cy.login('user@example.com', 'UserPass123!');
+});

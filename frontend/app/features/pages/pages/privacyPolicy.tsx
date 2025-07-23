@@ -1,5 +1,17 @@
+import { MetaFunction } from 'react-router';
 import Header from '~/components/layout/Header';
 import Footer from '~/components/layout/Footer';
+
+/**
+ * メタデータ関数:
+ * - ページのタイトルとメタデータを設定
+ */
+export const meta: MetaFunction = () => {
+  return [
+    { title: 'プライバシーポリシー | Webシステム開発テンプレート' },
+    { name: 'description', content: '当サイトにおけるプライバシーポリシー（個人情報保護方針）について記載しています。' },
+  ];
+};
 
 export default function PrivacyPolicy() {
   return (

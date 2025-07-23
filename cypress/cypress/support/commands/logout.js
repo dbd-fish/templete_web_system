@@ -1,9 +1,11 @@
-// NOTE: ログアウト処理をコマンド化
-// Cypress.Commands.add('logout', () => {
-//     // 2. ユーザーアカウントアイコンをクリックしてメニューを表示
-//     cy.get('button:has(img[alt="User Avatar"])').should('be.visible').click();
+// ログアウト処理をコマンド化
+Cypress.Commands.add('logout', () => {
+    // ユーザーメニューボタンをクリックしてメニューを表示
+    cy.get('[data-cy="user-menu-button"]').should('be.visible').click();
 
-//     // 3. ログアウトボタンをクリック
-//     cy.contains('button', 'ログアウト').should('be.visible').click();
-
-// });
+    // ログアウトボタンをクリック
+    cy.get('[data-cy="logout-button"]').should('be.visible').click();
+    
+    // ログアウト成功を待つ（ログインページにリダイレクトされる）
+    cy.url().should('include', '/login', { timeout: 10000 });
+});

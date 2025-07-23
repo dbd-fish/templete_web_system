@@ -5,6 +5,7 @@ CRUD操作の単体テスト（AAAパターン）
 import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import HTTPException
@@ -351,7 +352,7 @@ async def test_get_current_user_success():
     mock_session = AsyncMock()
 
     # Act & Assert: トークンデコードとユーザー取得をモック化して実行
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode, patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode, patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user:
         mock_decode.return_value = {"sub": TestData.TEST_USER_EMAIL_1}
         mock_get_user.return_value = mock_user
 
@@ -492,7 +493,7 @@ async def test_verify_email_token_success():
     token = "valid_email_token"
 
     # Act & Assert: トークンデコードをモック化して実行
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode:
         mock_decode.return_value = {"email": TestData.TEST_USER_EMAIL_1, "username": TestData.DOC_USERNAME_EXAMPLE, "password": TestData.DOC_PASSWORD_EXAMPLE}
 
         result = await verify_email_token(token)
@@ -513,7 +514,7 @@ async def test_verify_email_token_invalid_token():
     token = "invalid_token"
 
     # Act & Assert: 無効トークンエラーが発生することを確認
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode:
         mock_decode.side_effect = Exception("Invalid token")
 
         with pytest.raises(HTTPException) as exc_info:
@@ -541,7 +542,7 @@ async def test_reset_password_email_success():
     mock_session = AsyncMock()
 
     # Act & Assert: ユーザー検索とメール送信をモック化して実行
-    with patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user, patch("api.v1.features.feature_auth.crud.create_access_token") as mock_create_token:
+    with patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user, patch("api.v1.features.feature_auth.crud.create_verification_token") as mock_create_token:
         mock_get_user.return_value = mock_user
         mock_create_token.return_value = "reset_token"
 
@@ -549,6 +550,132 @@ async def test_reset_password_email_success():
 
         mock_get_user.assert_called_once_with(mock_session, email)
         mock_background_tasks.add_task.assert_called_once()
+
+
+# =============================================================================
+# Google OAuth 関連テスト
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_create_google_user_new_user():
+    """create_google_user
+
+    【正常系】新規Googleユーザーが正常に作成されることを確認。
+    """
+    # Arrange: 新規Googleユーザーデータを準備
+    email = "newgoogle@example.com"
+    username = "NewGoogleUser"
+    google_sub = "google_123456789"
+    full_name = "New Google User"
+
+    mock_session = AsyncMock()
+
+    # Act & Assert: 新規ユーザー作成をモック化して実行
+    with patch("api.v1.features.feature_auth.crud.get_user_by_email_including_deleted") as mock_get_user:
+        mock_get_user.return_value = None  # 既存ユーザーなし
+
+        # 新規ユーザー作成のモック
+        mock_new_user = User(
+            email=email,
+            username=username,
+            user_status=User.STATUS_ACTIVE,
+            hashed_password="",  # Google認証なのでパスワードは空
+        )
+
+        # データベースモック設定
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.first.return_value = None  # ユーザー名重複なし
+        mock_result.scalars.return_value = mock_scalars
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.add = MagicMock()
+        mock_session.commit = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        from api.v1.features.feature_auth.crud import create_google_user
+        result = await create_google_user(mock_session, email, username, google_sub, full_name)
+
+        # 検証
+        assert result.email == email
+        assert result.username == username
+        assert result.user_status == User.STATUS_ACTIVE
+        assert result.hashed_password == ""
+
+
+@pytest.mark.asyncio
+async def test_create_google_user_restore_deleted():
+    """create_google_user
+
+    【正常系】論理削除済みユーザーがGoogle認証で復活することを確認。
+    """
+    # Arrange: 論理削除済みユーザーデータを準備
+    email = "deleted@example.com"
+    username = "RestoredGoogleUser"
+    google_sub = "google_987654321"
+    full_name = "Restored Google User"
+
+    mock_deleted_user = User(
+        email=email,
+        username="old_username",
+        user_status=User.STATUS_SUSPENDED,
+        deleted_at=datetime.now(ZoneInfo("Asia/Tokyo")),
+        hashed_password="old_hashed_password",
+    )
+
+    mock_session = AsyncMock()
+
+    # Act & Assert: 論理削除ユーザー復活をモック化して実行
+    with patch("api.v1.features.feature_auth.crud.get_user_by_email_including_deleted") as mock_get_user:
+        mock_get_user.return_value = mock_deleted_user
+
+        # データベースモック設定
+        mock_session.commit = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        from api.v1.features.feature_auth.crud import create_google_user
+        result = await create_google_user(mock_session, email, username, google_sub, full_name)
+
+        # 検証：ユーザーが復活していることを確認
+        assert result.email == email
+        assert result.username == username
+        assert result.user_status == User.STATUS_ACTIVE
+        assert result.deleted_at is None
+
+
+@pytest.mark.asyncio
+async def test_create_google_user_active_user_conflict():
+    """create_google_user
+
+    【異常系】既存のアクティブユーザーとの競合でHTTPExceptionが発生することを確認。
+    """
+    # Arrange: 既存アクティブユーザーデータを準備
+    email = "active@example.com"
+    username = "ActiveUser"
+    google_sub = "google_111111111"
+    full_name = "Active User"
+
+    mock_active_user = User(
+        email=email,
+        username=username,
+        user_status=User.STATUS_ACTIVE,
+        deleted_at=None,
+        hashed_password="existing_password",
+    )
+
+    mock_session = AsyncMock()
+
+    # Act & Assert: アクティブユーザー競合エラーをモック化
+    with patch("api.v1.features.feature_auth.crud.get_user_by_email_including_deleted") as mock_get_user:
+        mock_get_user.return_value = mock_active_user
+
+        from api.v1.features.feature_auth.crud import create_google_user
+
+        with pytest.raises(HTTPException) as exc_info:
+            await create_google_user(mock_session, email, username, google_sub, full_name)
+
+        assert exc_info.value.status_code == 409
+        assert "このメールアドレスは既に登録されています" in str(exc_info.value.detail)
 
 
 @pytest.mark.asyncio
@@ -583,7 +710,7 @@ async def test_decode_password_reset_token_success():
     token = "valid_reset_token"
 
     # Act & Assert: トークンデコードをモック化して実行
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode:
         mock_decode.return_value = {"email": TestData.TEST_USER_EMAIL_1}
 
         result = await decode_password_reset_token(token)
@@ -601,7 +728,7 @@ async def test_decode_password_reset_token_invalid():
     token = "invalid_reset_token"
 
     # Act & Assert: 無効トークンエラーが発生することを確認
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode:
         mock_decode.side_effect = Exception("Invalid token")
 
         with pytest.raises(HTTPException) as exc_info:

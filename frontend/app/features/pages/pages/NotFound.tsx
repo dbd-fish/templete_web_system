@@ -1,7 +1,18 @@
-import { Link } from 'react-router';
+import { Link, MetaFunction } from 'react-router';
 import Layout from '~/components/layout/Layout';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+
+/**
+ * メタデータ関数:
+ * - ページのタイトルとメタデータを設定
+ */
+export const meta: MetaFunction = () => {
+  return [
+    { title: 'ページが見つかりません | Webシステム開発テンプレート' },
+    { name: 'description', content: 'お探しのページが見つかりませんでした。URLをご確認いただくか、ホームページからアクセスしてください。' },
+  ];
+};
 
 export default function NotFound() {
   return (
