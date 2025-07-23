@@ -40,11 +40,8 @@ from api.v1.features.feature_auth.schemas.user import (
     PasswordResetData,
     ProfileResponse,
     RevokeSessionRequest,
-    SecurityAnomaliesResponse,
-    SecurityAnomalyResponse,
     SendPasswordResetEmailData,
     SessionInfoResponse,
-    SessionMetricsResponse,
     TokenData,
     TokenPairResponse,
     UserCreate,
@@ -1239,127 +1236,6 @@ async def revoke_device_session(revoke_request: RevokeSessionRequest, request: R
         logger.info("revoke_device_session - end")
 
 
-@router.get(
-    "/sessions/metrics",
-    response_model=SuccessResponse[SessionMetricsResponse],
-    summary="セッションメトリクス取得",
-    description="""セッション操作のメトリクス情報を取得します。
-
-    **処理の流れ:**
-    1. session_store.get_session_metrics()でメトリクス情報を取得
-    2. SessionMetricsResponseスキーマに変換
-    3. 成功レスポンスとして返却
-
-    **メトリクス情報:**
-    - token_created: トークン作成数
-    - token_validated: トークン検証数
-    - token_revoked: トークン無効化数
-    - all_tokens_revoked: 全トークン無効化数
-    - login: ログイン数
-    - logout: ログアウト数
-    - refresh: トークン更新数
-
-    **管理者機能:** セキュリティ監視・システム分析用
-
-    **パラメータ:**
-    - date: 対象日付（YYYY-MM-DD形式、任意、未指定時は今日）
-
-    **レスポンス:**
-    - SuccessResponse[SessionMetricsResponse]: セッションメトリクス情報
-    """,
-)
-async def get_session_metrics(date: str | None = None):
-    logger.info("get_session_metrics - start", date=date)
-    try:
-        # セッションメトリクスを取得
-        metrics = await session_store.get_session_metrics(date)
-        target_date = date or datetime.now().strftime("%Y-%m-%d")
-
-        logger.info("get_session_metrics - metrics_retrieved", date=target_date, metrics_count=len(metrics))
-
-        # レスポンスデータを作成
-        session_metrics_response = SessionMetricsResponse(date=target_date, metrics=metrics)
-
-        logger.info("get_session_metrics - success", date=target_date)
-        return create_success_response(message="セッションメトリクスを取得しました", data=session_metrics_response.model_dump())
-
-    except Exception as e:
-        logger.error("get_session_metrics - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="セッションメトリクス取得処理でエラーが発生しました",
-        ) from e
-    finally:
-        logger.info("get_session_metrics - end")
-
-
-@router.get(
-    "/security/anomalies",
-    response_model=SuccessResponse[SecurityAnomaliesResponse],
-    summary="セキュリティ異常パターン取得",
-    description="""セキュリティ異常パターンの検知情報を取得します。
-
-    **処理の流れ:**
-    1. session_store.get_security_anomalies()で異常パターン情報を取得
-    2. SecurityAnomaliesResponseスキーマに変換
-    3. 成功レスポンスとして返却
-
-    **検知対象:**
-    - 1時間に10回以上のログイン
-    - 1時間に100回以上のトークン更新
-    - 1時間に15回以上のトークン作成
-    - その他の異常なアクセスパターン
-
-    **重要度レベル:**
-    - MEDIUM: 閾値を超えた場合
-    - HIGH: 閾値の2倍を超えた場合
-
-    **管理者機能:** セキュリティ監視・インシデント対応用
-
-    **パラメータ:**
-    - date: 対象日付（YYYY-MM-DD形式、任意、未指定時は今日）
-    - limit: 取得件数上限（デフォルト100件）
-
-    **レスポンス:**
-    - SuccessResponse[SecurityAnomaliesResponse]: セキュリティ異常パターン情報
-    """,
-)
-async def get_security_anomalies(date: str | None = None, limit: int = 100):
-    logger.info("get_security_anomalies - start", date=date, limit=limit)
-    try:
-        # セキュリティ異常パターンを取得
-        anomalies = await session_store.get_security_anomalies(date, limit)
-        target_date = date or datetime.now().strftime("%Y-%m-%d")
-
-        logger.info("get_security_anomalies - anomalies_retrieved", date=target_date, anomaly_count=len(anomalies))
-
-        # レスポンスデータを作成（異常パターン情報をSecurityAnomalyResponseスキーマに変換）
-        anomaly_response_list = []
-        for anomaly in anomalies:
-            anomaly_response = SecurityAnomalyResponse(
-                user_email=anomaly.get("user_email", ""),
-                action=anomaly.get("action", ""),
-                count=anomaly.get("count", 0),
-                threshold=anomaly.get("threshold", 0),
-                severity=anomaly.get("severity", "UNKNOWN"),
-                timestamp=anomaly.get("timestamp", ""),
-                device_info=anomaly.get("device_info", {}),
-            )
-            anomaly_response_list.append(anomaly_response)
-
-        security_anomalies_response = SecurityAnomaliesResponse(date=target_date, anomaly_count=len(anomalies), anomalies=anomaly_response_list)
-
-        logger.info("get_security_anomalies - success", date=target_date, anomaly_count=len(anomalies))
-        return create_success_response(message=f"セキュリティ異常パターン（{len(anomalies)}件）を取得しました", data=security_anomalies_response.model_dump())
-
-    except Exception as e:
-        logger.error("get_security_anomalies - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="セキュリティ異常パターン取得処理でエラーが発生しました",
-        ) from e
-    finally:
-        logger.info("get_security_anomalies - end")
 
 
 # ============================================================================

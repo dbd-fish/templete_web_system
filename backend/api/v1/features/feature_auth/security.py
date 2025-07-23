@@ -123,8 +123,6 @@ async def create_refresh_token(user_email: str, request: Request | None = None) 
         # Redisセッションストアにリフレッシュトークンとデバイス情報を保存
         await session_store.store_refresh_token(refresh_token, user_email, device_info)
 
-        # セッション作成のメトリクス情報をRedisに記録
-        await session_store.record_session_metrics("token_created", user_email, device_info)
 
         logger.info("create_refresh_token - success", user_email=user_email)
         return refresh_token
@@ -297,8 +295,6 @@ async def validate_refresh_token(refresh_token: str) -> str:
                 detail="無効なリフレッシュトークンです",
             )
 
-        # トークン検証のメトリクス情報をRedisに記録
-        await session_store.record_session_metrics("token_validated", user_email)
 
         logger.info("validate_refresh_token - success", user_email=user_email)
         return user_email
@@ -318,8 +314,6 @@ async def revoke_refresh_token(refresh_token: str) -> None:
         # Redisセッションストアから指定されたリフレッシュトークンを無効化
         await session_store.revoke_refresh_token(refresh_token)
 
-        # トークン無効化のメトリクス情報をRedisに記録
-        await session_store.record_session_metrics("token_revoked")
 
         logger.info("revoke_refresh_token - success")
     finally:
@@ -341,8 +335,6 @@ async def revoke_all_refresh_tokens_for_user(user_email: str) -> int:
         # Redisセッションストアで指定ユーザーの全リフレッシュトークンを無効化
         revoked_count = await session_store.revoke_all_refresh_tokens_for_user(user_email)
 
-        # 全トークン無効化のメトリクス情報をRedisに記録
-        await session_store.record_session_metrics("all_tokens_revoked", user_email)
 
         logger.info("revoke_all_refresh_tokens_for_user - success", user_email=user_email, revoked_count=revoked_count)
         return revoked_count

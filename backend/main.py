@@ -6,17 +6,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from jwt.exceptions import InvalidTokenError as JWTError
-from opentelemetry import metrics, trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.prometheus import PrometheusMetricReader
-from opentelemetry.instrumentation.asyncpg import AsyncPGInstrumentor
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from prometheus_client import start_http_server
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -43,82 +32,12 @@ os.environ["TZ"] = "Asia/Tokyo"
 time.tzset()
 
 
-def setup_opentelemetry():
-    """OpenTelemetryの初期化設定"""
-    try:
-        # OpenTelemetryのResourceクラスでアプリケーション識別情報を作成
-        resource = Resource.create(
-            {
-                "service.name": "template-web-system-backend",
-                "service.version": "1.0.0",
-                "deployment.environment": "development" if setting.DEV_MODE else "production",
-            },
-        )
-        # OpenTelemetryのTracerProviderでトレーシングプロバイダーを作成
-        tracer_provider = TracerProvider(resource=resource)
-        # trace.set_tracer_provider()でグローバルトレーサープロバイダーを設定
-        trace.set_tracer_provider(tracer_provider)
-
-        # OTLP Exporterの設定（本番環境用）
-        if not setting.DEV_MODE:
-            # OpenTelemetryのOTLPSpanExporterでスパン情報をOTLPコレクターに送信
-            otlp_exporter = OTLPSpanExporter(
-                endpoint="http://localhost:4317",  # OTLPコレクターのエンドポイント
-                insecure=True,
-            )
-            # BatchSpanProcessorでスパンをバッチ処理してエクスポート
-            span_processor = BatchSpanProcessor(otlp_exporter)
-            tracer_provider.add_span_processor(span_processor)
-
-        # OpenTelemetryのPrometheusMetricReaderでPrometheus形式のメトリクスリーダーを作成
-        prometheus_reader = PrometheusMetricReader()
-        # MeterProviderでメトリクスプロバイダーを作成
-        meter_provider = MeterProvider(resource=resource, metric_readers=[prometheus_reader])
-        # metrics.set_meter_provider()でグローバルメータープロバイダーを設定
-        metrics.set_meter_provider(meter_provider)
-
-        # prometheus_clientのstart_http_server()でPrometheusメトリクス用HTTPサーバーを起動（環境別制御）
-        if setting.PROD_MODE:
-            # 本番環境: 内部ネットワークのみ（127.0.0.1）
-            start_http_server(8001, addr="127.0.0.1")
-            logger.info("OpenTelemetry initialized (Production)", service_name="template-web-system-backend", metrics_port="8001 (internal only)", prod_mode=True)
-        else:
-            # 開発環境: 外部アクセス可能（0.0.0.0）
-            start_http_server(8001, addr="0.0.0.0")
-            logger.info("OpenTelemetry initialized (Development)", service_name="template-web-system-backend", metrics_port="8001 (external access)", dev_mode=setting.DEV_MODE)
-
-            # 開発環境のみポート確認
-            import socket
-
-            # socket.socket()でTCPソケットを作成し、connect_ex()でポート接続テストを実行
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                result = s.connect_ex(("0.0.0.0", 8001))
-                if result == 0:
-                    logger.info("Prometheus metrics server confirmed listening on port 8001")
-                else:
-                    logger.warning("Prometheus metrics server may not be listening on port 8001", result=result)
-
-    except Exception as e:
-        logger.error("Failed to initialize OpenTelemetry", error=str(e), error_type=type(e).__name__)
-        raise
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理を行うコンテキストマネージャ。"""
-    logger.info("Application startup - initializing OpenTelemetry and connecting to database")
-
-    # OpenTelemetryの初期化
-    setup_opentelemetry()
-
-    # OpenTelemetryのSQLAlchemyInstrumentorでSQLAlchemyの自動計測を有効化
-    SQLAlchemyInstrumentor().instrument()
-    # OpenTelemetryのAsyncPGInstrumentorでPostgreSQLの自動計測を有効化
-    AsyncPGInstrumentor().instrument()
-
-    # 明示的にイベントループを設定（最新バージョンでも安全）
-    # loop = asyncio.get_running_loop()
-    # asyncio.set_event_loop(loop)
+    logger.info("Application startup - connecting to database and Redis")
 
     # databasesライブラリのDatabaseオブジェクトでデータベースに接続
     await database.connect()
@@ -201,8 +120,6 @@ app.add_middleware(
 # Google OAuth 2.0用セッションミドルウェアを追加
 app.add_middleware(SessionMiddleware, secret_key=setting.SECRET_KEY)
 
-# FastAPIの自動instrumentation（アプリケーション作成後）
-FastAPIInstrumentor.instrument_app(app)
 
 # 統一例外ハンドラーの登録
 # FastAPIの制限により、HTTPExceptionはミドルウェアでキャッチできないため、
