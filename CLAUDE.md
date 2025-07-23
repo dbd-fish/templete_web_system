@@ -63,7 +63,7 @@ cd templete_web_system
 docker compose build
 
 # 3. 基本サービス起動
-docker compose up -d frontend backend db
+docker compose up -d frontend backend db redis
 
 # 4. 動作確認
 # フロントエンド: http://localhost:5173
@@ -76,7 +76,7 @@ docker compose up -d frontend backend db
 #### Docker環境管理
 ```bash
 # 基本サービス起動（最も使用頻度が高い）
-docker compose up -d frontend backend db
+docker compose up -d frontend backend db redis
 
 # 開発用ログ確認（リアルタイム）
 docker compose logs -f frontend backend
@@ -121,20 +121,22 @@ docker compose --profile test run --rm cypress
 ## アーキテクチャ概要
 
 ### コンテナ構成
-- **フロントエンド**: React Router + Vite（ポート3000/5173）
-- **バックエンド**: FastAPI + uvicorn（ポート8000）
+- **フロントエンド**: React Router + Vite（ポート3000/5173、HTTP/HTTPS対応）
+- **バックエンド**: FastAPI + uvicorn（ポート8000、structlogログ）
 - **データベース**: PostgreSQL 13（ポート5432）
-- **Cypress**: Cypress 13.17.0（run-and-exit設定）
+- **Redis**: Redis 7（ポート6379、基本セッション管理のみ）
+- **Cypress**: Cypress 13.17.0（run-and-exit設定、HTTP接続）
 
 ### ネットワーク構成
 - `frontend-network`: フロントエンド ↔ バックエンド ↔ Cypress
-- `backend-network`: バックエンド ↔ データベース
+- `backend-network`: バックエンド ↔ データベース ↔ Redis
 - セキュリティのためデータベースはフロントエンドから分離
 
 ### 主要技術スタック
 - **フロントエンド**: React 18 + React Router v7 + Vite + TypeScript + Tailwind CSS
-- **バックエンド**: FastAPI + SQLAlchemy 2.0 + Poetry + Python 3.13
+- **バックエンド**: FastAPI + SQLAlchemy 2.0 + Poetry + Python 3.13 + structlog
 - **データベース**: PostgreSQL 13 + asyncpg
+- **セッション管理**: Redis 7（基本機能のみ、監視機能は削除済み）
 - **テスト**: Cypress 13.17.0 + pytest
 - **インフラ**: Docker + Docker Compose
 
@@ -143,20 +145,21 @@ docker compose --profile test run --rm cypress
 ### サービス一覧とアクセス情報
 | サービス | URL | 用途 | ポート |
 |---------|-----|------|--------|
-| フロントエンド | http://localhost:5173 | 開発サーバー（Vite） | 5173 |
+| フロントエンド | http://localhost:5173 | 開発サーバー（Vite、HTTPS無効時） | 5173 |
+| フロントエンド | https://localhost:5173 | 開発サーバー（Vite、HTTPS有効時） | 5173 |
 | フロントエンド | http://localhost:3000 | 本番サーバー | 3000 |
 | バックエンドAPI | http://localhost:8000 | FastAPIアプリケーション | 8000 |
 | Swagger UI | http://localhost:8000/docs | API仕様書 | 8000 |
 | PostgreSQL | localhost:5432 | データベース | 5432 |
-| Prometheus | http://localhost:8001/metrics | メトリクス（開発環境のみ） | 8001 |
+| Redis | localhost:6379 | セッション管理（基本機能のみ） | 6379 |
 
 ### よく使用するコマンド組み合わせ
 ```bash
 # 開発開始
-docker compose up -d frontend backend db && docker compose logs -f frontend backend
+docker compose up -d frontend backend db redis && docker compose logs -f frontend backend
 
 # 依存関係更新後の再起動
-docker compose down && docker compose build && docker compose up -d frontend backend db
+docker compose down && docker compose build && docker compose up -d frontend backend db redis
 
 # フロントエンド品質チェック
 docker compose exec frontend npm run typecheck && docker compose exec frontend npm run lint
@@ -165,12 +168,12 @@ docker compose exec frontend npm run typecheck && docker compose exec frontend n
 docker compose exec backend poetry run pytest --cov && docker compose exec backend poetry run ruff check . && docker compose exec backend poetry run mypy .
 
 # 完全なテストサイクル
-docker compose up -d frontend backend db && docker compose --profile test run --rm cypress
+docker compose up -d frontend backend db redis && docker compose --profile test run --rm cypress
 ```
 
 ## 開発フロー
 
-1. **基本環境起動**: `docker compose up -d frontend backend db` で基本サービス起動
+1. **基本環境起動**: `docker compose up -d frontend backend db redis` で基本サービス起動
 2. **フロントエンド開発**: `http://localhost:5173` でアクセス
 3. **バックエンドAPI**: `http://localhost:8000/docs` でSwagger UI確認
 4. **E2Eテスト実行**: `docker compose --profile test run --rm cypress`
@@ -193,8 +196,10 @@ docker compose up -d frontend backend db && docker compose --profile test run --
 ### 開発時の注意
 - 各アプリの詳細開発情報は各ディレクトリの`CLAUDE.md`を参照
 - データベース接続は非同期PostgreSQL操作用にasyncpgを使用
-- Cypressテストはコンテナネットワーク内で`http://frontend:5173`をターゲット
+- Cypressテストはコンテナネットワーク内で`http://frontend:5173`をターゲット（HTTP接続）
+- フロントエンドはHTTPS/HTTP切り替え可能（`DISABLE_HTTPS=true`でHTTP化）
 - 全コンテナはライブ開発用のボリュームマウントを使用
+- 監視ツール（OpenTelemetry/Prometheus）は削除済み、structlogのみ使用
 
 ### Dockerfile配置の設計思想
 - **開発者中心**: アプリ担当者がDockerfileを管理
@@ -209,10 +214,10 @@ docker compose up -d frontend backend db && docker compose --profile test run --
 #### 1. Docker関連
 ```bash
 # コンテナ起動エラー
-docker compose down -v && docker compose build && docker compose up -d frontend backend db
+docker compose down -v && docker compose build && docker compose up -d frontend backend db redis
 
 # ポート競合エラー
-docker compose down && lsof -ti:5173,3000,8000,5432 | xargs kill -9
+docker compose down && lsof -ti:5173,3000,8000,5432,6379 | xargs kill -9
 
 # ボリューム関連エラー（node_modules等）
 docker compose down -v && docker volume prune -f && docker compose build --no-cache
@@ -260,14 +265,14 @@ docker compose logs frontend | grep "Local:"
 docker compose logs backend | grep "Uvicorn running"
 
 # テスト環境リセット
-docker compose --profile test down && docker compose up -d frontend backend db
+docker compose --profile test down && docker compose up -d frontend backend db redis
 ```
 
 ### デバッグコマンド集
 ```bash
 # コンテナ状態確認
 docker compose ps -a
-docker compose logs frontend backend db
+docker compose logs frontend backend db redis
 
 # リソース使用量確認
 docker stats
