@@ -14,7 +14,7 @@ from sqlalchemy.future import select
 
 from api.common.database import get_db
 from api.v1.features.feature_auth.models.user import User
-from api.v1.features.feature_auth.schemas.user import AdvancedUserUpdate, AdminUserUpdateRequest, UserCreate, UserUpdate
+from api.v1.features.feature_auth.schemas.user import AdminUserUpdateRequest, AdvancedUserUpdate, UserCreate, UserUpdate
 from api.v1.features.feature_auth.security import create_verification_token, decode_access_token, decode_verification_token, hash_password, verify_password
 from api.v1.features.feature_auth.send_reset_password_email import send_reset_password_email
 from api.v1.features.feature_auth.send_verification_email import send_verification_email
@@ -815,7 +815,7 @@ async def update_advanced_user_profile(db: AsyncSession, user: User, user_update
         # profile_image_urlは将来的にUserモデルに追加予定
 
         # 更新日時を設定
-        user.updated_at = datetime.now(ZoneInfo("Asia/Tokyo"))
+        user.updated_at = datetime.now(ZoneInfo("Asia/Tokyo")).replace(tzinfo=None)
 
         await db.commit()
         await db.refresh(user)
@@ -861,17 +861,17 @@ async def get_all_users_for_admin(db: AsyncSession, page: int = 1, page_size: in
     try:
         # 基本クエリ
         base_query = select(User)
-        
+
         if not include_deleted:
             base_query = base_query.where(User.deleted_at.is_(None))
-        
+
         # 全件数を取得するためのクエリ
         from sqlalchemy import func
         # SQLAlchemyのfunc.count()関数でレコード数をカウント
         count_query = select(func.count(User.user_id))
         if not include_deleted:
             count_query = count_query.where(User.deleted_at.is_(None))
-        
+
         # 非同期データベースセッションでカウントクエリを実行
         count_result = await db.execute(count_query)
         # scalar()で単一のスカラー値を取得
@@ -930,7 +930,7 @@ async def get_user_by_id_for_admin(db: AsyncSession, user_id: str) -> User:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="無効なユーザーIDです",
-            )
+            ) from None
 
         # SQLAlchemyのselectでユーザーID検索クエリを構築（削除済みも含めて検索）
         query = select(User).where(User.user_id == uuid_obj)
@@ -999,7 +999,7 @@ async def update_user_by_admin(db: AsyncSession, user_id: str, user_update: Admi
                 User.username == user_update.username,
                 User.user_status == User.STATUS_ACTIVE,
                 User.deleted_at.is_(None),
-                User.user_id != user.user_id  # 自分自身は除外
+                User.user_id != user.user_id,  # 自分自身は除外
             )
             # 非同期データベースセッションでクエリを実行
             username_result = await db.execute(username_query)
@@ -1086,7 +1086,7 @@ async def delete_user_by_admin(db: AsyncSession, user_id: str, permanent: bool =
 
         # SQLAlchemyセッションで変更をデータベースにコミット
         await db.commit()
-        
+
         if not permanent:
             # 論理削除の場合のみデータベースから最新の状態を再取得
             await db.refresh(user)

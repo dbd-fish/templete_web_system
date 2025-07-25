@@ -4,7 +4,7 @@
  * ログアウト機能とユーザー情報管理機能を提供
  */
 import { Form } from 'react-router';
-import { User } from '~/features/auth/types/auth';
+import { UserResponse as User } from '~/features/auth/types';
 import ProfileCard from './ProfileCard';
 
 interface RegularMyPageProps {

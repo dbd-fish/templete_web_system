@@ -11,7 +11,7 @@ services:
         limits:
           memory: 4G
     volumes:
-      - ./frontend:/app/frontend
+      - ./frontend:/app/frontend:cached
       - frontend_node_modules:/app/frontend/node_modules  # node_modulesのマウント除外
     working_dir: /app/frontend
     ports:
@@ -24,6 +24,7 @@ services:
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
+      - WATCHFILES_FORCE_POLLING=true
       - VITE_API_URL=http://backend:8000
 
   backend:
@@ -50,6 +51,7 @@ services:
       - DATABASE_URL=postgresql://template_user:template_password@db:5432/template_db
       - ENVIRONMENT=development
       - CORS_ORIGINS=http://localhost:5173,https://localhost:5173
+      - WATCHFILES_FORCE_POLLING=true
 
   db:
     image: postgres:13

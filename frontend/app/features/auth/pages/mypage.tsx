@@ -9,7 +9,8 @@ import { logoutAction } from '~/features/auth/actions/logoutAction';
 import { updateUser, deleteUser } from '~/features/auth/apis/authApi';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
-import { User } from '~/features/auth/types/auth';
+import { UserResponse as User, AdminUserResponse, AdminUserUpdateData } from '~/features/auth/types';
+import { getApiUrl } from '~/config/api';
 
 /**
  * メタデータ関数:
@@ -25,9 +26,10 @@ export const meta: MetaFunction = () => {
 /**
  * 管理者用ユーザー一覧取得関数
  */
-async function fetchAdminUsers(request: Request): Promise<any[]> {
+async function fetchAdminUsers(request: Request): Promise<AdminUserResponse[]> {
   try {
-    const response = await fetch(`${process.env.BACKEND_URL || 'http://localhost:8000'}/api/v1/auth/admin/users?page=1&page_size=50`, {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/api/v1/auth/admin/users?page=1&page_size=50`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -62,10 +64,10 @@ export const loader: LoaderFunction = async ({ request }) => {
     await authTokenLoader(request);
     const userData = await userDataLoader(request);
 
-    let users: any[] = [];
+    let users: AdminUserResponse[] = [];
     
     // 管理者権限のチェック（ROLE_ADMIN = 4以上）
-    if (userData.user_role >= 4) {
+    if (userData && userData.user_role >= 4) {
       users = await fetchAdminUsers(request);
     }
 
@@ -91,8 +93,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 /**
  * 管理者用ユーザー更新関数
  */
-async function updateUserAsAdmin(request: Request, userId: string, updateData: any): Promise<void> {
-  const response = await fetch(`${process.env.BACKEND_URL || 'http://localhost:8000'}/api/v1/auth/admin/users/${userId}`, {
+async function updateUserAsAdmin(request: Request, userId: string, updateData: AdminUserUpdateData): Promise<void> {
+  // SSR環境ではMSWが動作しないため、常に実際のバックエンドAPIを使用する
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/auth/admin/users/${userId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -112,7 +116,9 @@ async function updateUserAsAdmin(request: Request, userId: string, updateData: a
  * 管理者用ユーザー削除関数
  */
 async function deleteUserAsAdmin(request: Request, userId: string): Promise<void> {
-  const response = await fetch(`${process.env.BACKEND_URL || 'http://localhost:8000'}/api/v1/auth/admin/users/${userId}`, {
+  // SSR環境ではMSWが動作しないため、常に実際のバックエンドAPIを使用する
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/auth/admin/users/${userId}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -131,7 +137,9 @@ async function deleteUserAsAdmin(request: Request, userId: string): Promise<void
  * 管理者用ユーザー復活関数
  */
 async function restoreUserAsAdmin(request: Request, userId: string): Promise<void> {
-  const response = await fetch(`${process.env.BACKEND_URL || 'http://localhost:8000'}/api/v1/auth/admin/users/${userId}/restore`, {
+  // SSR環境ではMSWが動作しないため、常に実際のバックエンドAPIを使用する
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/auth/admin/users/${userId}/restore`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -231,7 +239,7 @@ export const action: ActionFunction = async ({ request }) => {
         );
       }
 
-      const updateData: any = {};
+      const updateData: AdminUserUpdateData = {};
       if (username) updateData.username = username;
       if (email) updateData.email = email;
       if (user_role) updateData.user_role = parseInt(user_role);
@@ -328,7 +336,7 @@ export const action: ActionFunction = async ({ request }) => {
 
 interface LoaderDataType {
   user: User;
-  users?: any[];
+  users?: AdminUserResponse[];
 }
 
 /**

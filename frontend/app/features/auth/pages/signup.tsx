@@ -141,7 +141,7 @@ export default function SignupPage() {
     <Layout>
       <Main>
         <SimpleCard>
-          <h1 className="text-xl font-semibold text-center mb-6">会員登録</h1>
+          <h1 className="text-xl font-semibold text-center mb-6" data-cy="signup-title">会員登録</h1>
           
           {/* エラーメッセージ表示 */}
           {(actionData?.error || googleError) && (
@@ -185,7 +185,7 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               既にアカウントをお持ちの方は{' '}
-              <a href="/login" className="text-primary hover:underline">
+              <a href="/login" className="text-primary hover:underline" data-cy="signup-login-link">
                 こちらからログイン
               </a>
             </p>

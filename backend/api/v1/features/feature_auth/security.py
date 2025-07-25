@@ -398,14 +398,14 @@ def require_admin_role(user: User) -> None:
 
     """
     logger.info("require_admin_role - start", user_id=user.user_id, user_role=user.user_role)
-    
+
     if user.user_role < User.ROLE_ADMIN:
         logger.warning("require_admin_role - access denied", user_id=user.user_id, user_role=user.user_role)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="管理者権限が必要です",
         )
-    
+
     logger.info("require_admin_role - access granted", user_id=user.user_id)
 
 
@@ -420,14 +420,14 @@ def require_owner_role(user: User) -> None:
 
     """
     logger.info("require_owner_role - start", user_id=user.user_id, user_role=user.user_role)
-    
+
     if user.user_role < User.ROLE_OWNER:
         logger.warning("require_owner_role - access denied", user_id=user.user_id, user_role=user.user_role)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="オーナー権限が必要です",
         )
-    
+
     logger.info("require_owner_role - access granted", user_id=user.user_id)
 
 

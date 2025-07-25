@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 
 /**
  * 認証状態の型定義
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /**
    * 認証状態確認
    */
-  const checkAuthStatus = async (): Promise<void> => {
+  const checkAuthStatus = useCallback(async (): Promise<void> => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
 
@@ -134,12 +134,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isLoading: false,
       });
     }
-  };
+  }, []);
 
   /**
    * 認証状態の更新（トークンリフレッシュなど）
    */
-  const refreshAuth = async (): Promise<void> => {
+  const refreshAuth = useCallback(async (): Promise<void> => {
     try {
       const response = await fetch('/api/v1/auth/refresh', {
         method: 'POST',
@@ -165,14 +165,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isLoading: false,
       });
     }
-  };
+  }, [checkAuthStatus]);
 
   /**
    * 初期認証状態確認
    */
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
   /**
    * 定期的な認証状態確認（10分間隔）
@@ -185,7 +185,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return () => clearInterval(interval);
     }
-  }, [authState.isAuthenticated]);
+  }, [authState.isAuthenticated, refreshAuth]);
 
   const contextValue: AuthContextType = {
     ...authState,

@@ -315,7 +315,7 @@ async def test_reset_password_with_invalid_token(authenticated_client: AsyncClie
 async def test_logout_with_invalid_token() -> None:
     """POST /api/v1/auth/logout
 
-    【異常系】無効なAuthorizationヘッダーでログアウトを試みる
+    【正常系】無効なAuthorizationヘッダーでログアウト
     """
     # Arrange: 無効な認証ヘッダーとクライアントを準備
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
@@ -327,23 +327,29 @@ async def test_logout_with_invalid_token() -> None:
             headers=invalid_headers,
         )
 
-        # Assert: 認証エラーレスポンスを検証
-        assert response.status_code == 401, response.text
+        # Assert: B018修正により、無効トークンでもログアウト成功（200）
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["success"] is True
+        assert "ログアウトしました" in data["message"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_logout_without_authentication() -> None:
     """POST /api/v1/auth/logout
 
-    【異常系】認証情報なしでログアウトを試みる
+    【正常系】認証情報なしでログアウト（B018修正により認証不要）
     """
     # Arrange: 認証情報なしのクライアントを準備
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         # Act: 認証情報なしでログアウトを試行
         response = await client.post("/api/v1/auth/logout")
 
-        # Assert: 認証エラーレスポンスを検証
-        assert response.status_code == 401, response.text
+        # Assert: B018修正により、認証情報なしでもログアウト成功（200）
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["success"] is True
+        assert "ログアウトしました" in data["message"]
 
 
 # =============================================================================
@@ -576,9 +582,12 @@ async def test_user_operations_with_expired_jwt() -> None:
         )
         assert update_response.status_code == 401, update_response.text
 
-        # Act & Assert: 期限切れトークンでログアウトを試行
+        # Act & Assert: 期限切れトークンでログアウトを試行（B018修正により成功）
         logout_response = await client.post("/api/v1/auth/logout")
-        assert logout_response.status_code == 401, logout_response.text
+        assert logout_response.status_code == 200, logout_response.text
+        logout_data = logout_response.json()
+        assert logout_data["success"] is True
+        assert "ログアウトしました" in logout_data["message"]
 
 
 @pytest.mark.asyncio(loop_scope="session")

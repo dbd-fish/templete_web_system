@@ -3,7 +3,7 @@ import { useActionData } from 'react-router';
 import { useState } from 'react';
 import LoginForm from '~/features/auth/components/LoginForm';
 import GoogleLoginButton from '~/features/auth/components/GoogleLoginButton';
-import { authenticateUser, MOCK_ACCESS_TOKEN } from '~/mocks/data/auth';
+// import { authenticateUser, MOCK_ACCESS_TOKEN } from '~/mocks/data/auth';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 import SimpleCard from '~/components/common/SimpleCard';
@@ -26,22 +26,31 @@ export const action: ActionFunction = async ({ request }) => {
   const password = formData.get('password') as string;
 
   try {
-    // モック認証情報で直接認証
-    const user = authenticateUser(email, password);
-
-    if (user) {
-      // 認証成功時はCookieを設定してリダイレクト
-      const cookieString = `authToken=${MOCK_ACCESS_TOKEN}; HttpOnly; Secure; SameSite=Lax; Path=/`;
-
-      return redirect('/mypage', {
-        headers: { 'Set-Cookie': cookieString },
-      });
-    } else {
-      return { error: 'メールアドレスまたはパスワードが正しくありません' };
+    // バリデーション
+    if (!email || !password) {
+      return { error: 'メールアドレスとパスワードを入力してください' };
     }
+
+    // authApi.tsのlogin関数を使用して統一性を確保
+    const { login } = await import('~/features/auth/apis/authApi');
+    const response = await login(email, password);
+
+    const responseData = await response.json();
+    console.log('ログイン成功:', responseData);
+    
+    // 認証成功時はマイページにリダイレクト
+    // HttpOnly Cookieはサーバー側で設定される
+    return redirect('/mypage');
   } catch (error) {
     console.error('ログインエラー:', error);
-    return { error: 'ログインに失敗しました' };
+    
+    // ApiErrorの場合はエラーメッセージを使用
+    if (error instanceof Error && 'detail' in error) {
+      const apiError = error as Error & { detail?: string };
+      return { error: apiError.detail || error.message };
+    }
+    
+    return { error: 'ログインに失敗しました。メールアドレスまたはパスワードが正しくありません。' };
   }
 };
 

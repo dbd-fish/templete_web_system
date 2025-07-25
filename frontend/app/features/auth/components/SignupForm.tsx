@@ -9,10 +9,11 @@ import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
 import {
   isPasswordValid,
-  getAllowedSymbols,
 } from '~/features/auth/passwordValidation';
 
 export default function SignupForm() {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -23,10 +24,7 @@ export default function SignupForm() {
     setPassword(newPassword);
 
     if (newPassword && !isPasswordValid(newPassword)) {
-      const allowedSymbols = getAllowedSymbols();
-      setPasswordError(
-        `パスワードが条件を満たしていません:\n・8文字以上\n・大文字・小文字\n・数字\n・記号(${allowedSymbols})を含む`,
-      );
+      setPasswordError('パスワードが条件を満たしていません');
     } else {
       setPasswordError('');
     }
@@ -64,6 +62,8 @@ export default function SignupForm() {
           id="username"
           name="username"
           placeholder="ユーザー名を入力"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           data-cy="signup-username-input"
           required
           minLength={2}
@@ -81,6 +81,8 @@ export default function SignupForm() {
           id="email"
           name="email"
           placeholder="example@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           data-cy="signup-email-input"
           required
         />
@@ -103,7 +105,7 @@ export default function SignupForm() {
           minLength={8}
         />
         {passwordError && (
-          <div className="mt-1 text-xs text-destructive whitespace-pre-line">
+          <div className="mt-1 text-xs text-destructive" data-cy="password-error">
             {passwordError}
           </div>
         )}
@@ -129,7 +131,7 @@ export default function SignupForm() {
           minLength={8}
         />
         {confirmPasswordError && (
-          <div className="mt-1 text-xs text-destructive">
+          <div className="mt-1 text-xs text-destructive" data-cy="confirm-password-error">
             {confirmPasswordError}
           </div>
         )}
@@ -141,10 +143,12 @@ export default function SignupForm() {
           type="submit"
           className="w-full"
           disabled={
-            !!passwordError ||
-            !!confirmPasswordError ||
+            !username.trim() ||
+            !email.trim() ||
             !password ||
-            !confirmPassword
+            !confirmPassword ||
+            !!passwordError ||
+            !!confirmPasswordError
           }
           data-cy="signup-submit-button"
         >

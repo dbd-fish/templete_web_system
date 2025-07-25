@@ -13,6 +13,7 @@ import {
   UserUpdate,
 } from '../types';
 import { apiRequest, apiFormRequest } from '~/utils/apiErrorHandler';
+import { getApiUrl } from '~/config/api';
 
 // ==================== 認証関連 ====================
 
@@ -26,11 +27,12 @@ import { apiRequest, apiFormRequest } from '~/utils/apiErrorHandler';
  * @param password - ユーザーのパスワード
  */
 export const login = async (email: string, password: string) => {
-  const apiUrl = process.env.API_URL; // 環境変数からURLを取得
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   try {
     const response = await apiFormRequest(`${apiUrl}/api/v1/auth/login`, {
-      username: email, // OAuth2PasswordRequestFormは "username" フィールドを期待
+      username: email, // emailアドレスをusernameフィールドで送信（OAuth2互換）
       password: password,
     });
 
@@ -47,7 +49,8 @@ export const login = async (email: string, password: string) => {
  * - 失敗時: エラーメッセージをスロー
  */
 export const logout = async (request: Request) => {
-  const apiUrl = process.env.API_URL; // 環境変数からURLを取得
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   try {
     const cookieHeader = request.headers.get('Cookie');
@@ -74,7 +77,8 @@ export const logout = async (request: Request) => {
  * - 失敗時: null を返す
  */
 export const getUser = async (request: Request) => {
-  const apiUrl = process.env.API_URL; // 環境変数からURLを取得
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   const cookieHeader = request.headers.get('Cookie');
 
@@ -88,7 +92,7 @@ export const getUser = async (request: Request) => {
     );
 
     const data = (await response.json()) as UserResponse;
-    return { username: data.username, email: data.email };
+    return data;
   } catch (error) {
     // 認証エラーの場合はnullを返す
     if (error instanceof Error && error.message.includes('401')) {
@@ -108,7 +112,8 @@ export const updateUser = async (
   request: Request,
   updateData: UserUpdate,
 ): Promise<UserResponse> => {
-  const apiUrl = process.env.API_URL;
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   try {
     const cookieHeader = request.headers.get('Cookie');
@@ -129,19 +134,20 @@ export const updateUser = async (
 
 /**
  * ユーザーアカウントを削除する非同期関数
- * - '/api/v1/auth/me' エンドポイントでアカウントを削除
+ * - '/api/v1/auth/user' エンドポイントでアカウントを削除
  * - 成功時: メッセージレスポンスを返す
  * - 失敗時: エラーをスロー
  */
 export const deleteUser = async (
   request: Request,
 ): Promise<MessageResponse> => {
-  const apiUrl = process.env.API_URL;
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   try {
     const cookieHeader = request.headers.get('Cookie');
     const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/me`,
+      `${apiUrl}/api/v1/auth/user`,
       {
         method: 'DELETE',
       },
@@ -163,7 +169,8 @@ export const deleteUser = async (
  * - 失敗時: エラーをスロー
  */
 export const signup = async (token: string): Promise<boolean> => {
-  const apiUrl = process.env.API_URL;
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   try {
     const signupData = {
@@ -194,7 +201,8 @@ export const sendVerifyEmail = async (
   password: string,
   username: string,
 ): Promise<SuccessResponse> => {
-  const apiUrl = process.env.API_URL;
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   try {
     // 各フィールドをトリムし、空文字列チェック
@@ -238,7 +246,8 @@ export const sendVerifyEmail = async (
 export const sendPasswordResetEmail = async (
   email: string,
 ): Promise<SuccessResponse> => {
-  const apiUrl = process.env.API_URL;
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   try {
     // メールアドレスをトリムし、空文字列チェック
@@ -277,7 +286,8 @@ export const resetPassword = async (
   token: string,
   newPassword: string,
 ): Promise<SuccessResponse> => {
-  const apiUrl = process.env.API_URL;
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
 
   try {
     const resetData = {

@@ -352,7 +352,7 @@ async def test_get_current_user_success():
     mock_session = AsyncMock()
 
     # Act & Assert: トークンデコードとユーザー取得をモック化して実行
-    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode, patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user:
+    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode, patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user:
         mock_decode.return_value = {"sub": TestData.TEST_USER_EMAIL_1}
         mock_get_user.return_value = mock_user
 
@@ -576,7 +576,7 @@ async def test_create_google_user_new_user():
         mock_get_user.return_value = None  # 既存ユーザーなし
 
         # 新規ユーザー作成のモック
-        mock_new_user = User(
+        User(
             email=email,
             username=username,
             user_status=User.STATUS_ACTIVE,

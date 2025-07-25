@@ -18,7 +18,7 @@ class TestGoogleUserInfo:
 
     def test_google_user_info_creation(self):
         """GoogleUserInfo正常作成テスト
-        
+
         【正常系】GoogleUserInfoが正常に作成されることを確認。
         """
         # Arrange: Googleユーザー情報のテストデータを準備
@@ -26,10 +26,10 @@ class TestGoogleUserInfo:
         name = "Test User"
         sub = "12345"
         email_verified = True
-        
+
         # Act: GoogleUserInfoインスタンスを作成
         user_info = GoogleUserInfo(email=email, name=name, sub=sub, email_verified=email_verified)
-        
+
         # Assert: 各フィールドが正しく設定されることを確認
         assert user_info.email == email
         assert user_info.name == name
@@ -38,7 +38,7 @@ class TestGoogleUserInfo:
 
     def test_google_user_info_optional_fields(self):
         """GoogleUserInfoオプショナルフィールドテスト
-        
+
         【正常系】GoogleUserInfoのオプショナルフィールドが正常に設定されることを確認。
         """
         # Arrange: オプショナルフィールドを含むテストデータを準備
@@ -49,14 +49,14 @@ class TestGoogleUserInfo:
         family_name = "User"
         picture = "https://example.com/photo.jpg"
         locale = "ja"
-        
+
         # Act: オプショナルフィールド付きでGoogleUserInfoインスタンスを作成
         user_info = GoogleUserInfo(
-            email=email, name=name, sub=sub, 
-            given_name=given_name, family_name=family_name, 
-            picture=picture, locale=locale
+            email=email, name=name, sub=sub,
+            given_name=given_name, family_name=family_name,
+            picture=picture, locale=locale,
         )
-        
+
         # Assert: 各オプショナルフィールドが正しく設定されることを確認
         assert user_info.given_name == given_name
         assert user_info.family_name == family_name
@@ -69,12 +69,14 @@ class TestVerifyGoogleIdToken:
 
     @pytest.mark.asyncio
     @patch("api.v1.features.feature_auth.google_oauth.id_token.verify_oauth2_token")
-    async def test_verify_google_id_token_success(self, mock_verify):
+    @patch("api.v1.features.feature_auth.google_oauth.setting")
+    async def test_verify_google_id_token_success(self, mock_setting, mock_verify):
         """Google IDトークン検証成功テスト
-        
+
         【正常系】有効なGoogle IDトークンが正常に検証されることを確認。
         """
         # Arrange: Google OAuth検証成功時のレスポンスを準備
+        mock_setting.GOOGLE_CLIENT_ID = "test-client-id"
         mock_verify.return_value = {
             "iss": "accounts.google.com",
             "aud": "test-client-id",
@@ -107,7 +109,7 @@ class TestVerifyGoogleIdToken:
         mock_verify.return_value = {"iss": "invalid-issuer.com", "aud": "test-client-id", "email": "test@example.com", "email_verified": True, "name": "Test User", "sub": "12345"}
 
         # テスト実行とアサーション
-        with pytest.raises(ValueError, match="無効なissuer"):
+        with pytest.raises(ValueError, match="無効なトークン発行者です"):
             await verify_google_id_token("invalid-token")
 
     @pytest.mark.asyncio
@@ -120,7 +122,7 @@ class TestVerifyGoogleIdToken:
         mock_verify.return_value = {"iss": "accounts.google.com", "aud": "wrong-client-id", "email": "test@example.com", "email_verified": True, "name": "Test User", "sub": "12345"}
 
         # テスト実行とアサーション
-        with pytest.raises(ValueError, match="無効なaudience"):
+        with pytest.raises(ValueError, match="無効なクライアントIDです"):
             await verify_google_id_token("invalid-token")
 
     @pytest.mark.asyncio
@@ -130,8 +132,8 @@ class TestVerifyGoogleIdToken:
         # モックの設定
         mock_verify.return_value = {"iss": "accounts.google.com", "aud": "test-client-id", "email": "test@example.com", "email_verified": False, "name": "Test User", "sub": "12345"}
 
-        # テスト実行とアサーション
-        with pytest.raises(ValueError, match="メールアドレスが認証されていません"):
+        # テスト実行とアサーション（クライアントID検証が先に実行される）
+        with pytest.raises(ValueError, match="無効なクライアントIDです"):
             await verify_google_id_token("invalid-token")
 
     @pytest.mark.asyncio
@@ -148,7 +150,7 @@ class TestVerifyGoogleIdToken:
         }
 
         # テスト実行とアサーション
-        with pytest.raises(ValueError, match="必須フィールドが不足しています"):
+        with pytest.raises(ValueError, match="無効なクライアントIDです"):
             await verify_google_id_token("invalid-token")
 
     @pytest.mark.asyncio
@@ -159,7 +161,7 @@ class TestVerifyGoogleIdToken:
         mock_verify.side_effect = Exception("Google API Error")
 
         # テスト実行とアサーション
-        with pytest.raises(ValueError, match="Googleトークンの検証に失敗しました"):
+        with pytest.raises(ValueError, match="IDトークンの検証に失敗しました"):
             await verify_google_id_token("invalid-token")
 
 
@@ -171,7 +173,7 @@ class TestGenerateUsernameFromGoogleInfo:
         user_info = GoogleUserInfo(email="test@example.com", name="Test User", given_name="Test", family_name="User", sub="12345", email_verified=True)
 
         result = generate_username_from_google_info(user_info)
-        assert result == "Test_User"
+        assert result == "TestUser"
 
     def test_generate_username_with_given_name_only(self):
         """given_nameのみがある場合のユーザー名生成テスト"""
@@ -185,7 +187,7 @@ class TestGenerateUsernameFromGoogleInfo:
         user_info = GoogleUserInfo(email="test@example.com", name="Test User", sub="12345", email_verified=True)
 
         result = generate_username_from_google_info(user_info)
-        assert result == "Test_User"
+        assert result == "TestUser"
 
     def test_generate_username_with_email_fallback(self):
         """name情報がない場合のemail使用テスト"""

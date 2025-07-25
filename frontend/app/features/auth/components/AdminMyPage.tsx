@@ -5,27 +5,16 @@
  */
 import { useState } from 'react';
 import { Form } from 'react-router';
-import { User } from '~/features/auth/types/auth';
+import { UserResponse as User, AdminUserResponse } from '~/features/auth/types';
 
 interface AdminMyPageProps {
   user: User;
-  users?: AdminUser[];
+  users?: AdminUserResponse[];
   actionData?: {
     error?: string;
     success?: string;
     type?: string;
   };
-}
-
-interface AdminUser {
-  user_id: string;
-  email: string;
-  username: string;
-  user_role: number;
-  user_status: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string;
 }
 
 const getUserRoleText = (role: number): string => {
@@ -58,7 +47,7 @@ const getUserStatusText = (status: number): string => {
 
 export default function AdminMyPage({ user, users = [], actionData }: AdminMyPageProps) {
   const [showUserManagement, setShowUserManagement] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUserResponse | null>(null);
   const [editMode, setEditMode] = useState(false);
 
   return (
@@ -106,34 +95,34 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 mb-1">
                   メールアドレス
                 </label>
-                <div className="text-sm p-2 bg-white border rounded-md">
+                <div id="admin-email" className="text-sm p-2 bg-white border rounded-md">
                   {user.email}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="admin-username" className="block text-sm font-medium text-gray-700 mb-1">
                   ユーザー名
                 </label>
-                <div className="text-sm p-2 bg-white border rounded-md">
+                <div id="admin-username" className="text-sm p-2 bg-white border rounded-md">
                   {user.username}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="admin-role" className="block text-sm font-medium text-gray-700 mb-1">
                   権限レベル
                 </label>
-                <div className="text-sm p-2 bg-red-100 border border-red-300 rounded-md font-semibold text-red-700">
+                <div id="admin-role" className="text-sm p-2 bg-red-100 border border-red-300 rounded-md font-semibold text-red-700">
                   {getUserRoleText(user.user_role)}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="admin-status" className="block text-sm font-medium text-gray-700 mb-1">
                   アカウント状態
                 </label>
-                <div className="text-sm p-2 bg-green-100 border border-green-300 rounded-md font-semibold text-green-700">
+                <div id="admin-status" className="text-sm p-2 bg-green-100 border border-green-300 rounded-md font-semibold text-green-700">
                   {getUserStatusText(user.user_status)}
                 </div>
               </div>
@@ -448,9 +437,10 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">ユーザー名</label>
+                  <label htmlFor="edit-username" className="block text-sm font-medium mb-1">ユーザー名</label>
                   <input
                     type="text"
+                    id="edit-username"
                     name="username"
                     defaultValue={selectedUser.username}
                     className="w-full p-2 border rounded-md"
@@ -458,9 +448,10 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">メールアドレス</label>
+                  <label htmlFor="edit-email" className="block text-sm font-medium mb-1">メールアドレス</label>
                   <input
                     type="email"
+                    id="edit-email"
                     name="email"
                     defaultValue={selectedUser.email}
                     className="w-full p-2 border rounded-md"
@@ -468,8 +459,9 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">権限</label>
+                  <label htmlFor="edit-role" className="block text-sm font-medium mb-1">権限</label>
                   <select
+                    id="edit-role"
                     name="user_role"
                     defaultValue={selectedUser.user_role}
                     className="w-full p-2 border rounded-md"
@@ -483,8 +475,9 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">状態</label>
+                  <label htmlFor="edit-status" className="block text-sm font-medium mb-1">状態</label>
                   <select
+                    id="edit-status"
                     name="user_status"
                     defaultValue={selectedUser.user_status}
                     className="w-full p-2 border rounded-md"

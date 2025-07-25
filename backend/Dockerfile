@@ -32,4 +32,5 @@ ENV PYTHONPATH="/app/backend"
 EXPOSE 8000
 
 # FastAPIアプリケーションを起動
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# WSL2環境でのwatchfilesエラー対策のため、ポーリングモードを使用
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/backend", "--reload-delay", "2"]
