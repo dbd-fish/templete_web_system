@@ -7,7 +7,7 @@
  * - セッション管理とリダイレクト処理
  */
 describe('認証機能テスト', () => {
-  const baseUrl = 'https://frontend:5173';
+  const baseUrl = 'http://frontend:5173';
   
   beforeEach(() => {
     // HTTPS証明書エラーを無視してページにアクセス
@@ -29,7 +29,7 @@ describe('認証機能テスト', () => {
     });
 
     it('有効な認証情報でログインできる', () => {
-      cy.login('test@example.com', 'TestPass123!');
+      cy.loginViaForm('targetuser@example.com', 'Password123456+-');
       // ログイン成功後マイページにリダイレクト
       cy.url().should('include', '/mypage');
     });
@@ -123,6 +123,10 @@ describe('認証機能テスト', () => {
     it('パスワードバリデーションが正常に動作する', () => {
       cy.visit('/signup');
       
+      // ユーザー名とメールを入力
+      cy.get('[data-cy="signup-username-input"]').type('testuser');
+      cy.get('[data-cy="signup-email-input"]').type('test@example.com');
+      
       // 弱いパスワードを入力
       cy.get('[data-cy="signup-password-input"]').type('weak');
       cy.get('[data-cy="signup-confirm-password-input"]').click();
@@ -134,7 +138,11 @@ describe('認証機能テスト', () => {
     it('パスワード確認が一致しない場合エラーが表示される', () => {
       cy.visit('/signup');
       
-      cy.get('[data-cy="signup-password-input"]').type('ValidPass123!');
+      // ユーザー名とメールを入力
+      cy.get('[data-cy="signup-username-input"]').type('testuser');
+      cy.get('[data-cy="signup-email-input"]').type('test@example.com');
+      
+      cy.get('[data-cy="signup-password-input"]').type('Password123456+-');
       cy.get('[data-cy="signup-confirm-password-input"]').type('DifferentPass123!');
       
       // パスワード不一致エラーが表示される

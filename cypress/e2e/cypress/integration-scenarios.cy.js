@@ -7,7 +7,7 @@
  * - 実際のユーザー利用シナリオの再現
  */
 describe('統合テストシナリオ', () => {
-  const baseUrl = 'https://frontend:5173';
+  const baseUrl = '/';
   
   beforeEach(() => {
     // HTTPS証明書エラーを無視してページにアクセス

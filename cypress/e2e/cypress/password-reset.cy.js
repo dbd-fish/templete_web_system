@@ -7,7 +7,7 @@
  * - 新パスワード設定後のログイン確認
  */
 describe('パスワードリセット機能テスト', () => {
-  const baseUrl = 'https://frontend:5173';
+  const baseUrl = '/';
   
   beforeEach(() => {
     // HTTPS証明書エラーを無視してページにアクセス

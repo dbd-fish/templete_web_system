@@ -7,7 +7,7 @@
  * - ロールベースアクセス制御の動作確認
  */
 describe('権限分離機能テスト', () => {
-  const baseUrl = 'https://frontend:5173';
+  const baseUrl = '/';
   
   beforeEach(() => {
     // HTTPS証明書エラーを無視してページにアクセス

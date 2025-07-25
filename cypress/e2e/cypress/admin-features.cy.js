@@ -7,7 +7,7 @@
  * - 一般ユーザーでのアクセス制限確認
  */
 describe('管理者権限機能テスト', () => {
-  const baseUrl = 'https://frontend:5173';
+  const baseUrl = '/';
   
   beforeEach(() => {
     // HTTPS証明書エラーを無視してページにアクセス

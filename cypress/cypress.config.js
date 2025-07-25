@@ -2,7 +2,7 @@ const { defineConfig } = require('cypress');
 
 module.exports = defineConfig({
   e2e: {
-    baseUrl: 'https://frontend:5173', // テスト対象のURL
+    baseUrl: 'https://frontend:5173', // テスト対象のURL（HTTPS接続）
     specPattern: [
        'e2e/cypress/**/*.cy.js', //ローカル環境におけるE2Eテスト
       'front_st/**/*.cy.js',  //画面単位のテスト
@@ -11,5 +11,9 @@ module.exports = defineConfig({
     supportFile: 'cypress/support/index.js',
     // HTTPS証明書エラーを無視（コンテナ間通信の自己署名証明書対応）
     chromeWebSecurity: false,
+    // Cookieとlocal storageを保持
+    experimentalSessionAndOrigin: true,
+    // Cookie設定
+    blockHosts: [],
   },
 });

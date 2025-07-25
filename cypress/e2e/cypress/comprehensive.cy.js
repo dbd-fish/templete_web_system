@@ -7,7 +7,7 @@
  * - パフォーマンス要件の検証
  */
 describe('フロントエンドアプリケーション包括テスト', () => {
-  const baseUrl = 'https://frontend:5173';
+  const baseUrl = '/';
   
   beforeEach(() => {
     // HTTPS証明書エラーを無視してページにアクセス
@@ -111,7 +111,7 @@ describe('バックエンドAPI接続テスト', () => {
 describe('パフォーマンステスト', () => {
   it('ページの読み込み時間が許容範囲内', () => {
     const startTime = Date.now();
-    cy.visit('https://frontend:5173', { 
+    cy.visit('/', { 
       failOnStatusCode: false,
       timeout: 30000
     });
@@ -123,7 +123,7 @@ describe('パフォーマンステスト', () => {
 
   it('ページサイズが適切な範囲内', () => {
     cy.request({
-      url: 'https://frontend:5173',
+      url: '/',
       failOnStatusCode: false
     }).then((response) => {
       const contentLength = response.headers['content-length'] || response.body.length;

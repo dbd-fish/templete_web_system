@@ -9,7 +9,7 @@
 describe('基本画面テスト', () => {
   beforeEach(() => {
     // フロントエンドにHTTPでアクセス
-    cy.visit('https://frontend:5173', { 
+    cy.visit('/', { 
       failOnStatusCode: false,
       timeout: 30000
     });
@@ -27,7 +27,7 @@ describe('基本画面テスト', () => {
 
 describe('ナビゲーションテスト', () => {
   beforeEach(() => {
-    cy.visit('https://frontend:5173', { 
+    cy.visit('/', { 
       failOnStatusCode: false,
       timeout: 30000
     });

@@ -1,5 +1,5 @@
 // サインアップ処理をコマンド化
-Cypress.Commands.add('signup', (username = 'testuser', email = 'newuser@example.com', password = 'NewPass123!') => {
+Cypress.Commands.add('signup', (username = 'testuser', email = 'newuser@example.com', password = 'Password123456+-') => {
   cy.visit('/signup');
 
   // ページの読み込みを待つ
@@ -26,8 +26,11 @@ Cypress.Commands.add('signup', (username = 'testuser', email = 'newuser@example.
     .clear()
     .type(password);
 
+  // フォーム入力完了後、ボタンが有効化されるまで待機
+  cy.wait(500);
+  
   // サインアップボタンをクリック
-  cy.get('[data-cy="signup-submit-button"]').should('be.enabled').click();
+  cy.get('[data-cy="signup-submit-button"]').should('be.enabled', { timeout: 5000 }).click();
   
   // サインアップ成功を待つ
   cy.url().should('not.include', '/signup', { timeout: 10000 });

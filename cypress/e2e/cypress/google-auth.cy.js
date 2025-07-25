@@ -7,7 +7,7 @@
  * - Google認証後のリダイレクト処理
  */
 describe('Google SSO機能テスト', () => {
-  const baseUrl = 'https://frontend:5173';
+  const baseUrl = '/';
   
   beforeEach(() => {
     // HTTPS証明書エラーを無視してページにアクセス
