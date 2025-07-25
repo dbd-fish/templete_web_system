@@ -189,3 +189,4 @@ cookies.txt
 curl-cookies.txt
 claude/temp_doc
 claude/reports
+cypress/cypress/screenshots
