@@ -17,8 +17,11 @@ class Setting(BaseSettings):
     # セキュリティ設定
     SECRET_KEY: str = "your-secret-key-here-change-in-production-please"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # アクセストークンは短期間（15分）
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240  # アクセストークンは長期間（4時間）- 401エラー緊急対策
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # リフレッシュトークンは長期間（30日）
+    
+    # Cookie有効期限設定（JWTトークンと整合性を保つ）
+    COOKIE_EXPIRE_BUFFER_MINUTES: int = 5  # Cookie期限をJWTより5分長く設定
 
     # データベース設定
     DATABASE_HOST: str = "db"
@@ -49,7 +52,7 @@ class Setting(BaseSettings):
     PROD_MODE: bool = False
 
     # その他の設定
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://frontend:5173"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://localhost:5173,http://frontend:5173"
     LOG_LEVEL: str = "INFO"
     TIMEZONE: str = "Asia/Tokyo"
 
@@ -65,6 +68,16 @@ class Setting(BaseSettings):
     @property
     def REDIS_SESSION_EXPIRE_SECONDS(self) -> int:
         """Redisセッション期限をREFRESH_TOKEN_EXPIRE_DAYSに同期"""
+        return 60 * 60 * 24 * self.REFRESH_TOKEN_EXPIRE_DAYS
+    
+    @property
+    def ACCESS_TOKEN_COOKIE_MAX_AGE(self) -> int:
+        """アクセストークンCookie有効期限（JWTより若干長め）"""
+        return 60 * (self.ACCESS_TOKEN_EXPIRE_MINUTES + self.COOKIE_EXPIRE_BUFFER_MINUTES)
+    
+    @property
+    def REFRESH_TOKEN_COOKIE_MAX_AGE(self) -> int:
+        """リフレッシュトークンCookie有効期限"""
         return 60 * 60 * 24 * self.REFRESH_TOKEN_EXPIRE_DAYS
 
     # Google OAuth 2.0設定

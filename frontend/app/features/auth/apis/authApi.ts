@@ -81,6 +81,13 @@ export const getUser = async (request: Request) => {
   const apiUrl = getApiUrl();
 
   const cookieHeader = request.headers.get('Cookie');
+  console.log('getUser - Cookie header:', cookieHeader ? `Present: ${cookieHeader.substring(0, 50)}...` : 'Missing');
+  console.log('getUser - API URL:', `${apiUrl}/api/v1/auth/me`);
+  console.log('getUser - Request headers keys:', Array.from(request.headers.keys()));
+  
+  // Cookie内のauthToken存在チェック
+  const hasAuthToken = cookieHeader?.includes('authToken=');
+  console.log('getUser - AuthToken present in cookies:', hasAuthToken);
 
   try {
     const response = await apiRequest(
@@ -92,10 +99,17 @@ export const getUser = async (request: Request) => {
     );
 
     const data = (await response.json()) as UserResponse;
+    console.log('getUser - Success:', data);
     return data;
   } catch (error) {
+    console.log('getUser - Error:', error);
+    console.log('getUser - Error type:', typeof error);
+    console.log('getUser - Error instanceof Error:', error instanceof Error);
+    
     // 認証エラーの場合はnullを返す
     if (error instanceof Error && error.message.includes('401')) {
+      console.log('getUser - 401 error detected, returning null');
+      console.log('getUser - Cookie was present:', hasAuthToken);
       return null;
     }
     throw error;

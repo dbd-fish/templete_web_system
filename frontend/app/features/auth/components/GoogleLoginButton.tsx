@@ -5,10 +5,10 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '~/components/ui/button';
-import { 
-  initializeGoogleAuth, 
-  authenticateWithGoogle, 
-  validateGoogleConfig 
+import {
+  initializeGoogleAuth,
+  authenticateWithGoogle,
+  validateGoogleConfig,
 } from '~/utils/googleAuth';
 
 // 開発環境では Google認証を無効化
@@ -27,7 +27,7 @@ interface GoogleLoginButtonProps {
 
 /**
  * GoogleLoginButton コンポーネント
- * 
+ *
  * Google OAuth認証用のボタンコンポーネント
  * Google Identity Services (gsi) ライブラリと統合済み
  */
@@ -62,7 +62,9 @@ export default function GoogleLoginButton({
 
         // 環境設定の検証
         if (!validateGoogleConfig()) {
-          console.warn('Google OAuth設定が不完全です。開発環境として続行します。');
+          console.warn(
+            'Google OAuth設定が不完全です。開発環境として続行します。',
+          );
           setIsInitialized(true);
           return;
         }
@@ -78,7 +80,7 @@ export default function GoogleLoginButton({
             if (onError) {
               onError(`Google認証の初期化に失敗しました: ${error}`);
             }
-          }
+          },
         );
 
         setIsInitialized(true);
@@ -98,36 +100,39 @@ export default function GoogleLoginButton({
   /**
    * Googleから受け取った認証情報を処理
    */
-  const handleGoogleCredential = useCallback(async (credential: string) => {
-    try {
-      setIsLoading(true);
-      if (onLoginStart) {
-        onLoginStart();
-      }
-
-      const result = await authenticateWithGoogle(credential);
-
-      if (result.success) {
-        if (onSuccess && result.message) {
-          onSuccess(result.message);
+  const handleGoogleCredential = useCallback(
+    async (credential: string) => {
+      try {
+        setIsLoading(true);
+        if (onLoginStart) {
+          onLoginStart();
         }
-      } else {
-        if (onError && result.error) {
-          onError(result.error);
+
+        const result = await authenticateWithGoogle(credential);
+
+        if (result.success) {
+          if (onSuccess && result.message) {
+            onSuccess(result.message);
+          }
+        } else {
+          if (onError && result.error) {
+            onError(result.error);
+          }
+        }
+      } catch (error) {
+        console.error('Google認証処理エラー:', error);
+        if (onError) {
+          onError('Google認証処理中にエラーが発生しました');
+        }
+      } finally {
+        setIsLoading(false);
+        if (onLoginEnd) {
+          onLoginEnd();
         }
       }
-    } catch (error) {
-      console.error('Google認証処理エラー:', error);
-      if (onError) {
-        onError('Google認証処理中にエラーが発生しました');
-      }
-    } finally {
-      setIsLoading(false);
-      if (onLoginEnd) {
-        onLoginEnd();
-      }
-    }
-  }, [onLoginStart, onError, onSuccess, onLoginEnd]);
+    },
+    [onLoginStart, onError, onSuccess, onLoginEnd],
+  );
 
   /**
    * Googleログインボタンクリック処理
@@ -140,7 +145,9 @@ export default function GoogleLoginButton({
     // 開発環境では模擬ログインを実行
     if (isDevelopment) {
       if (onError) {
-        onError('開発環境では Google認証は利用できません。メールアドレスでのログインをご利用ください。');
+        onError(
+          '開発環境では Google認証は利用できません。メールアドレスでのログインをご利用ください。',
+        );
       }
       return;
     }
@@ -203,7 +210,9 @@ export default function GoogleLoginButton({
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          <span className="opacity-50">Googleでログイン（開発環境では無効）</span>
+          <span className="opacity-50">
+            Googleでログイン（開発環境では無効）
+          </span>
         </>
       ) : (
         <>

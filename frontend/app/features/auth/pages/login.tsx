@@ -3,7 +3,7 @@ import { useActionData } from 'react-router';
 import { useState } from 'react';
 import LoginForm from '~/features/auth/components/LoginForm';
 import GoogleLoginButton from '~/features/auth/components/GoogleLoginButton';
-// import { authenticateUser, MOCK_ACCESS_TOKEN } from '~/mocks/data/auth';
+import { login } from '~/features/auth/apis/authApi';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 import SimpleCard from '~/components/common/SimpleCard';
@@ -15,7 +15,11 @@ import SimpleCard from '~/components/common/SimpleCard';
 export const meta: MetaFunction = () => {
   return [
     { title: 'ログイン | Webシステム開発テンプレート' },
-    { name: 'description', content: 'アカウントへログインします。メールアドレスとパスワードを入力してください。' },
+    {
+      name: 'description',
+      content:
+        'アカウントへログインします。メールアドレスとパスワードを入力してください。',
+    },
   ];
 };
 
@@ -32,25 +36,27 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     // authApi.tsのlogin関数を使用して統一性を確保
-    const { login } = await import('~/features/auth/apis/authApi');
     const response = await login(email, password);
 
     const responseData = await response.json();
     console.log('ログイン成功:', responseData);
-    
+
     // 認証成功時はマイページにリダイレクト
     // HttpOnly Cookieはサーバー側で設定される
     return redirect('/mypage');
   } catch (error) {
     console.error('ログインエラー:', error);
-    
+
     // ApiErrorの場合はエラーメッセージを使用
     if (error instanceof Error && 'detail' in error) {
       const apiError = error as Error & { detail?: string };
       return { error: apiError.detail || error.message };
     }
-    
-    return { error: 'ログインに失敗しました。メールアドレスまたはパスワードが正しくありません。' };
+
+    return {
+      error:
+        'ログインに失敗しました。メールアドレスまたはパスワードが正しくありません。',
+    };
   }
 };
 
@@ -93,8 +99,13 @@ export default function LoginPage() {
     <Layout>
       <Main>
         <SimpleCard>
-          <h1 className="text-xl font-semibold text-center mb-6" data-cy="login-title">ログイン</h1>
-          
+          <h1
+            className="text-xl font-semibold text-center mb-6"
+            data-cy="login-title"
+          >
+            ログイン
+          </h1>
+
           {/* エラーメッセージ表示 */}
           {(actionData?.error || googleError) && (
             <div className="mb-4 text-sm text-destructive border border-destructive/50 bg-destructive/10 p-3 rounded-md">

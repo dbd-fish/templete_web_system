@@ -1,15 +1,23 @@
-import { LoaderFunction, ActionFunction, redirect, MetaFunction } from 'react-router';
+import {
+  LoaderFunction,
+  ActionFunction,
+  redirect,
+  MetaFunction,
+} from 'react-router';
 import { useActionData, useLoaderData } from 'react-router';
 import AdminMyPage from '~/features/auth/components/AdminMyPage';
 import RegularMyPage from '~/features/auth/components/RegularMyPage';
 import { userDataLoader } from '~/features/auth/loaders/userDataLoader';
-import { authTokenLoader } from '~/features/auth/loaders/authTokenLoader';
 import { AuthenticationError } from '../errors/AuthenticationError';
 import { logoutAction } from '~/features/auth/actions/logoutAction';
 import { updateUser, deleteUser } from '~/features/auth/apis/authApi';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
-import { UserResponse as User, AdminUserResponse, AdminUserUpdateData } from '~/features/auth/types';
+import {
+  UserResponse as User,
+  AdminUserResponse,
+  AdminUserUpdateData,
+} from '~/features/auth/types';
 import { getApiUrl } from '~/config/api';
 
 /**
@@ -19,7 +27,10 @@ import { getApiUrl } from '~/config/api';
 export const meta: MetaFunction = () => {
   return [
     { title: 'マイページ | Webシステム開発テンプレート' },
-    { name: 'description', content: 'ユーザープロフィールの確認・編集ページです。' },
+    {
+      name: 'description',
+      content: 'ユーザープロフィールの確認・編集ページです。',
+    },
   ];
 };
 
@@ -29,14 +40,17 @@ export const meta: MetaFunction = () => {
 async function fetchAdminUsers(request: Request): Promise<AdminUserResponse[]> {
   try {
     const apiUrl = getApiUrl();
-    const response = await fetch(`${apiUrl}/api/v1/auth/admin/users?page=1&page_size=50`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': request.headers.get('Cookie') || '',
+    const response = await fetch(
+      `${apiUrl}/api/v1/auth/admin/users?page=1&page_size=50`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: request.headers.get('Cookie') || '',
+        },
+        credentials: 'include',
       },
-      credentials: 'include',
-    });
+    );
 
     if (!response.ok) {
       console.warn('Failed to fetch admin users:', response.status);
@@ -61,11 +75,11 @@ async function fetchAdminUsers(request: Request): Promise<AdminUserResponse[]> {
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     // throw new Error('Error occurred in MyPage Loader');
-    await authTokenLoader(request);
+    // authTokenLoaderを削除し、直接userDataLoaderで認証チェック
     const userData = await userDataLoader(request);
 
     let users: AdminUserResponse[] = [];
-    
+
     // 管理者権限のチェック（ROLE_ADMIN = 4以上）
     if (userData && userData.user_role >= 4) {
       users = await fetchAdminUsers(request);
@@ -80,10 +94,14 @@ export const loader: LoaderFunction = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.log('MyPage loader error:', error);
+    
     if (error instanceof AuthenticationError) {
+      console.log('Authentication error detected, redirecting to login');
       return redirect('/login');
     }
 
+    console.error('Unexpected error in MyPage loader:', error);
     throw new Response('ユーザーデータの取得に失敗しました。', {
       status: 400,
     });
@@ -93,14 +111,18 @@ export const loader: LoaderFunction = async ({ request }) => {
 /**
  * 管理者用ユーザー更新関数
  */
-async function updateUserAsAdmin(request: Request, userId: string, updateData: AdminUserUpdateData): Promise<void> {
+async function updateUserAsAdmin(
+  request: Request,
+  userId: string,
+  updateData: AdminUserUpdateData,
+): Promise<void> {
   // SSR環境ではMSWが動作しないため、常に実際のバックエンドAPIを使用する
   const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/auth/admin/users/${userId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      'Cookie': request.headers.get('Cookie') || '',
+      Cookie: request.headers.get('Cookie') || '',
     },
     credentials: 'include',
     body: JSON.stringify(updateData),
@@ -115,14 +137,17 @@ async function updateUserAsAdmin(request: Request, userId: string, updateData: A
 /**
  * 管理者用ユーザー削除関数
  */
-async function deleteUserAsAdmin(request: Request, userId: string): Promise<void> {
+async function deleteUserAsAdmin(
+  request: Request,
+  userId: string,
+): Promise<void> {
   // SSR環境ではMSWが動作しないため、常に実際のバックエンドAPIを使用する
   const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/auth/admin/users/${userId}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      'Cookie': request.headers.get('Cookie') || '',
+      Cookie: request.headers.get('Cookie') || '',
     },
     credentials: 'include',
   });
@@ -136,17 +161,23 @@ async function deleteUserAsAdmin(request: Request, userId: string): Promise<void
 /**
  * 管理者用ユーザー復活関数
  */
-async function restoreUserAsAdmin(request: Request, userId: string): Promise<void> {
+async function restoreUserAsAdmin(
+  request: Request,
+  userId: string,
+): Promise<void> {
   // SSR環境ではMSWが動作しないため、常に実際のバックエンドAPIを使用する
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/v1/auth/admin/users/${userId}/restore`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cookie': request.headers.get('Cookie') || '',
+  const response = await fetch(
+    `${apiUrl}/api/v1/auth/admin/users/${userId}/restore`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: request.headers.get('Cookie') || '',
+      },
+      credentials: 'include',
     },
-    credentials: 'include',
-  });
+  );
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

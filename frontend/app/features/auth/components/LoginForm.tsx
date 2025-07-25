@@ -8,7 +8,12 @@ import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
 export default function LoginForm() {
   return (
-    <Form id="login-form" method="post" className="space-y-4" data-cy="login-form">
+    <Form
+      id="login-form"
+      method="post"
+      className="space-y-4"
+      data-cy="login-form"
+    >
       {/* メールアドレス入力フィールド */}
       <div>
         <label htmlFor="email" className="block text-sm font-medium mb-1">

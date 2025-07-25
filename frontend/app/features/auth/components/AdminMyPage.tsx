@@ -45,15 +45,26 @@ const getUserStatusText = (status: number): string => {
   }
 };
 
-export default function AdminMyPage({ user, users = [], actionData }: AdminMyPageProps) {
+export default function AdminMyPage({
+  user,
+  users = [],
+  actionData,
+}: AdminMyPageProps) {
   const [showUserManagement, setShowUserManagement] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AdminUserResponse | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUserResponse | null>(
+    null,
+  );
   const [editMode, setEditMode] = useState(false);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-red-600" data-cy="admin-mypage-title">管理者マイページ</h1>
+        <h1
+          className="text-2xl font-bold text-red-600"
+          data-cy="admin-mypage-title"
+        >
+          管理者マイページ
+        </h1>
         <p className="text-muted-foreground mt-2">
           システム管理者として全機能にアクセス可能です
         </p>
@@ -95,34 +106,58 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="admin-email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   メールアドレス
                 </label>
-                <div id="admin-email" className="text-sm p-2 bg-white border rounded-md">
+                <div
+                  id="admin-email"
+                  className="text-sm p-2 bg-white border rounded-md"
+                >
                   {user.email}
                 </div>
               </div>
               <div>
-                <label htmlFor="admin-username" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="admin-username"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   ユーザー名
                 </label>
-                <div id="admin-username" className="text-sm p-2 bg-white border rounded-md">
+                <div
+                  id="admin-username"
+                  className="text-sm p-2 bg-white border rounded-md"
+                >
                   {user.username}
                 </div>
               </div>
               <div>
-                <label htmlFor="admin-role" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="admin-role"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   権限レベル
                 </label>
-                <div id="admin-role" className="text-sm p-2 bg-red-100 border border-red-300 rounded-md font-semibold text-red-700">
+                <div
+                  id="admin-role"
+                  className="text-sm p-2 bg-red-100 border border-red-300 rounded-md font-semibold text-red-700"
+                >
                   {getUserRoleText(user.user_role)}
                 </div>
               </div>
               <div>
-                <label htmlFor="admin-status" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="admin-status"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   アカウント状態
                 </label>
-                <div id="admin-status" className="text-sm p-2 bg-green-100 border border-green-300 rounded-md font-semibold text-green-700">
+                <div
+                  id="admin-status"
+                  className="text-sm p-2 bg-green-100 border border-green-300 rounded-md font-semibold text-green-700"
+                >
                   {getUserStatusText(user.user_status)}
                 </div>
               </div>
@@ -222,7 +257,9 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                     />
                   </svg>
                   <div>
-                    <p className="font-medium text-gray-700">セキュリティ管理</p>
+                    <p className="font-medium text-gray-700">
+                      セキュリティ管理
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       権限・アクセス制御
                     </p>
@@ -275,44 +312,66 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                 </svg>
                 ユーザー管理
               </h3>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-4 py-2 text-left">ユーザー名</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">メールアドレス</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">権限</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">状態</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">作成日</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">操作</th>
+                      <th className="border border-gray-300 px-4 py-2 text-left">
+                        ユーザー名
+                      </th>
+                      <th className="border border-gray-300 px-4 py-2 text-left">
+                        メールアドレス
+                      </th>
+                      <th className="border border-gray-300 px-4 py-2 text-left">
+                        権限
+                      </th>
+                      <th className="border border-gray-300 px-4 py-2 text-left">
+                        状態
+                      </th>
+                      <th className="border border-gray-300 px-4 py-2 text-left">
+                        作成日
+                      </th>
+                      <th className="border border-gray-300 px-4 py-2 text-left">
+                        操作
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((adminUser) => (
                       <tr key={adminUser.user_id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-2">{adminUser.username}</td>
-                        <td className="border border-gray-300 px-4 py-2">{adminUser.email}</td>
                         <td className="border border-gray-300 px-4 py-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            adminUser.user_role >= 4 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
+                          {adminUser.username}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2">
+                          {adminUser.email}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              adminUser.user_role >= 4
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
                             {getUserRoleText(adminUser.user_role)}
                           </span>
                         </td>
                         <td className="border border-gray-300 px-4 py-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            adminUser.user_status === 1 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              adminUser.user_status === 1
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
                             {getUserStatusText(adminUser.user_status)}
                           </span>
                         </td>
                         <td className="border border-gray-300 px-4 py-2">
-                          {new Date(adminUser.created_at).toLocaleDateString('ja-JP')}
+                          {new Date(adminUser.created_at).toLocaleDateString(
+                            'ja-JP',
+                          )}
                         </td>
                         <td className="border border-gray-300 px-4 py-2">
                           <button
@@ -326,8 +385,16 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                           </button>
                           {adminUser.deleted_at ? (
                             <Form method="post" className="inline">
-                              <input type="hidden" name="_action" value="restoreUser" />
-                              <input type="hidden" name="userId" value={adminUser.user_id} />
+                              <input
+                                type="hidden"
+                                name="_action"
+                                value="restoreUser"
+                              />
+                              <input
+                                type="hidden"
+                                name="userId"
+                                value={adminUser.user_id}
+                              />
                               <button
                                 type="submit"
                                 className="text-green-600 hover:underline"
@@ -337,13 +404,25 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                             </Form>
                           ) : (
                             <Form method="post" className="inline">
-                              <input type="hidden" name="_action" value="deleteUser" />
-                              <input type="hidden" name="userId" value={adminUser.user_id} />
+                              <input
+                                type="hidden"
+                                name="_action"
+                                value="deleteUser"
+                              />
+                              <input
+                                type="hidden"
+                                name="userId"
+                                value={adminUser.user_id}
+                              />
                               <button
                                 type="submit"
                                 className="text-red-600 hover:underline"
                                 onClick={(e) => {
-                                  if (!confirm('本当にこのユーザーを削除しますか？')) {
+                                  if (
+                                    !confirm(
+                                      '本当にこのユーザーを削除しますか？',
+                                    )
+                                  ) {
                                     e.preventDefault();
                                   }
                                 }}
@@ -397,7 +476,9 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
 
           {/* 管理者統計情報 */}
           <div className="bg-gradient-to-b from-red-50 to-orange-50 rounded-lg border-2 border-red-200 p-6">
-            <h3 className="text-lg font-semibold mb-4 text-red-700">管理者情報</h3>
+            <h3 className="text-lg font-semibold mb-4 text-red-700">
+              管理者情報
+            </h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">権限レベル</span>
@@ -434,10 +515,15 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
             >
               <input type="hidden" name="_action" value="updateUser" />
               <input type="hidden" name="userId" value={selectedUser.user_id} />
-              
+
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="edit-username" className="block text-sm font-medium mb-1">ユーザー名</label>
+                  <label
+                    htmlFor="edit-username"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    ユーザー名
+                  </label>
                   <input
                     type="text"
                     id="edit-username"
@@ -446,9 +532,14 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                     className="w-full p-2 border rounded-md"
                   />
                 </div>
-                
+
                 <div>
-                  <label htmlFor="edit-email" className="block text-sm font-medium mb-1">メールアドレス</label>
+                  <label
+                    htmlFor="edit-email"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    メールアドレス
+                  </label>
                   <input
                     type="email"
                     id="edit-email"
@@ -457,9 +548,14 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                     className="w-full p-2 border rounded-md"
                   />
                 </div>
-                
+
                 <div>
-                  <label htmlFor="edit-role" className="block text-sm font-medium mb-1">権限</label>
+                  <label
+                    htmlFor="edit-role"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    権限
+                  </label>
                   <select
                     id="edit-role"
                     name="user_role"
@@ -473,9 +569,14 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                     <option value={5}>オーナー</option>
                   </select>
                 </div>
-                
+
                 <div>
-                  <label htmlFor="edit-status" className="block text-sm font-medium mb-1">状態</label>
+                  <label
+                    htmlFor="edit-status"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    状態
+                  </label>
                   <select
                     id="edit-status"
                     name="user_status"
@@ -487,7 +588,7 @@ export default function AdminMyPage({ user, users = [], actionData }: AdminMyPag
                   </select>
                 </div>
               </div>
-              
+
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"

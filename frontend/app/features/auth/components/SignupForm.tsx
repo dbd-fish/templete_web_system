@@ -1,5 +1,5 @@
 /**
- * ユーザー登録フォームコンポーネント  
+ * ユーザー登録フォームコンポーネント
  * 新規ユーザー情報入力とバリデーション機能
  * パスワード強度チェックとリアルタイム確認表示
  */
@@ -7,9 +7,7 @@ import { Form } from 'react-router';
 import { useState } from 'react';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
-import {
-  isPasswordValid,
-} from '~/features/auth/passwordValidation';
+import { isPasswordValid } from '~/features/auth/passwordValidation';
 
 export default function SignupForm() {
   const [username, setUsername] = useState('');
@@ -51,7 +49,13 @@ export default function SignupForm() {
   };
 
   return (
-    <Form id="signup-form" method="post" action="/signup" className="space-y-4" data-cy="signup-form">
+    <Form
+      id="signup-form"
+      method="post"
+      action="/signup"
+      className="space-y-4"
+      data-cy="signup-form"
+    >
       {/* ユーザー名入力フィールド */}
       <div>
         <label htmlFor="username" className="block text-sm font-medium mb-1">
@@ -105,7 +109,10 @@ export default function SignupForm() {
           minLength={8}
         />
         {passwordError && (
-          <div className="mt-1 text-xs text-destructive" data-cy="password-error">
+          <div
+            className="mt-1 text-xs text-destructive"
+            data-cy="password-error"
+          >
             {passwordError}
           </div>
         )}
@@ -131,7 +138,10 @@ export default function SignupForm() {
           minLength={8}
         />
         {confirmPasswordError && (
-          <div className="mt-1 text-xs text-destructive" data-cy="confirm-password-error">
+          <div
+            className="mt-1 text-xs text-destructive"
+            data-cy="confirm-password-error"
+          >
             {confirmPasswordError}
           </div>
         )}

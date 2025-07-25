@@ -173,7 +173,7 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
             key="authToken",
             value=access_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=60 * setting.ACCESS_TOKEN_EXPIRE_MINUTES,  # トークンの有効期限と一致
+            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -183,7 +183,7 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
             key="refreshToken",
             value=refresh_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=60 * 60 * 24 * setting.REFRESH_TOKEN_EXPIRE_DAYS,  # トークンの有効期限と一致
+            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -230,11 +230,35 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
     - 401エラー: 認証失敗時（無効なトークン・ユーザー未存在）
     """,
 )
-async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
+async def get_me(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     logger.info("get_me - start")
     try:
         user = await get_current_user(request, db)
         logger.info("get_me - success", user_id=user.user_id)
+        
+        # セッション延長: 新しいトークンペアを生成してCookieを更新
+        client_host = request.headers.get("X-Forwarded-For") or (request.client.host if request.client else "unknown")
+        access_token, refresh_token = await create_token_pair(user.email, client_host, request)
+        
+        # 新しいトークンでCookieを更新（セッション延長）
+        response.set_cookie(
+            key="authToken",
+            value=access_token,
+            httponly=True,
+            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,
+            secure=not setting.DEV_MODE,
+            samesite="lax",
+        )
+        response.set_cookie(
+            key="refreshToken",
+            value=refresh_token,
+            httponly=True,
+            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,
+            secure=not setting.DEV_MODE,
+            samesite="lax",
+        )
+        
+        logger.info("get_me - session extended", user_id=user.user_id)
         user_data = UserResponse.model_validate(user)
         return create_success_response(message="ユーザー情報を取得しました", data=user_data.model_dump())
     finally:
@@ -557,7 +581,7 @@ async def update_user_profile(user_update: UserUpdate, request: Request, respons
             key="authToken",
             value=access_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=60 * setting.ACCESS_TOKEN_EXPIRE_MINUTES,  # トークンの有効期限と一致
+            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -567,7 +591,7 @@ async def update_user_profile(user_update: UserUpdate, request: Request, respons
             key="refreshToken",
             value=refresh_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=60 * 60 * 24 * setting.REFRESH_TOKEN_EXPIRE_DAYS,  # トークンの有効期限と一致
+            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -831,7 +855,7 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
             key="authToken",
             value=access_token,
             httponly=True,
-            max_age=60 * setting.ACCESS_TOKEN_EXPIRE_MINUTES,  # トークンの有効期限と一致
+            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,
             samesite="lax",
         )
@@ -841,7 +865,7 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
             key="refreshToken",
             value=new_refresh_token,
             httponly=True,
-            max_age=60 * 60 * 24 * setting.REFRESH_TOKEN_EXPIRE_DAYS,  # トークンの有効期限と一致
+            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
             secure=not setting.DEV_MODE,
             samesite="lax",
         )
@@ -959,7 +983,7 @@ async def google_login(google_request: GoogleLoginRequest, request: Request, res
             key="authToken",
             value=access_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=60 * setting.ACCESS_TOKEN_EXPIRE_MINUTES,  # トークンの有効期限と一致
+            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -969,7 +993,7 @@ async def google_login(google_request: GoogleLoginRequest, request: Request, res
             key="refreshToken",
             value=refresh_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=60 * 60 * 24 * setting.REFRESH_TOKEN_EXPIRE_DAYS,  # トークンの有効期限と一致
+            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -1189,7 +1213,7 @@ async def update_user_profile_advanced(profile_update: AdvancedUserUpdate, reque
             key="authToken",
             value=access_token,
             httponly=True,
-            max_age=60 * setting.ACCESS_TOKEN_EXPIRE_MINUTES,  # トークンの有効期限と一致
+            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,
             samesite="lax",
         )
@@ -1199,7 +1223,7 @@ async def update_user_profile_advanced(profile_update: AdvancedUserUpdate, reque
             key="refreshToken",
             value=refresh_token,
             httponly=True,
-            max_age=60 * 60 * 24 * setting.REFRESH_TOKEN_EXPIRE_DAYS,  # トークンの有効期限と一致
+            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
             secure=not setting.DEV_MODE,
             samesite="lax",
         )

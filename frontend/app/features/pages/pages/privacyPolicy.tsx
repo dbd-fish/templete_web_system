@@ -9,7 +9,11 @@ import Footer from '~/components/layout/Footer';
 export const meta: MetaFunction = () => {
   return [
     { title: 'プライバシーポリシー | Webシステム開発テンプレート' },
-    { name: 'description', content: '当サイトにおけるプライバシーポリシー（個人情報保護方針）について記載しています。' },
+    {
+      name: 'description',
+      content:
+        '当サイトにおけるプライバシーポリシー（個人情報保護方針）について記載しています。',
+    },
   ];
 };
 

@@ -20,7 +20,7 @@ from api.common.exception_handlers import (
     sqlalchemy_exception_handler,
     validation_exception_handler,
 )
-from api.common.middleware import AddUserIPMiddleware
+# from api.common.middleware import AddUserIPMiddleware  # 削除: Uvicornログで十分（G032対応）
 from api.common.redis_client import redis_client
 from api.common.setting import setting
 from api.v1.features.feature_auth.route import router as auth_router
@@ -103,10 +103,9 @@ else:
     # 本番環境ではOpenAPIドキュメントを無効化（セキュリティ対策）
     app = FastAPI(title="Template Web System API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
-# ミドルウェアの追加（ユーザーIP記録）
-# 注意: ミドルウェアを別ファイルにする場合、@app.middleware()デコレータが機能しないため、
-#       add_middlewareメソッドでミドルウェアを登録する方法を採用
-app.add_middleware(AddUserIPMiddleware)
+# ミドルウェアの追加（ユーザーIP記録）削除
+# 理由: UvicornがデフォルトでIPアドレスをログ出力するため不要（G032対応）
+# 削除前: app.add_middleware(AddUserIPMiddleware)
 
 # CORS設定（ブラウザからのSwagger UIアクセス対応）
 app.add_middleware(

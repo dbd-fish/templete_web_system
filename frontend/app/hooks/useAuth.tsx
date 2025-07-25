@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+} from 'react';
 
 /**
  * 認証状態の型定義
@@ -45,7 +52,7 @@ interface AuthProviderProps {
 
 /**
  * 認証プロバイダーコンポーネント
- * 
+ *
  * アプリケーション全体の認証状態を管理します
  */
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -78,7 +85,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (!response.ok) {
-        console.warn('ログアウトAPIの呼び出しに失敗しましたが、クライアント側の状態をクリアします');
+        console.warn(
+          'ログアウトAPIの呼び出しに失敗しましたが、クライアント側の状態をクリアします',
+        );
       }
     } catch (error) {
       console.error('ログアウト処理エラー:', error);
@@ -97,7 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const checkAuthStatus = useCallback(async (): Promise<void> => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true }));
+      setAuthState((prev) => ({ ...prev, isLoading: true }));
 
       const response = await fetch('/api/v1/auth/me', {
         method: 'POST',
@@ -196,15 +205,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 
 /**
  * 認証フック
- * 
+ *
  * コンポーネントで認証状態や認証処理を使用するためのフック
  */
 export function useAuth(): AuthContextType {
@@ -217,7 +224,7 @@ export function useAuth(): AuthContextType {
 
 /**
  * 認証が必要なページ用のフック
- * 
+ *
  * 未認証時にログインページにリダイレクトする
  */
 export function useRequireAuth(): AuthContextType {
@@ -235,7 +242,7 @@ export function useRequireAuth(): AuthContextType {
 
 /**
  * ゲスト専用ページ用のフック
- * 
+ *
  * 認証済みの場合にマイページにリダイレクトする
  */
 export function useRequireGuest(): AuthContextType {

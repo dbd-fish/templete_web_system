@@ -1,4 +1,9 @@
-import { LoaderFunction, redirect, ActionFunction, MetaFunction } from 'react-router';
+import {
+  LoaderFunction,
+  redirect,
+  ActionFunction,
+  MetaFunction,
+} from 'react-router';
 import { userDataLoader } from '~/features/auth/loaders/userDataLoader';
 import { AuthenticationError } from '../errors/AuthenticationError';
 import { logoutAction } from '~/features/auth/actions/logoutAction';
@@ -34,7 +39,11 @@ import Main from '~/components/layout/Main';
 export const meta: MetaFunction = () => {
   return [
     { title: 'ホーム | Webシステム開発テンプレート' },
-    { name: 'description', content: 'ログイン後のメインダッシュボード。各種機能へのアクセスが可能です。' },
+    {
+      name: 'description',
+      content:
+        'ログイン後のメインダッシュボード。各種機能へのアクセスが可能です。',
+    },
   ];
 };
 

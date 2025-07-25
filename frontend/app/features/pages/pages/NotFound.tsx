@@ -10,7 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 export const meta: MetaFunction = () => {
   return [
     { title: 'ページが見つかりません | Webシステム開発テンプレート' },
-    { name: 'description', content: 'お探しのページが見つかりませんでした。URLをご確認いただくか、ホームページからアクセスしてください。' },
+    {
+      name: 'description',
+      content:
+        'お探しのページが見つかりませんでした。URLをご確認いただくか、ホームページからアクセスしてください。',
+    },
   ];
 };
 

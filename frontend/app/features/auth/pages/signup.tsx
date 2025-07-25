@@ -1,4 +1,9 @@
-import { useActionData, redirect, ActionFunction, MetaFunction } from 'react-router';
+import {
+  useActionData,
+  redirect,
+  ActionFunction,
+  MetaFunction,
+} from 'react-router';
 import { useState } from 'react';
 import SignupForm from '~/features/auth/components/SignupForm';
 import GoogleLoginButton from '~/features/auth/components/GoogleLoginButton';
@@ -18,7 +23,10 @@ import SimpleCard from '~/components/common/SimpleCard';
 export const meta: MetaFunction = () => {
   return [
     { title: 'アカウント登録 | Webシステム開発テンプレート' },
-    { name: 'description', content: '新しいアカウントを作成します。メールアドレス認証が必要です。' },
+    {
+      name: 'description',
+      content: '新しいアカウントを作成します。メールアドレス認証が必要です。',
+    },
   ];
 };
 
@@ -141,8 +149,13 @@ export default function SignupPage() {
     <Layout>
       <Main>
         <SimpleCard>
-          <h1 className="text-xl font-semibold text-center mb-6" data-cy="signup-title">会員登録</h1>
-          
+          <h1
+            className="text-xl font-semibold text-center mb-6"
+            data-cy="signup-title"
+          >
+            会員登録
+          </h1>
+
           {/* エラーメッセージ表示 */}
           {(actionData?.error || googleError) && (
             <div className="mb-4 text-sm text-destructive border border-destructive/50 bg-destructive/10 p-3 rounded-md whitespace-pre-wrap">
@@ -185,7 +198,11 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               既にアカウントをお持ちの方は{' '}
-              <a href="/login" className="text-primary hover:underline" data-cy="signup-login-link">
+              <a
+                href="/login"
+                className="text-primary hover:underline"
+                data-cy="signup-login-link"
+              >
                 こちらからログイン
               </a>
             </p>

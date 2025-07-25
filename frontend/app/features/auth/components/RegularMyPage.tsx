@@ -1,5 +1,5 @@
 /**
- * 一般ユーザー用マイページコンポーネント  
+ * 一般ユーザー用マイページコンポーネント
  * 一般ユーザー権限でのプロフィール表示と編集機能
  * ログアウト機能とユーザー情報管理機能を提供
  */
@@ -44,11 +44,16 @@ const getUserStatusText = (status: number): string => {
   }
 };
 
-export default function RegularMyPage({ user, actionData }: RegularMyPageProps) {
+export default function RegularMyPage({
+  user,
+  actionData,
+}: RegularMyPageProps) {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold" data-cy="mypage-title">マイページ</h1>
+        <h1 className="text-2xl font-bold" data-cy="mypage-title">
+          マイページ
+        </h1>
         <p className="text-muted-foreground mt-2">
           アカウント情報の管理とセキュリティ設定
         </p>
@@ -138,16 +143,24 @@ export default function RegularMyPage({ user, actionData }: RegularMyPageProps) 
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-muted-foreground">今月のログイン回数</p>
+                <p className="text-sm text-muted-foreground">
+                  今月のログイン回数
+                </p>
                 <p className="text-2xl font-bold text-blue-600">12回</p>
               </div>
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-muted-foreground">利用開始日からの日数</p>
+                <p className="text-sm text-muted-foreground">
+                  利用開始日からの日数
+                </p>
                 <p className="text-2xl font-bold text-green-600">30日</p>
               </div>
               <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <p className="text-sm text-muted-foreground">アカウントレベル</p>
-                <p className="text-lg font-bold text-purple-600">{getUserRoleText(user.user_role)}</p>
+                <p className="text-sm text-muted-foreground">
+                  アカウントレベル
+                </p>
+                <p className="text-lg font-bold text-purple-600">
+                  {getUserRoleText(user.user_role)}
+                </p>
               </div>
             </div>
           </div>
@@ -239,13 +252,17 @@ export default function RegularMyPage({ user, actionData }: RegularMyPageProps) 
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">アカウントタイプ</span>
-                <span className="font-semibold">{getUserRoleText(user.user_role)}</span>
+                <span className="font-semibold">
+                  {getUserRoleText(user.user_role)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">アカウント状態</span>
-                <span className={`font-semibold ${
-                  user.user_status === 1 ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <span
+                  className={`font-semibold ${
+                    user.user_status === 1 ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
                   {getUserStatusText(user.user_status)}
                 </span>
               </div>
@@ -259,31 +276,60 @@ export default function RegularMyPage({ user, actionData }: RegularMyPageProps) 
           {/* プレミアム機能案内（非管理者のみ） */}
           {user.user_role < 4 && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 p-6">
-              <h3 className="text-lg font-semibold mb-2 text-blue-700">プレミアム機能</h3>
+              <h3 className="text-lg font-semibold mb-2 text-blue-700">
+                プレミアム機能
+              </h3>
               <p className="text-sm text-blue-600 mb-4">
                 さらに高度な機能をご利用いただけます
               </p>
               <div className="space-y-2 text-sm text-blue-700">
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   高度な分析機能
                 </div>
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   優先サポート
                 </div>
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   容量無制限
                 </div>
               </div>
-              <button className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors" data-cy="upgrade-button">
+              <button
+                className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                data-cy="upgrade-button"
+              >
                 アップグレード
               </button>
             </div>

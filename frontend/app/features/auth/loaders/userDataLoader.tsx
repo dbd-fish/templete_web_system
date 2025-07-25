@@ -26,7 +26,10 @@ export async function userDataLoader(
     return userData;
   } catch (error) {
     // 認証エラーの場合はAuthenticationErrorとして処理
-    if (error instanceof Error && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+    if (
+      error instanceof Error &&
+      (error.message.includes('401') || error.message.includes('Unauthorized'))
+    ) {
       if (loginRequired) {
         throw new AuthenticationError('認証情報の取得に失敗しました。');
       }
