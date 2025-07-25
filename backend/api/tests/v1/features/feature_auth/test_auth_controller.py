@@ -622,6 +622,123 @@ async def test_update_user_info_with_deleted_user() -> None:
 
 
 # =============================================================================
+# アカウント削除テスト（DELETE /api/v1/auth/account）
+# =============================================================================
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_delete_account_success() -> None:
+    """DELETE /api/v1/auth/account
+
+    【正常系】認証済みユーザーがアカウント削除を実行する
+    """
+    # Arrange: テストデータの準備と認証済みクライアント作成
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+        await client.post("/api/v1/dev/clear_data")
+        await client.post("/api/v1/dev/seed_data")
+
+        # 認証済みクライアントを準備
+        await setup_authenticated_client_with_manual_token(client, TestData.TEST_USER_EMAIL_1, TestData.TEST_USER_PASSWORD)
+
+        # Act: アカウント削除を実行
+        delete_response = await client.delete("/api/v1/auth/account")
+
+        # Assert: 削除成功レスポンスを検証
+        assert delete_response.status_code == 200, delete_response.text
+        response_json = delete_response.json()
+        assert response_json["success"] is True
+        assert "アカウントが正常に削除され、ログアウトしました" in response_json["message"]
+        assert response_json["data"]["message"] == "アカウントが正常に削除されました"
+
+        # Assert: 認証クッキーが削除されていることを確認
+        # NOTE: delete_cookieはSet-Cookieヘッダーで空の値とmax_age=0を設定する
+        set_cookie_headers = delete_response.headers.get_list("set-cookie")
+        assert any("authToken=" in header and "Max-Age=0" in header for header in set_cookie_headers)
+        assert any("refreshToken=" in header and "Max-Age=0" in header for header in set_cookie_headers)
+
+        # Assert: 削除後は認証が必要なエンドポイントにアクセスできない
+        profile_response = await client.post("/api/v1/auth/me")
+        assert profile_response.status_code == 401
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_delete_account_unauthorized() -> None:
+    """DELETE /api/v1/auth/account
+
+    【異常系】未認証状態でアカウント削除を試行する
+    """
+    # Arrange: 未認証クライアント
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+        await client.post("/api/v1/dev/clear_data")
+        await client.post("/api/v1/dev/seed_data")
+
+        # Act: 未認証状態でアカウント削除を試行
+        delete_response = await client.delete("/api/v1/auth/account")
+
+        # Assert: 認証エラーレスポンスを検証
+        assert delete_response.status_code == 401, delete_response.text
+        response_json = delete_response.json()
+        assert response_json["success"] is False
+        assert "認証情報が無効です" in response_json["message"]
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_delete_account_with_deleted_user() -> None:
+    """DELETE /api/v1/auth/account
+
+    【異常系】論理削除済みユーザーでアカウント削除を試行する
+    """
+    # Arrange: 論理削除済みユーザーアカウントを準備
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+        await client.post("/api/v1/dev/clear_data")
+        await client.post("/api/v1/dev/seed_data")
+
+        # 既存ユーザーでログインしてアカウントを最初に削除
+        await setup_authenticated_client_with_manual_token(client, TestData.TEST_USER_EMAIL_1, TestData.TEST_USER_PASSWORD)
+        first_delete_response = await client.delete("/api/v1/auth/me")
+        assert first_delete_response.status_code == 200
+
+        # Act: 論理削除済みユーザーで再度アカウント削除を試行
+        second_delete_response = await client.delete("/api/v1/auth/account")
+
+        # Assert: 認証拒否エラーレスポンスを検証
+        assert second_delete_response.status_code == 401, second_delete_response.text
+        response_json = second_delete_response.json()
+        assert response_json["success"] is False
+        assert "認証情報が無効です" in response_json["message"]
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_delete_account_with_expired_token() -> None:
+    """DELETE /api/v1/auth/account
+
+    【異常系】期限切れJWTトークンでアカウント削除を試行する
+    """
+    # Arrange: 期限切れトークンを生成
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+        await client.post("/api/v1/dev/clear_data")
+        await client.post("/api/v1/dev/seed_data")
+
+        # 期限切れトークンを生成（-1秒前に期限切れ）
+        expired_token = create_access_token(
+            data={"sub": TestData.TEST_USER_EMAIL_1},
+            expires_delta=timedelta(seconds=-1),
+        )
+
+        # 期限切れトークンをクッキーに設定
+        client.cookies.set("authToken", expired_token)
+
+        # Act: 期限切れトークンでアカウント削除を試行
+        delete_response = await client.delete("/api/v1/auth/account")
+
+        # Assert: 認証エラーレスポンスを検証
+        assert delete_response.status_code == 401, delete_response.text
+        response_json = delete_response.json()
+        assert response_json["success"] is False
+        assert "認証情報が無効です" in response_json["message"]
+
+
+# =============================================================================
 # Google OAuth 2.0 認証テスト
 # =============================================================================
 

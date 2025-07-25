@@ -1,7 +1,8 @@
 
-import structlog
 import urllib.parse
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request, Response, status
+
+import structlog
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.common.database import get_db
@@ -116,10 +117,10 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
     content_type = request.headers.get("content-type", "")
     body = await request.body()
     body_str = body.decode('utf-8')
-    
+
     username = ""
     password = ""
-    
+
     if "application/json" in content_type:
         # JSONリクエストの場合
         import json
@@ -127,12 +128,12 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
             json_data = json.loads(body_str)
             username = json_data.get("username", "")
             password = json_data.get("password", "")
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             logger.error("login - invalid JSON format")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="無効なJSON形式です",
-            )
+            ) from e
     else:
         # フォームデータの場合（デフォルト）
         def parse_form_data(data: str) -> dict[str, str]:
@@ -145,11 +146,11 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
                     value = urllib.parse.unquote(value)
                     params[key] = value
             return params
-        
+
         form_params = parse_form_data(body_str)
         username = form_params.get("username", "")
         password = form_params.get("password", "")
-    
+
     logger.info("login - start", username=username)
     logger.info("login - form_data received", username=username, password_length=len(password))
     try:
@@ -632,6 +633,77 @@ async def delete_user_account(request: Request, response: Response, db: AsyncSes
         return create_success_response(message="ユーザーアカウントが正常に削除され、ログアウトしました", data={"message": "ユーザーアカウントが正常に削除されました"})
     finally:
         logger.info("delete_user_account - end")
+
+
+@router.delete(
+    "/account",
+    response_model=SuccessResponse[MessageResponse],
+    summary="アカウント削除",
+    description="""現在ログイン中のユーザーアカウントを削除します。
+
+    **処理の流れ:**
+    1. get_current_user()で現在のユーザーを取得・認証
+    2. delete_user()で論理削除を実行
+    3. ユーザーステータスを「停止中」に変更
+    4. deleted_at フィールドに削除日時を記録
+    5. 全てのリフレッシュトークンを無効化
+    6. 認証クッキーを削除してログアウト処理
+    7. 削除完了メッセージを返却
+
+    **論理削除の詳細:**
+    - 物理削除は行わず、データベースレコードは保持
+    - user_status を STATUS_SUSPENDED に変更
+    - deleted_at に削除日時を記録（日本時間）
+    - 削除されたユーザーは検索対象から除外
+
+    **認証必須:** JWTトークンが必要です。
+
+    **セキュリティ機能:**
+    - 本人認証確認（ログイン中のユーザーのみ削除可能）
+    - 全セッション無効化（リフレッシュトークン削除）
+    - 即座ログアウト処理
+
+    **削除方式:**
+    - 論理削除（ソフトデリート）を採用
+    - データは実際には残るが、非アクティブ状態に変更
+    - アカウントは完全に無効化され、今後ログインできなくなります
+
+    **注意事項:**
+    - この操作は元に戻せません
+    - 削除実行後は自動的にログアウトされます
+    - 同じメールアドレスでの再登録が必要な場合は、新規登録を行ってください
+
+    **パラメータ:**
+    - request: リクエストオブジェクト（認証トークン取得用）
+    - response: レスポンスオブジェクト（クッキー削除用）
+    - db: 非同期データベースセッション
+
+    **レスポンス:**
+    - SuccessResponse[MessageResponse]: 削除完了メッセージ
+    - 401エラー: 未認証状態でのアクセス時
+    """,
+)
+async def delete_account(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    logger.info("delete_account - start")
+    try:
+        # 現在のユーザーを取得
+        current_user = await get_current_user(request, db)
+
+        # ユーザーを論理削除
+        await delete_user(db, current_user)
+        logger.info("delete_account - user_deleted", user_id=current_user.user_id)
+
+        # 全てのリフレッシュトークンを無効化
+        await revoke_all_refresh_tokens_for_user(current_user.email)
+
+        # 認証クッキーを削除（ログアウト処理）
+        response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
+        response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
+        logger.info("delete_account - success", user_id=current_user.user_id)
+
+        return create_success_response(message="アカウントが正常に削除され、ログアウトしました", data={"message": "アカウントが正常に削除されました"})
+    finally:
+        logger.info("delete_account - end")
 
 
 @router.delete(
