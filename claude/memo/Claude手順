@@ -40,9 +40,9 @@ tmux new -s claude-co \
 \; select-pane -t 0 \
 \; split-window -v \
 \; select-pane -t 0 -T "PM" \
-\; select-pane -t 1 -T "メンバー　フロントエンドエンジニア" \
-\; select-pane -t 2 -T "メンバー　バックエンドエンジニア" \
-\; select-pane -t 3 -T "メンバー　フルスタックエンジニア" \
+\; select-pane -t 1 -T "メンバー　フルスタックエンジニア1" \
+\; select-pane -t 2 -T "メンバー　フルスタックエンジニア2" \
+\; select-pane -t 3 -T "メンバー　フルスタックエンジニア3" \
 \; send-keys -t 0 'claude --dangerously-skip-permissions' Enter \
 \; send-keys -t 1 'claude --dangerously-skip-permissions' Enter \
 \; send-keys -t 2 'claude --dangerously-skip-permissions' Enter \
@@ -74,4 +74,7 @@ claude-tmux_pm.mdを読み込んでシステム開発に着手してください
 ```
 ```
 claude-tmux_pm.mdを読み込んで現状のシステム開発状況を理解してください
+```
+```
+claude\要件定義.mdの`## 追加要望`を追加しました。各メンバーに指示して対応させてください。
 ```

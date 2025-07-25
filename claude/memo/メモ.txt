@@ -18,9 +18,9 @@ tmux new -s claude-co \
 \; select-pane -t 0 \
 \; split-window -v \
 \; select-pane -t 0 -T "PM" \
-\; select-pane -t 1 -T "フロントエンドエンジニア" \
-\; select-pane -t 2 -T "バックエンドエンジニア" \
-\; select-pane -t 3 -T "フルスタックエンジニア" \
+\; select-pane -t 1 -T "フルスタックエンジニア1" \
+\; select-pane -t 2 -T "フルスタックエンジニア2" \
+\; select-pane -t 3 -T "フルスタックエンジニア3" \
 \; send-keys -t 0 'claude --dangerously-skip-permissions' Enter \
 \; send-keys -t 1 'claude --dangerously-skip-permissions' Enter \
 \; send-keys -t 2 'claude --dangerously-skip-permissions' Enter \

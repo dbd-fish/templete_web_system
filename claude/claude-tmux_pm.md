@@ -15,9 +15,9 @@ tmux new -s claude-co \
 \; select-pane -t 0 \
 \; split-window -v \
 \; select-pane -t 0 -T "PM" \
-\; select-pane -t 1 -T "メンバー　フロントエンドエンジニア" \
-\; select-pane -t 2 -T "メンバー　バックエンドエンジニア" \
-\; select-pane -t 3 -T "メンバー　フルスタックエンジニア" \
+\; select-pane -t 1 -T "メンバー　フルスタックエンジニア1" \
+\; select-pane -t 2 -T "メンバー　フルスタックエンジニア2" \
+\; select-pane -t 3 -T "メンバー　フルスタックエンジニア3" \
 \; send-keys -t 0 'claude --dangerously-skip-permissions' Enter \
 \; send-keys -t 1 'claude --dangerously-skip-permissions' Enter \
 \; send-keys -t 2 'claude --dangerously-skip-permissions' Enter \
@@ -73,7 +73,7 @@ echo 'tmux send-keys -t [pane_id] "メッセージ内容" && sleep 0.2 && tmux s
 初回のメッセージ内容のテンプレートは下記の通りです。
 ```
 あなたは
-ROLE: フロントエンドエンジニア
+ROLE: フルスタックエンジニア1
 PANE_ID: %{pane_id}
 です。
 claude\claude-tmux_member.md を読み込んでください。

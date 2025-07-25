@@ -17,9 +17,9 @@ tmux new -s claude-co \
 \; select-pane -t 0 \
 \; split-window -v \
 \; select-pane -t 0 -T "PM" \
-\; select-pane -t 1 -T "メンバー　フロントエンドエンジニア" \
-\; select-pane -t 2 -T "メンバー　バックエンドエンジニア" \
-\; select-pane -t 3 -T "メンバー　フルスタックエンジニア" \
+\; select-pane -t 1 -T "メンバー　フルスタックエンジニア1" \
+\; select-pane -t 2 -T "メンバー　フルスタックエンジニア2" \
+\; select-pane -t 3 -T "メンバー　フルスタックエンジニア3" \
 \; send-keys -t 0 'claude --dangerously-skip-permissions' Enter \
 \; send-keys -t 1 'claude --dangerously-skip-permissions' Enter \
 \; send-keys -t 2 'claude --dangerously-skip-permissions' Enter \
@@ -38,7 +38,7 @@ PMからどのメンバーなのか指定されます。
 
 1. **自己認識**  
    - 受信した最初のメッセージに `ROLE:` 行が含まれている場合、  
-     例：`ROLE: フロントエンドエンジニア`  
+     例：`ROLE: フルスタックエンジニア1`  
      ⇒ 自身のロールと `PANE_ID` をメモリに保持
    - 初期化完了後、`[READY FRONTEND]` 形式で報告
 
