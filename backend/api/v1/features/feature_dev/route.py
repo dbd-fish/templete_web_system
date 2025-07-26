@@ -122,7 +122,7 @@ async def test_reset_password_endpoint(
             "reset_url": f"http://localhost:3000/auth/reset-password?token={reset_token}",
             "note": "This is a development test endpoint. The password has been actually changed.",
         }
-    backend\api\v1\features\feature_dev\route.pyException as e:
+    except Exception as e:
         logger.error("test_reset_password_endpoint - error", email=test_data.email, error=str(e))
         return {"msg": "Password reset test failed", "email": test_data.email, "error": str(e)}
     finally:
@@ -198,3 +198,4 @@ async def health_check_db(session: AsyncSession = Depends(get_db)) -> dict:
         return response
     finally:
         logger.info("health_check_db - end")
+
