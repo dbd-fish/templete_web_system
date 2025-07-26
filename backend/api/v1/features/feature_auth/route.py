@@ -1,6 +1,4 @@
 
-import urllib.parse
-
 import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,6 +35,7 @@ from api.v1.features.feature_auth.schemas.user import (
     AdvancedUserUpdate,
     DirectUserCreate,
     GoogleLoginRequest,
+    LoginRequest,
     PasswordChangeRequest,
     PasswordResetData,
     ProfileResponse,
@@ -63,103 +62,40 @@ router = APIRouter()
     description="""ユーザー名（またはメールアドレス）とパスワードでログインします。
 
     **処理の流れ:**
-    1. JSONまたはフォームデータ（username/password）を受信
+    1. JSON形式でusername/passwordを受信（OAuth2仕様準拠）
     2. authenticate_user()でユーザー認証を実行
-    3. 認証成功時、JWTアクセストークンを生成
+    3. 認証成功時、JWTアクセストークンとリフレッシュトークンを生成
     4. HttpOnlyクッキーとしてトークンを設定
-    5. セキュアなクッキー設定（3時間の有効期限）
+    5. アクセストークン：30分、リフレッシュトークン：5日の有効期限
 
     **テスト用アカウント:**
     - メールアドレス: `testuser@example.com`
     - パスワード: `Password123456+-`
 
     **レスポンス:**
-    - 成功時：HttpOnlyクッキーにJWTトークンを設定
+    - 成功時：HttpOnlyクッキーにJWTトークンペアを設定
     - 失敗時：401エラー（認証失敗）
 
     **セキュリティ:**
     - HttpOnlyクッキーでXSS攻撃を防止
-    - Secure属性でHTTPS通信を強制
+    - Secure属性でHTTPS通信を強制（本番環境）
     - SameSite=Lax設定でCSRF攻撃を軽減
     """,
-    openapi_extra={
-        "requestBody": {
-            "content": {
-                "application/json": {
-                    "schema": {
-                        "type": "object",
-                        "properties": {
-                            "username": {"type": "string", "title": "Username", "description": "ユーザー名またはメールアドレス", "default": "testuser@example.com", "example": "testuser@example.com"},
-                            "password": {"type": "string", "title": "Password", "description": "パスワード", "default": "Password123456+-", "example": "Password123456+-"},
-                        },
-                        "required": ["username", "password"],
-                    },
-                },
-                "application/x-www-form-urlencoded": {
-                    "schema": {
-                        "type": "object",
-                        "properties": {
-                            "username": {"type": "string", "title": "Username", "description": "ユーザー名またはメールアドレス", "default": "testuser@example.com", "example": "testuser@example.com"},
-                            "password": {"type": "string", "title": "Password", "description": "パスワード", "default": "Password123456+-", "example": "Password123456+-"},
-                        },
-                        "required": ["username", "password"],
-                    },
-                },
-            },
-        },
-    },
 )
-async def login(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
-    # Content-Typeに基づいてリクエストボディを解析
-    content_type = request.headers.get("content-type", "")
-    body = await request.body()
-    body_str = body.decode('utf-8')
-
-    email = ""
-    password = ""
-
-    if "application/json" in content_type:
-        # JSONリクエストの場合
-        import json
-        try:
-            json_data = json.loads(body_str)
-            email = json_data.get("username", "")
-            password = json_data.get("password", "")
-        except json.JSONDecodeError as e:
-            logger.error("login - invalid JSON format")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="無効なJSON形式です",
-            ) from e
-    else:
-        # フォームデータの場合（デフォルト）
-        def parse_form_data(data: str) -> dict[str, str]:
-            params = {}
-            for pair in data.split('&'):
-                if '=' in pair:
-                    key, value = pair.split('=', 1)
-                    # URL デコード（ただし + を空白に変換しない）
-                    key = urllib.parse.unquote(key)
-                    value = urllib.parse.unquote(value)
-                    params[key] = value
-            return params
-
-        form_params = parse_form_data(body_str)
-        email = form_params.get("username", "")
-        password = form_params.get("password", "")
-
-    logger.info("login - start", email=email)
-    logger.info("login - form_data received", email=email, password_length=len(password))
+async def login(
+    login_data: LoginRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+):
+    logger.info("login - start", email=login_data.username)
+    logger.info("login - request received", email=login_data.username, password_length=len(login_data.password))
+    
     try:
-        user = await authenticate_user(email, password, db)
-        if not user:
-            logger.info("login - authentication failed", email=email)
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        access_token, refresh_token = create_token_pair(user.email)  # JWTトークンペアを生成
+        # NOTE: OAuth2仕様準拠のため、usernameフィールドでメールアドレスを受け取る
+        user = await authenticate_user(login_data.username, login_data.password, db)
+        
+        # JWTトークンペアを生成
+        access_token, refresh_token = create_token_pair(user.email)
         logger.info("login - success", user_id=user.user_id)
 
         # HttpOnlyクッキーとしてアクセストークンを設定
@@ -167,7 +103,7 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
             key="authToken",
             value=access_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
+            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # 30分
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -177,7 +113,7 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
             key="refreshToken",
             value=refresh_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
+            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # 5日
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )

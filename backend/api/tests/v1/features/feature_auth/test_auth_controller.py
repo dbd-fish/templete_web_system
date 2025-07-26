@@ -70,12 +70,12 @@ async def test_login_user() -> None:
         await client.post("/api/v1/dev/seed_data")
 
         login_data = {"username": TestData.TEST_USER_EMAIL_1, "password": TestData.TEST_USER_PASSWORD}
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        headers = {"Content-Type": "application/json"}
 
         # Act: ログインAPIを実行
         response = await client.post(
             "/api/v1/auth/login",
-            data=login_data,
+            json=login_data,
             headers=headers,
         )
 
@@ -94,12 +94,12 @@ async def test_login_with_invalid_credentials() -> None:
     # Arrange: 不正な認証情報とクライアントを準備
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000/") as client:
         invalid_credentials = {"username": "wronguser@example.com", "password": "wrongpassword"}
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        headers = {"Content-Type": "application/json"}
 
         # Act: 不正な認証情報でログインを試行
         response = await client.post(
             "/api/v1/auth/login",
-            data=invalid_credentials,
+            json=invalid_credentials,
             headers=headers,
         )
 

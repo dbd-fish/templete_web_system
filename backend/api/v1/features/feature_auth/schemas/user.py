@@ -6,6 +6,28 @@ from api.common.test_data import TestData
 from api.v1.features.feature_auth.models.user import User
 
 
+class LoginRequest(BaseModel):
+    """ログインリクエストのスキーマ（OAuth2仕様準拠）"""
+    
+    username: str = Field(
+        ...,
+        description="ユーザー名またはメールアドレス（OAuth2仕様でusernameフィールドを使用）",
+        examples=[TestData.TEST_USER_EMAIL_1],
+    )
+    password: str = Field(
+        ...,
+        description="パスワード",
+        examples=[TestData.TEST_USER_PASSWORD],
+    )
+    
+    model_config = {"json_schema_extra": {
+        "example": {
+            "username": "testuser@example.com",
+            "password": "Password123456+-"
+        }
+    }}
+
+
 class DirectUserCreate(BaseModel):
     """直接ユーザー登録時に必要なデータを表すモデル。"""
 
@@ -83,13 +105,13 @@ class LoginRequest(BaseModel):
 
     username: str = Field(
         ...,
-        description="ユーザー名またはメールアドレス",
-        examples=[TestData.DOC_USERNAME_EXAMPLE, TestData.DOC_EMAIL_EXAMPLE],
+        description="ユーザー名またはメールアドレス。メールアドレスでの運用を基本とする。",
+        examples=[TestData.TEST_USER_EMAIL_1],
     )
     password: str = Field(
         ...,
         description="パスワード",
-        examples=[TestData.DOC_PASSWORD_EXAMPLE],
+        examples=[TestData.TEST_USER_PASSWORD],
     )
 
 
