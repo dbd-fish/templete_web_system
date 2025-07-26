@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 import structlog
 
 from api.common.setting import setting
+from api.v1.features.feature_auth.setting import auth_setting
 
 # ログの設定
 logger = structlog.get_logger()

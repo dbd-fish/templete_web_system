@@ -5,7 +5,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 from pydantic import BaseModel
 
-from api.common.setting import setting
+from api.v1.features.feature_auth.setting import auth_setting
 
 logger = structlog.get_logger()
 
@@ -41,7 +41,7 @@ async def verify_google_id_token(id_token_str: str) -> GoogleUserInfo:
 
     try:
         # Google APIでIDトークンを検証
-        idinfo = id_token.verify_oauth2_token(id_token_str, requests.Request(), setting.GOOGLE_CLIENT_ID)
+        idinfo = id_token.verify_oauth2_token(id_token_str, requests.Request(), auth_setting.GOOGLE_CLIENT_ID)
 
         # issuerの確認
         if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
@@ -49,8 +49,8 @@ async def verify_google_id_token(id_token_str: str) -> GoogleUserInfo:
             raise ValueError("無効なトークン発行者です")
 
         # audienceの確認
-        if idinfo["aud"] != setting.GOOGLE_CLIENT_ID:
-            logger.error("verify_google_id_token - invalid audience", expected=setting.GOOGLE_CLIENT_ID, actual=idinfo.get("aud"))
+        if idinfo["aud"] != auth_setting.GOOGLE_CLIENT_ID:
+            logger.error("verify_google_id_token - invalid audience", expected=auth_setting.GOOGLE_CLIENT_ID, actual=idinfo.get("aud"))
             raise ValueError("無効なクライアントIDです")
 
         # 必須フィールドの確認

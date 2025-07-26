@@ -10,6 +10,7 @@ from api.common.core.log_config import logger
 from api.common.database import database
 from api.common.middleware import ErrorHandlingMiddleware
 from api.common.setting import setting
+from api.v1.features.feature_auth.setting import auth_setting
 from api.v1.features.feature_auth.route import router as auth_router
 from api.v1.features.feature_dev.route import router as dev_router
 
@@ -108,7 +109,7 @@ app.add_middleware(
 )
 
 # Google OAuth 2.0用セッションミドルウェアを追加
-app.add_middleware(SessionMiddleware, secret_key=setting.SECRET_KEY)
+app.add_middleware(SessionMiddleware, secret_key=auth_setting.SECRET_KEY)
 
 # 統一エラーハンドリングミドルウェアを追加
 # ミドルウェア方式により、すべての例外を統一的に処理し、

@@ -10,17 +10,17 @@ from sqlalchemy import or_
 from sqlalchemy.future import select
 
 from api.common.database import AsyncSession
-from api.common.setting import setting
+from api.v1.features.feature_auth.setting import auth_setting
 from api.v1.features.feature_auth.models.user import User
 
 # ログの設定
 logger = structlog.get_logger()
 
 # 環境変数に適切に置き換える
-SECRET_KEY = setting.SECRET_KEY  # JWTの署名に使用する秘密鍵
-ALGORITHM = setting.ALGORITHM  # JWTの暗号化アルゴリズム
-ACCESS_TOKEN_EXPIRE_MINUTES = setting.ACCESS_TOKEN_EXPIRE_MINUTES  # アクセストークンの有効期限（分単位）
-REFRESH_TOKEN_EXPIRE_DAYS = setting.REFRESH_TOKEN_EXPIRE_DAYS  # リフレッシュトークンの有効期限（日単位）
+SECRET_KEY = auth_setting.SECRET_KEY  # JWTの署名に使用する秘密鍵
+ALGORITHM = auth_setting.ALGORITHM  # JWTの暗号化アルゴリズム
+ACCESS_TOKEN_EXPIRE_MINUTES = auth_setting.ACCESS_TOKEN_EXPIRE_MINUTES  # アクセストークンの有効期限（分単位）
+REFRESH_TOKEN_EXPIRE_DAYS = auth_setting.REFRESH_TOKEN_EXPIRE_DAYS  # リフレッシュトークンの有効期限（日単位）
 
 # パスワード暗号化設定
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

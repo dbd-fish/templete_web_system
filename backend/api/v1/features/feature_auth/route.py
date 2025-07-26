@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.common.database import get_db
 from api.common.response_schemas import MessageResponse, SuccessResponse, create_message_response, create_success_response
 from api.common.setting import setting
+from api.v1.features.feature_auth.setting import auth_setting
 from api.v1.features.feature_auth.crud import (
     change_user_password,
     create_user_service,
@@ -103,7 +104,7 @@ async def login(
             key="authToken",
             value=access_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # 30分
+            max_age=auth_setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # 30分
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -113,7 +114,7 @@ async def login(
             key="refreshToken",
             value=refresh_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # 5日
+            max_age=auth_setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # 5日
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -470,7 +471,7 @@ async def update_user_profile(user_update: UserUpdate, request: Request, respons
             key="authToken",
             value=access_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
+            max_age=auth_setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -480,7 +481,7 @@ async def update_user_profile(user_update: UserUpdate, request: Request, respons
             key="refreshToken",
             value=refresh_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
+            max_age=auth_setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -740,7 +741,7 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
             key="authToken",
             value=access_token,
             httponly=True,
-            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
+            max_age=auth_setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,  # 開発環境では False (HTTP許可)
             samesite="lax",
         )
@@ -858,7 +859,7 @@ async def google_login(google_request: GoogleLoginRequest, request: Request, res
             key="authToken",
             value=access_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
+            max_age=auth_setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -868,7 +869,7 @@ async def google_login(google_request: GoogleLoginRequest, request: Request, res
             key="refreshToken",
             value=refresh_token,
             httponly=True,  # JavaScriptからアクセスできないようにする
-            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
+            max_age=auth_setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
@@ -1056,7 +1057,7 @@ async def update_user_profile_advanced(profile_update: AdvancedUserUpdate, reque
             key="authToken",
             value=access_token,
             httponly=True,
-            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
+            max_age=auth_setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
             secure=not setting.DEV_MODE,
             samesite="lax",
         )
@@ -1066,7 +1067,7 @@ async def update_user_profile_advanced(profile_update: AdvancedUserUpdate, reque
             key="refreshToken",
             value=refresh_token,
             httponly=True,
-            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
+            max_age=auth_setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
             secure=not setting.DEV_MODE,
             samesite="lax",
         )
