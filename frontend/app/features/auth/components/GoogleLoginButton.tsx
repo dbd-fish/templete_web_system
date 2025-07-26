@@ -55,7 +55,6 @@ export default function GoogleLoginButton({
       try {
         // 開発環境では Google認証を無効化
         if (isDevelopment) {
-          console.log('開発環境のため、Google認証は無効化されています');
           setIsInitialized(true);
           return;
         }

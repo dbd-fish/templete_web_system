@@ -36,10 +36,7 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     // authApi.tsのlogin関数を使用して統一性を確保
-    const response = await login(email, password);
-
-    const responseData = await response.json();
-    console.log('ログイン成功:', responseData);
+    await login(email, password);
 
     // 認証成功時はマイページにリダイレクト
     // HttpOnly Cookieはサーバー側で設定される

@@ -94,10 +94,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.log('MyPage loader error:', error);
-    
     if (error instanceof AuthenticationError) {
-      console.log('Authentication error detected, redirecting to login');
       return redirect('/login');
     }
 

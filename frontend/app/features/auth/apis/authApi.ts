@@ -12,10 +12,40 @@ import {
   SuccessResponse,
   UserUpdate,
 } from '../types';
-import { apiRequest, apiFormRequest } from '~/utils/apiErrorHandler';
+import { apiRequest } from '~/utils/apiErrorHandler';
 import { getApiUrl } from '~/config/api';
+import { extractAuthTokens } from '../cookies';
 
 // ==================== 認証関連 ====================
+
+/**
+ * リフレッシュトークンを使用して新しいアクセストークンを取得する非同期関数
+ * - '/api/v1/auth/refresh' エンドポイントを使用してトークンリフレッシュリクエストを送信
+ * - 成功時: 新しいアクセストークンを含むレスポンスを返す
+ * - 失敗時: エラーをスロー
+ */
+export const refreshToken = async (request: Request) => {
+  // 実際のバックエンドAPIに接続（Docker環境対応）
+  const apiUrl = getApiUrl();
+
+  try {
+    // セキュリティ: 認証に必要なトークンCookieのみを抽出
+    const cookieHeader = request.headers.get('Cookie');
+    const authOnlyCookies = extractAuthTokens(cookieHeader);
+    
+    const response = await apiRequest(
+      `${apiUrl}/api/v1/auth/refresh`,
+      {
+        method: 'POST',
+      },
+      authOnlyCookies,
+    );
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
 
 /**
  * ユーザーのログインを処理する非同期関数
@@ -31,9 +61,12 @@ export const login = async (email: string, password: string) => {
   const apiUrl = getApiUrl();
 
   try {
-    const response = await apiFormRequest(`${apiUrl}/api/v1/auth/login`, {
-      username: email, // emailアドレスをusernameフィールドで送信（OAuth2互換）
-      password: password,
+    const response = await apiRequest(`${apiUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      body: JSON.stringify({
+        username: email, // emailアドレスをusernameフィールドで送信（OAuth2互換）
+        password: password,
+      }),
     });
 
     return response;
@@ -53,13 +86,16 @@ export const logout = async (request: Request) => {
   const apiUrl = getApiUrl();
 
   try {
+    // セキュリティ: 認証に必要なトークンCookieのみを抽出
     const cookieHeader = request.headers.get('Cookie');
+    const authOnlyCookies = extractAuthTokens(cookieHeader);
+    
     const response = await apiRequest(
       `${apiUrl}/api/v1/auth/logout`,
       {
         method: 'POST',
       },
-      cookieHeader || '',
+      authOnlyCookies,
     );
 
     return response;
@@ -72,7 +108,7 @@ export const logout = async (request: Request) => {
 
 /**
  * ユーザー情報を取得する非同期関数
- * - '/api/v1/auth/me' エンドポイントからユーザー情報を取得
+ * - '/api/v1/auth/me' エンドポイントからユーザー情報を取得（POSTメソッド）
  * - 成功時: ユーザー情報オブジェクトを返す
  * - 失敗時: null を返す
  */
@@ -80,14 +116,9 @@ export const getUser = async (request: Request) => {
   // 実際のバックエンドAPIに接続（Docker環境対応）
   const apiUrl = getApiUrl();
 
+  // セキュリティ: 認証に必要なトークンCookieのみを抽出
   const cookieHeader = request.headers.get('Cookie');
-  console.log('getUser - Cookie header:', cookieHeader ? `Present: ${cookieHeader.substring(0, 50)}...` : 'Missing');
-  console.log('getUser - API URL:', `${apiUrl}/api/v1/auth/me`);
-  console.log('getUser - Request headers keys:', Array.from(request.headers.keys()));
-  
-  // Cookie内のauthToken存在チェック
-  const hasAuthToken = cookieHeader?.includes('authToken=');
-  console.log('getUser - AuthToken present in cookies:', hasAuthToken);
+  const authOnlyCookies = extractAuthTokens(cookieHeader);
 
   try {
     const response = await apiRequest(
@@ -95,21 +126,14 @@ export const getUser = async (request: Request) => {
       {
         method: 'POST',
       },
-      cookieHeader || '',
+      authOnlyCookies,
     );
 
     const data = (await response.json()) as UserResponse;
-    console.log('getUser - Success:', data);
     return data;
   } catch (error) {
-    console.log('getUser - Error:', error);
-    console.log('getUser - Error type:', typeof error);
-    console.log('getUser - Error instanceof Error:', error instanceof Error);
-    
     // 認証エラーの場合はnullを返す
     if (error instanceof Error && error.message.includes('401')) {
-      console.log('getUser - 401 error detected, returning null');
-      console.log('getUser - Cookie was present:', hasAuthToken);
       return null;
     }
     throw error;
@@ -130,14 +154,17 @@ export const updateUser = async (
   const apiUrl = getApiUrl();
 
   try {
+    // セキュリティ: 認証に必要なトークンCookieのみを抽出
     const cookieHeader = request.headers.get('Cookie');
+    const authOnlyCookies = extractAuthTokens(cookieHeader);
+    
     const response = await apiRequest(
       `${apiUrl}/api/v1/auth/me`,
       {
         method: 'PATCH',
         body: JSON.stringify(updateData),
       },
-      cookieHeader || '',
+      authOnlyCookies,
     );
 
     return (await response.json()) as UserResponse;
@@ -159,13 +186,16 @@ export const deleteUser = async (
   const apiUrl = getApiUrl();
 
   try {
+    // セキュリティ: 認証に必要なトークンCookieのみを抽出
     const cookieHeader = request.headers.get('Cookie');
+    const authOnlyCookies = extractAuthTokens(cookieHeader);
+    
     const response = await apiRequest(
       `${apiUrl}/api/v1/auth/user`,
       {
         method: 'DELETE',
       },
-      cookieHeader || '',
+      authOnlyCookies,
     );
 
     return (await response.json()) as MessageResponse;
@@ -199,7 +229,6 @@ export const signup = async (token: string): Promise<boolean> => {
     const data = (await response.json()) as SuccessResponse;
     return data.success;
   } catch (error) {
-    console.error('[signup] Error:', error);
     throw error;
   }
 };
@@ -244,7 +273,6 @@ export const sendVerifyEmail = async (
 
     return (await response.json()) as SuccessResponse;
   } catch (error) {
-    console.error('[sendVerifyEmail] Error:', error);
     throw error;
   }
 };
@@ -285,7 +313,6 @@ export const sendPasswordResetEmail = async (
 
     return (await response.json()) as SuccessResponse;
   } catch (error) {
-    console.error('[sendPasswordResetEmail] Error:', error);
     throw error;
   }
 };
@@ -316,7 +343,6 @@ export const resetPassword = async (
 
     return (await response.json()) as SuccessResponse;
   } catch (error) {
-    console.error('[resetPassword] Error:', error);
     throw error;
   }
 };
