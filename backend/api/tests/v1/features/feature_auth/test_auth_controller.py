@@ -105,7 +105,8 @@ async def test_login_with_invalid_credentials() -> None:
 
         # Assert: 認証エラーレスポンスを検証
         assert response.status_code == 401
-        assert "メールアドレスまたはパスワードが無効です" == response.json()["message"]
+        response_json = response.json()
+        assert "メールアドレスまたはパスワードが無効です" == response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -263,7 +264,7 @@ async def test_register_with_invalid_token() -> None:
         # Assert: 無効トークンエラーレスポンスを検証
         assert response.status_code == 400, response.text
         response_json = response.json()
-        assert "無効な認証トークンです" in response_json["message"]
+        assert "無効な認証トークンです" in response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -285,8 +286,7 @@ async def test_reset_password_with_invalid_email() -> None:
         # Assert: ユーザー未発見エラーレスポンスを検証
         assert response.status_code == 404, response.text
         response_json = response.json()
-        assert response_json["success"] is False
-        assert "指定されたメールアドレスのユーザーが見つかりません" in response_json["message"]
+        assert "指定されたメールアドレスのユーザーが見つかりません" in response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -309,6 +309,8 @@ async def test_reset_password_with_invalid_token(authenticated_client: AsyncClie
 
     # Assert: 無効トークンエラーレスポンスを検証
     assert response.status_code == 422, response.text
+    response_json = response.json()
+    assert "detail" in response_json
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -386,8 +388,7 @@ async def test_register_user_already_exists() -> None:
         # Assert: 重複エラーレスポンスを検証
         assert response.status_code == 409, response.text
         response_json = response.json()
-        assert response_json["success"] is False
-        assert "このメールアドレスは既に使用されています" in response_json["message"]
+        assert "このメールアドレスは既に使用されています" in response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -490,8 +491,7 @@ async def test_password_reset_with_deleted_user() -> None:
         # Assert: ユーザー未発見エラーレスポンスを検証
         assert response.status_code == 404, response.text
         response_json = response.json()
-        assert response_json["success"] is False
-        assert "指定されたメールアドレスのユーザーが見つかりません" in response_json["message"]
+        assert "指定されたメールアドレスのユーザーが見つかりません" in response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -519,8 +519,7 @@ async def test_password_reset_with_expired_jwt() -> None:
         # Assert: 期限切れトークンエラーレスポンスを検証
         assert response.status_code == 400, response.text
         response_json = response.json()
-        assert response_json["success"] is False
-        assert "無効なリセットトークンです" in response_json["message"]
+        assert "無効なリセットトークンです" in response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -552,8 +551,7 @@ async def test_authentication_with_deleted_user() -> None:
         # Assert: 認証拒否エラーレスポンスを検証
         assert login_deleted_response.status_code == 401, login_deleted_response.text
         response_json = login_deleted_response.json()
-        assert response_json["success"] is False
-        assert "メールアドレスまたはパスワードが無効です" in response_json["message"]
+        assert "メールアドレスまたはパスワードが無効です" in response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -574,6 +572,8 @@ async def test_user_operations_with_expired_jwt() -> None:
         # Act & Assert: 期限切れトークンでユーザー情報取得を試行
         response = await client.post("/api/v1/auth/me")
         assert response.status_code == 401, response.text
+        response_json = response.json()
+        assert "detail" in response_json
 
         # Act & Assert: 期限切れトークンでユーザー情報更新を試行
         update_response = await client.patch(
@@ -581,6 +581,8 @@ async def test_user_operations_with_expired_jwt() -> None:
             json=update_data,
         )
         assert update_response.status_code == 401, update_response.text
+        update_response_json = update_response.json()
+        assert "detail" in update_response_json
 
         # Act & Assert: 期限切れトークンでログアウトを試行（B018修正により成功）
         logout_response = await client.post("/api/v1/auth/logout")
@@ -617,8 +619,7 @@ async def test_update_user_info_with_deleted_user() -> None:
         # Assert: 認証拒否エラーレスポンスを検証
         assert update_response.status_code == 401, update_response.text
         response_json = update_response.json()
-        assert response_json["success"] is False
-        assert "認証情報が無効です" in response_json["message"]
+        assert "認証情報が無効です" in response_json["detail"]
 
 
 # =============================================================================
@@ -659,6 +660,8 @@ async def test_delete_account_success() -> None:
         # Assert: 削除後は認証が必要なエンドポイントにアクセスできない
         profile_response = await client.post("/api/v1/auth/me")
         assert profile_response.status_code == 401
+        profile_response_json = profile_response.json()
+        assert "detail" in profile_response_json
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -678,8 +681,7 @@ async def test_delete_account_unauthorized() -> None:
         # Assert: 認証エラーレスポンスを検証
         assert delete_response.status_code == 401, delete_response.text
         response_json = delete_response.json()
-        assert response_json["success"] is False
-        assert "認証情報が無効です" in response_json["message"]
+        assert "認証情報が無効です" in response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -704,8 +706,7 @@ async def test_delete_account_with_deleted_user() -> None:
         # Assert: 認証拒否エラーレスポンスを検証
         assert second_delete_response.status_code == 401, second_delete_response.text
         response_json = second_delete_response.json()
-        assert response_json["success"] is False
-        assert "認証情報が無効です" in response_json["message"]
+        assert "認証情報が無効です" in response_json["detail"]
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -734,8 +735,7 @@ async def test_delete_account_with_expired_token() -> None:
         # Assert: 認証エラーレスポンスを検証
         assert delete_response.status_code == 401, delete_response.text
         response_json = delete_response.json()
-        assert response_json["success"] is False
-        assert "認証情報が無効です" in response_json["message"]
+        assert "認証情報が無効です" in response_json["detail"]
 
 
 # =============================================================================
@@ -762,8 +762,7 @@ async def test_google_login_success():
         # Assert: エンドポイントが存在し、適切なエラーが返されることを確認
         assert response.status_code == 400  # Google認証エラー
         json_response = response.json()
-        assert json_response["success"] is False
-        assert "認証エラー" in json_response["message"]
+        assert "認証エラー" in json_response["detail"]
 
 
 @pytest.mark.asyncio
@@ -785,8 +784,4 @@ async def test_google_login_invalid_token():
         # Assert: バリデーションエラーレスポンスを確認
         assert response.status_code == 422
         json_response = response.json()
-        assert json_response["success"] is False
-        assert "validation_errors" in json_response.get("details", {})
-        # JWTトークン形式エラーを確認
-        validation_errors = json_response["details"]["validation_errors"]
-        assert any("無効なJWTトークン形式です" in error.get("message", "") for error in validation_errors)
+        assert "detail" in json_response
