@@ -16,11 +16,6 @@ from api.v1.features.feature_auth.models.user import User
 # ログの設定
 logger = structlog.get_logger()
 
-# 環境変数に適切に置き換える
-SECRET_KEY = auth_setting.SECRET_KEY  # JWTの署名に使用する秘密鍵
-ALGORITHM = auth_setting.ALGORITHM  # JWTの暗号化アルゴリズム
-ACCESS_TOKEN_EXPIRE_MINUTES = auth_setting.ACCESS_TOKEN_EXPIRE_MINUTES  # アクセストークンの有効期限（分単位）
-REFRESH_TOKEN_EXPIRE_DAYS = auth_setting.REFRESH_TOKEN_EXPIRE_DAYS  # リフレッシュトークンの有効期限（日単位）
 
 # パスワード暗号化設定
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -83,7 +78,7 @@ def create_access_token(user_email: str, expires_delta: timedelta | None = None)
     """
     logger.info("create_access_token - start", user_email=user_email)
     try:
-        expire = datetime.now(ZoneInfo("Asia/Tokyo")) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+        expire = datetime.now(ZoneInfo("Asia/Tokyo")) + (expires_delta or timedelta(minutes=auth_setting.ACCESS_TOKEN_EXPIRE_MINUTES))
         to_encode = {
             "email": user_email,  # ユーザーメール
             "exp": int(expire.timestamp()),  # 有効期限（30分）
@@ -91,7 +86,7 @@ def create_access_token(user_email: str, expires_delta: timedelta | None = None)
 
         logger.debug("create_access_token - JWT payload prepared", user_email=user_email)
         # python-joseライブラリでJWTアクセストークンを生成
-        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        encoded_jwt = jwt.encode(to_encode, auth_setting.SECRET_KEY, algorithm=auth_setting.ALGORITHM)
         logger.info("create_access_token - simplified JWT created", user_email=user_email, expire=expire)
         return encoded_jwt
     finally:
@@ -111,7 +106,7 @@ def create_refresh_token(user_email: str, expires_delta: timedelta | None = None
     """
     logger.info("create_refresh_token - start", user_email=user_email)
     try:
-        expire = datetime.now(ZoneInfo("Asia/Tokyo")) + (expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
+        expire = datetime.now(ZoneInfo("Asia/Tokyo")) + (expires_delta or timedelta(days=auth_setting.REFRESH_TOKEN_EXPIRE_DAYS))
         to_encode = {
             "email": user_email,  # ユーザーメール
             "exp": int(expire.timestamp()),  # 有効期限（5日）
@@ -120,7 +115,7 @@ def create_refresh_token(user_email: str, expires_delta: timedelta | None = None
         logger.debug("create_refresh_token - JWT payload prepared", user_email=user_email)
 
         # python-joseでJWTリフレッシュトークンを生成
-        refresh_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        refresh_token = jwt.encode(to_encode, auth_setting.SECRET_KEY, algorithm=auth_setting.ALGORITHM)
 
         logger.info("create_refresh_token - simplified JWT created", user_email=user_email, expire=expire)
         return refresh_token
@@ -169,7 +164,7 @@ def create_verification_token(data: dict, expires_delta: timedelta | None = None
         to_encode.update({"exp": int(expire.timestamp())})
         logger.debug("create_verification_token - to_encode prepared")
         # python-joseでメール認証用の署名付きトークンを生成
-        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        encoded_jwt = jwt.encode(to_encode, auth_setting.SECRET_KEY, algorithm=auth_setting.ALGORITHM)
         logger.info("create_verification_token - success")
         logger.info("create_verification_token - expire", expire=expire)
         return encoded_jwt
@@ -193,7 +188,7 @@ def decode_access_token(token: str) -> dict:
     logger.info("decode_access_token - start")
     try:
         # python-joseライブラリでJWTトークンを秘密鍵と指定アルゴリズムで検証・デコード
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, auth_setting.SECRET_KEY, algorithms=[auth_setting.ALGORITHM])
 
         logger.info("decode_access_token - success")
         return payload
@@ -217,7 +212,7 @@ def decode_verification_token(token: str) -> dict:
     logger.info("decode_verification_token - start")
     try:
         # python-joseでメール認証用トークンを検証・デコード
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, auth_setting.SECRET_KEY, algorithms=[auth_setting.ALGORITHM])
 
         # トークンタイプの検証（verification以外は拒否）
         if payload.get("token_type") != "verification":
@@ -249,7 +244,7 @@ def decode_refresh_token(token: str) -> dict:
     logger.info("decode_refresh_token - start")
     try:
         # python-joseライブラリでJWTリフレッシュトークンを検証・デコード
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, auth_setting.SECRET_KEY, algorithms=[auth_setting.ALGORITHM])
 
         # 必須フィールドの確認
         if not payload.get("email"):
