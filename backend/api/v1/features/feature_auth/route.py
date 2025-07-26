@@ -115,7 +115,7 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
     body = await request.body()
     body_str = body.decode('utf-8')
 
-    username = ""
+    email = ""
     password = ""
 
     if "application/json" in content_type:
@@ -123,7 +123,7 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
         import json
         try:
             json_data = json.loads(body_str)
-            username = json_data.get("email", "")
+            email = json_data.get("username", "")
             password = json_data.get("password", "")
         except json.JSONDecodeError as e:
             logger.error("login - invalid JSON format")
@@ -145,15 +145,15 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
             return params
 
         form_params = parse_form_data(body_str)
-        username = form_params.get("username", "")
+        email = form_params.get("username", "")
         password = form_params.get("password", "")
 
-    logger.info("login - start", username=username)
-    logger.info("login - form_data received", username=username, password_length=len(password))
+    logger.info("login - start", email=email)
+    logger.info("login - form_data received", email=email, password_length=len(password))
     try:
-        user = await authenticate_user(username, password, db)
+        user = await authenticate_user(email, password, db)
         if not user:
-            logger.info("login - authentication failed", username=username)
+            logger.info("login - authentication failed", email=email)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",
