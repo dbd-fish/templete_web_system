@@ -296,15 +296,17 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
     description="""ログアウト処理を行うエンドポイントです。
 
     **処理の流れ:**
-    1. リフレッシュトークンを無効化（存在する場合）
-    2. 認証クッキー（authToken/refreshToken）をセキュアな設定で削除
+    1. アクセストークンとリフレッシュトークンの存在確認
+    2. 認証クッキー（authToken/refreshToken）の両方を削除
     3. ログアウト成功メッセージを返却
 
-    **認証不要設計:**
-    - 無効なトークンやクッキーなしでもログアウト処理を実行
+    **寛容な設計:**
+    - 無効なトークンやクッキーなしでもログアウト処理は必ず成功
+    - トークン検証エラーでも確実にクッキーを削除
     - フロントエンド側の状態リセットを確実に支援
 
-    **クッキー削除設定:**
+    **セキュリティ設計:**
+    - アクセストークンとリフレッシュトークンの両方を破棄
     - HttpOnly: JavaScriptからアクセス不可
     - Secure: HTTPS通信でのみ有効（本番環境）
     - SameSite=Lax: CSRF攻撃防止
@@ -314,16 +316,34 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
     - response: レスポンスオブジェクト（クッキー削除用）
 
     **レスポンス:**
-    - SuccessResponse[MessageResponse]: ログアウト成功メッセージ
+    - SuccessResponse[MessageResponse]: ログアウト成功メッセージ（常に200 OK）
     """,
 )
 async def logout(request: Request, response: Response):
     logger.info("logout - start")
     try:
-        # 認証クッキーを削除してログアウト処理
+        # アクセストークンとリフレッシュトークンの取得（存在確認のみ）
+        access_token = request.cookies.get("authToken")
+        refresh_token = request.cookies.get("refreshToken")
+        
+        logger.info("logout - tokens found", 
+                   access_token_exists=bool(access_token), 
+                   refresh_token_exists=bool(refresh_token))
+        
+        # 認証クッキーを削除してログアウト処理（トークン検証なし、常に成功）
+        # ログアウトは寛容な設計とし、無効なトークンでも確実に実行する
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
         response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
-        logger.info("logout - success")
+        
+        logger.info("logout - success - both cookies deleted", 
+                   access_token_deleted=True, 
+                   refresh_token_deleted=True)
+        return create_message_response(message="ログアウトしました")
+    except Exception as e:
+        # 予期しないエラーでもログアウトは成功させる
+        logger.error("logout - unexpected error, but completing logout", error=str(e))
+        response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
+        response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
         return create_message_response(message="ログアウトしました")
     finally:
         logger.info("logout - end")

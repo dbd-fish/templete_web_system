@@ -227,19 +227,27 @@ async def test_logout_user(authenticated_client: AsyncClient) -> None:
     """POST /api/v1/auth/logout
 
     【正常系】認証済みユーザーのログアウト処理を行う
+    クッキーに含まれるアクセストークンとリフレッシュトークンの両方を削除する
     """
-    # Arrange: ログアウト用データを準備
-    logout_data = {"email": TestData.TEST_USER_EMAIL_1}
-
-    # Act: ログアウトAPIを実行
-    response = await authenticated_client.post(
-        "/api/v1/auth/logout",
-        json=logout_data,
-    )
+    # Act: ログアウトAPIを実行（リクエストボディなし、クッキーから認証情報を取得）
+    response = await authenticated_client.post("/api/v1/auth/logout")
 
     # Assert: ログアウト成功レスポンスを検証
     assert response.status_code == 200, response.text
-    assert response.json()["message"] == "ログアウトしました"
+    response_json = response.json()
+    assert response_json["success"] is True
+    assert response_json["message"] == "ログアウトしました"
+    
+    # Assert: クッキーが削除されているかを確認
+    # Set-Cookieヘッダーでクッキーの削除を確認
+    set_cookie_headers = response.headers.get_list("set-cookie")
+    
+    # authTokenとrefreshTokenの削除を確認
+    auth_token_deleted = any("authToken=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie_headers)
+    refresh_token_deleted = any("refreshToken=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie_headers)
+    
+    assert auth_token_deleted, "authTokenクッキーが削除されていません"
+    assert refresh_token_deleted, "refreshTokenクッキーが削除されていません"
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -317,23 +325,33 @@ async def test_reset_password_with_invalid_token(authenticated_client: AsyncClie
 async def test_logout_with_invalid_token() -> None:
     """POST /api/v1/auth/logout
 
-    【正常系】無効なAuthorizationヘッダーでログアウト
+    【正常系】無効なクッキートークンでログアウト
+    無効なトークンでもログアウト処理は成功する（寛容な設計）
     """
-    # Arrange: 無効な認証ヘッダーとクライアントを準備
+    # Arrange: 無効なトークンクッキーとクライアントを準備
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
-        invalid_headers = {"Authorization": "Bearer invalid_token"}
+        # 無効なトークンをクッキーに設定
+        client.cookies.set("authToken", "invalid.access.token")
+        client.cookies.set("refreshToken", "invalid.refresh.token")
 
-        # Act: 無効な認証情報でログアウトを試行
-        response = await client.post(
-            "/api/v1/auth/logout",
-            headers=invalid_headers,
-        )
+        # Act: 無効なトークンでログアウトを試行
+        response = await client.post("/api/v1/auth/logout")
 
-        # Assert: B018修正により、無効トークンでもログアウト成功（200）
+        # Assert: 無効トークンでもログアウト成功（200）
         assert response.status_code == 200, response.text
         data = response.json()
         assert data["success"] is True
         assert "ログアウトしました" in data["message"]
+        
+        # Assert: 無効なトークンでもクッキーは削除される
+        set_cookie_headers = response.headers.get_list("set-cookie")
+        
+        # 具体的なクッキー削除を確認
+        auth_token_deleted = any("authToken=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie_headers)
+        refresh_token_deleted = any("refreshToken=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie_headers)
+        
+        assert auth_token_deleted, "無効なトークンでもauthTokenクッキーが削除される"
+        assert refresh_token_deleted, "無効なトークンでもrefreshTokenクッキーが削除される"
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -352,6 +370,88 @@ async def test_logout_without_authentication() -> None:
         data = response.json()
         assert data["success"] is True
         assert "ログアウトしました" in data["message"]
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_logout_with_partial_tokens() -> None:
+    """POST /api/v1/auth/logout
+
+    【正常系】一部のトークンのみ存在する場合のログアウト
+    アクセストークンのみ、またはリフレッシュトークンのみでもログアウト成功
+    """
+    # Arrange: アクセストークンのみのケース
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+        # 有効なアクセストークンを生成
+        from api.v1.features.feature_auth.security import create_access_token
+        valid_access_token = create_access_token(TestData.TEST_USER_EMAIL_1)
+        client.cookies.set("authToken", valid_access_token)
+        # refreshTokenは設定しない
+
+        # Act: アクセストークンのみでログアウト
+        response = await client.post("/api/v1/auth/logout")
+
+        # Assert: 部分的なトークンでもログアウト成功
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["success"] is True
+        assert "ログアウトしました" in data["message"]
+
+    # Arrange: リフレッシュトークンのみのケース
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+        # 有効なリフレッシュトークンを生成
+        from api.v1.features.feature_auth.security import create_refresh_token
+        valid_refresh_token = create_refresh_token(TestData.TEST_USER_EMAIL_1)
+        client.cookies.set("refreshToken", valid_refresh_token)
+        # authTokenは設定しない
+
+        # Act: リフレッシュトークンのみでログアウト
+        response = await client.post("/api/v1/auth/logout")
+
+        # Assert: 部分的なトークンでもログアウト成功
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["success"] is True
+        assert "ログアウトしました" in data["message"]
+
+
+@pytest.mark.asyncio(loop_scope="session") 
+async def test_logout_after_successful_login() -> None:
+    """POST /api/v1/auth/logout
+
+    【統合テスト】ログイン後のログアウト処理
+    実際のログインフローでトークンを取得してからログアウトする
+    """
+    # Arrange: 新しいクライアントを準備
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+        # Act: まずログインしてトークンを取得
+        login_data = {"username": TestData.TEST_USER_EMAIL_1, "password": TestData.TEST_USER_PASSWORD}
+        login_response = await client.post("/api/v1/auth/login", json=login_data)
+        
+        # Assert: ログイン成功を確認
+        assert login_response.status_code == 200, login_response.text
+        
+        # ログイン時にクッキーが設定されていることを確認
+        set_cookie_headers = login_response.headers.get_list("set-cookie")
+        assert len(set_cookie_headers) >= 2, "ログイン時にauthTokenとrefreshTokenが設定される"
+        
+        # Act: 続いてログアウト処理
+        logout_response = await client.post("/api/v1/auth/logout")
+        
+        # Assert: ログアウト成功を確認
+        assert logout_response.status_code == 200, logout_response.text
+        logout_data = logout_response.json()
+        assert logout_data["success"] is True
+        assert "ログアウトしました" in logout_data["message"]
+        
+        # Assert: ログアウト時にクッキーが削除されることを確認
+        logout_set_cookie_headers = logout_response.headers.get_list("set-cookie")
+        
+        # 具体的なクッキー削除を確認
+        logout_auth_token_deleted = any("authToken=" in cookie and "Max-Age=0" in cookie for cookie in logout_set_cookie_headers)
+        logout_refresh_token_deleted = any("refreshToken=" in cookie and "Max-Age=0" in cookie for cookie in logout_set_cookie_headers)
+        
+        assert logout_auth_token_deleted, "ログアウト時にauthTokenクッキーが削除される"
+        assert logout_refresh_token_deleted, "ログアウト時にrefreshTokenクッキーが削除される"
 
 
 # =============================================================================
