@@ -4,7 +4,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api.common.test_data import TestData
-from api.v1.features.feature_auth.security import create_access_token
+from api.v1.features.feature_auth.security import create_access_token, create_verification_token
 from main import app
 
 # =============================================================================
@@ -50,7 +50,7 @@ async def setup_authenticated_client_with_manual_token(client: AsyncClient, emai
     この関数は論理削除など、実際のユーザー操作が必要な特別なシナリオでのみ使用します。
     """
     # 手動でJWTトークンを生成して設定（AsyncClientのクッキー処理問題を回避）
-    auth_token = create_access_token(data={"sub": email, "client_ip": "127.0.0.1"})
+    auth_token = create_access_token(user_email=email)
     client.cookies.set("authToken", auth_token)
     return auth_token
 
@@ -505,7 +505,7 @@ async def test_password_reset_with_expired_jwt() -> None:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
 
-        expired_token = create_access_token(data={"email": TestData.TEST_USER_EMAIL_1}, expires_delta=timedelta(seconds=-1))
+        expired_token = create_verification_token(data={"email": TestData.TEST_USER_EMAIL_1}, expires_delta=timedelta(seconds=-1))
         expired_reset_payload = {"token": expired_token, "new_password": "NewPassword123!"}
         headers = {"Content-Type": "application/json"}
 
@@ -567,7 +567,7 @@ async def test_user_operations_with_expired_jwt() -> None:
         await client.post("/api/v1/dev/clear_data")
         await client.post("/api/v1/dev/seed_data")
 
-        expired_token = create_access_token(data={"sub": TestData.TEST_USER_EMAIL_1, "client_ip": "127.0.0.1"}, expires_delta=timedelta(seconds=-1))
+        expired_token = create_access_token(user_email=TestData.TEST_USER_EMAIL_1, expires_delta=timedelta(seconds=-1))
         client.cookies.set("authToken", expired_token)
         update_data = {"username": "updated_name"}
 
@@ -721,7 +721,7 @@ async def test_delete_account_with_expired_token() -> None:
 
         # 期限切れトークンを生成（-1秒前に期限切れ）
         expired_token = create_access_token(
-            data={"sub": TestData.TEST_USER_EMAIL_1},
+            user_email=TestData.TEST_USER_EMAIL_1,
             expires_delta=timedelta(seconds=-1),
         )
 

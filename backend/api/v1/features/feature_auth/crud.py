@@ -102,16 +102,6 @@ async def create_google_user(db: AsyncSession, email: str, username: str, google
         logger.info("create_google_user - success", user_id=new_user.user_id, email=new_user.email, username=new_user.username)
         return new_user
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("create_google_user - error", error=str(e), error_type=type(e).__name__)
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Googleユーザーの作成に失敗しました",
-        ) from e
     finally:
         logger.info("create_google_user - end")
 
@@ -319,11 +309,16 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
     try:
         # securityモジュールのdecode_access_tokenでJWTトークンをデコードしメールを取得
+        logger.info("get_current_user - decoding access token", token_length=len(token))
         payload = decode_access_token(token)
-        email: str | None = payload.get("sub")
+        logger.info("get_current_user - JWT payload", payload=payload)
+        email: str | None = payload.get("email")
+        logger.info("get_current_user - extracted email", email=email)
         if email is None:
+            logger.error("get_current_user - email not found in payload")
             raise credentials_exception
-    except Exception:
+    except Exception as e:
+        logger.error("get_current_user - token decode error", error=str(e), error_type=type(e).__name__)
         raise credentials_exception from None
 
     # メールアドレスでデータベースからユーザーを検索
@@ -554,15 +549,6 @@ async def change_user_password(db: AsyncSession, user: User, current_password: s
 
         logger.info("change_user_password - success", user_id=user.user_id)
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("change_user_password - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="パスワード変更に失敗しました",
-        ) from e
     finally:
         logger.info("change_user_password - end")
 
@@ -598,12 +584,6 @@ async def get_profile_info(user: User) -> dict:
         logger.info("get_profile_info - success", user_id=user.user_id, is_google_user=is_google_user)
         return profile_data
 
-    except Exception as e:
-        logger.error("get_profile_info - error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="プロフィール情報の取得に失敗しました",
-        ) from e
     finally:
         logger.info("get_profile_info - end")
 
@@ -647,16 +627,6 @@ async def link_google_account_to_email_user(db: AsyncSession, email_user: User, 
         logger.info("link_google_account_to_email_user - success", user_id=email_user.user_id)
         return email_user
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("link_google_account_to_email_user - error", error=str(e), error_type=type(e).__name__)
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="アカウント連携に失敗しました",
-        ) from e
     finally:
         logger.info("link_google_account_to_email_user - end")
 
@@ -696,16 +666,6 @@ async def link_email_account_to_google_user(db: AsyncSession, google_user: User,
         logger.info("link_email_account_to_google_user - success", user_id=google_user.user_id)
         return google_user
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("link_email_account_to_google_user - error", error=str(e), error_type=type(e).__name__)
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="アカウント連携に失敗しました",
-        ) from e
     finally:
         logger.info("link_email_account_to_google_user - end")
 
@@ -753,12 +713,6 @@ async def get_account_linking_status(user: User) -> dict:
         logger.info("get_account_linking_status - success", user_id=user.user_id, primary_account=primary_account)
         return linking_info
 
-    except Exception as e:
-        logger.error("get_account_linking_status - error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="アカウント連携状態の取得に失敗しました",
-        ) from e
     finally:
         logger.info("get_account_linking_status - end")
 
@@ -823,16 +777,6 @@ async def update_advanced_user_profile(db: AsyncSession, user: User, user_update
         logger.info("update_advanced_user_profile - success", user_id=user.user_id)
         return user
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("update_advanced_user_profile - error", error=str(e), error_type=type(e).__name__)
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="プロフィール更新に失敗しました",
-        ) from e
     finally:
         logger.info("update_advanced_user_profile - end")
 
@@ -895,12 +839,6 @@ async def get_all_users_for_admin(db: AsyncSession, page: int = 1, page_size: in
         logger.info("get_all_users_for_admin - success", user_count=len(users), total_count=total_count)
         return list(users), total_count
 
-    except Exception as e:
-        logger.error("get_all_users_for_admin - error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー一覧の取得に失敗しました",
-        ) from e
     finally:
         logger.info("get_all_users_for_admin - end")
 
@@ -949,15 +887,6 @@ async def get_user_by_id_for_admin(db: AsyncSession, user_id: str) -> User:
         logger.info("get_user_by_id_for_admin - success", user_id=user.user_id)
         return user
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("get_user_by_id_for_admin - error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー取得に失敗しました",
-        ) from e
     finally:
         logger.info("get_user_by_id_for_admin - end")
 
@@ -1038,16 +967,6 @@ async def update_user_by_admin(db: AsyncSession, user_id: str, user_update: Admi
         logger.info("update_user_by_admin - success", user_id=user.user_id)
         return user
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("update_user_by_admin - error", error=str(e), error_type=type(e).__name__)
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー更新に失敗しました",
-        ) from e
     finally:
         logger.info("update_user_by_admin - end")
 
@@ -1094,16 +1013,6 @@ async def delete_user_by_admin(db: AsyncSession, user_id: str, permanent: bool =
         logger.info("delete_user_by_admin - success", user_id=user_id, permanent=permanent)
         return user
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("delete_user_by_admin - error", error=str(e), error_type=type(e).__name__)
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー削除に失敗しました",
-        ) from e
     finally:
         logger.info("delete_user_by_admin - end")
 
@@ -1158,15 +1067,5 @@ async def restore_deleted_user_by_admin(db: AsyncSession, user_id: str) -> User:
         logger.info("restore_deleted_user_by_admin - success", user_id=user.user_id)
         return user
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("restore_deleted_user_by_admin - error", error=str(e), error_type=type(e).__name__)
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー復活に失敗しました",
-        ) from e
     finally:
         logger.info("restore_deleted_user_by_admin - end")

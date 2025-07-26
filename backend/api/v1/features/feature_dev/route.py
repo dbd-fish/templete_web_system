@@ -7,10 +7,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.common.database import get_db
-from api.common.redis_client import redis_client
 from api.common.response_schemas import ErrorCodes, SuccessResponse, create_error_response, create_success_response
 from api.v1.features.feature_auth.crud import reset_password
-from api.v1.features.feature_auth.security import create_access_token
+from api.v1.features.feature_auth.security import create_access_token, create_verification_token
 from api.v1.features.feature_dev.seed_data import clear_data, seed_data
 
 # ロガーの設定
@@ -46,41 +45,7 @@ async def clear_data_endpoint(
         logger.info("clear_data_endpoint - end")
 
 
-@router.get(
-    "/redis-status",
-    response_model=dict,
-    summary="Redis接続状態確認",
-    description="""【開発用】Redis接続状態を確認します。
 
-    **レスポンス:**
-    - dict: Redis接続状態
-    """,
-)
-async def redis_status():
-    logger.info("redis_status - start")
-    try:
-        # Redis接続状態確認
-        try:
-            # 簡単なRedis操作でテスト
-            await redis_client.client.set("test_connection", "ok")
-            test_value = await redis_client.client.get("test_connection")
-
-            status = {
-                "connected": True,
-                "test_value": test_value.decode() if isinstance(test_value, bytes) else str(test_value) if test_value else None,
-                "client_exists": redis_client._redis is not None,
-            }
-        except Exception as e:
-            status = {
-                "connected": False,
-                "error": str(e),
-                "client_exists": redis_client._redis is not None,
-            }
-
-        logger.info("redis_status - success", status=status)
-        return {"msg": "Redis status checked", "status": status}
-    finally:
-        logger.info("redis_status - end")
 
 
 @router.post(
@@ -143,7 +108,7 @@ async def test_reset_password_endpoint(
     logger.info("test_reset_password_endpoint - start", email=test_data.email)
     try:
         # 1. パスワードリセットトークンを生成（実際のメール送信プロセスをシミュレート）
-        reset_token = create_access_token(data={"email": test_data.email}, expires_delta=timedelta(hours=1))
+        reset_token = create_verification_token(data={"email": test_data.email}, expires_delta=timedelta(hours=1))
         logger.info("test_reset_password_endpoint - token generated", email=test_data.email)
 
         # 2. 生成されたトークンを使ってパスワードリセットを実行
@@ -157,7 +122,7 @@ async def test_reset_password_endpoint(
             "reset_url": f"http://localhost:3000/auth/reset-password?token={reset_token}",
             "note": "This is a development test endpoint. The password has been actually changed.",
         }
-    except Exception as e:
+    backend\api\v1\features\feature_dev\route.pyException as e:
         logger.error("test_reset_password_endpoint - error", email=test_data.email, error=str(e))
         return {"msg": "Password reset test failed", "email": test_data.email, "error": str(e)}
     finally:

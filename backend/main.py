@@ -2,26 +2,13 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from jwt.exceptions import InvalidTokenError as JWTError
-from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.sessions import SessionMiddleware
 
 from api.common.core.log_config import logger
 from api.common.database import database
-from api.common.exception_handlers import (
-    BusinessLogicError,
-    business_logic_exception_handler,
-    general_exception_handler,
-    http_exception_handler,
-    jwt_exception_handler,
-    sqlalchemy_exception_handler,
-    validation_exception_handler,
-)
-# from api.common.middleware import AddUserIPMiddleware  # 削除: Uvicornログで十分（G032対応）
-from api.common.redis_client import redis_client
+from api.common.middleware import ErrorHandlingMiddleware
 from api.common.setting import setting
 from api.v1.features.feature_auth.route import router as auth_router
 from api.v1.features.feature_dev.route import router as dev_router
@@ -37,18 +24,14 @@ time.tzset()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理を行うコンテキストマネージャ。"""
-    logger.info("Application startup - connecting to database and Redis")
+    logger.info("Application startup - connecting to database")
 
     # databasesライブラリのDatabaseオブジェクトでデータベースに接続
     await database.connect()
-    # RedisクライアントでRedisサーバーに接続
-    await redis_client.connect()
     yield
-    logger.info("Application shutdown - disconnecting from database and Redis")
+    logger.info("Application shutdown - disconnecting from database")
     # databasesライブラリのDatabaseオブジェクトでデータベースから切断
     await database.disconnect()
-    # RedisクライアントでRedisサーバーから切断
-    await redis_client.disconnect()
 
 
 # FastAPIアプリケーションのインスタンスを作成し、ライフサイクルを設定
@@ -103,33 +86,34 @@ else:
     # 本番環境ではOpenAPIドキュメントを無効化（セキュリティ対策）
     app = FastAPI(title="Template Web System API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
-# ミドルウェアの追加（ユーザーIP記録）削除
-# 理由: UvicornがデフォルトでIPアドレスをログ出力するため不要（G032対応）
-# 削除前: app.add_middleware(AddUserIPMiddleware)
-
 # CORS設定（ブラウザからのSwagger UIアクセス対応）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=setting.CORS_ORIGINS.split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=True,  # HttpOnlyクッキー送信に必須
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],  # 明示的指定
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "Cookie",
+        "Set-Cookie",
+        "X-Requested-With",
+        "X-Forwarded-For",
+        "X-Forwarded-Proto",
+    ],
+    expose_headers=["Set-Cookie"],  # Set-Cookieヘッダーをフロントエンドで読み取り可能にする
 )
 
 # Google OAuth 2.0用セッションミドルウェアを追加
 app.add_middleware(SessionMiddleware, secret_key=setting.SECRET_KEY)
 
-
-# 統一例外ハンドラーの登録
-# FastAPIの制限により、HTTPExceptionはミドルウェアでキャッチできないため、
-# 例外ハンドラーによる統一レスポンス形式を採用
-# ※ UnifiedErrorHandlerMiddlewareは削除し、例外ハンドラーによる処理に統一
-app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore
-app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore
-app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)  # type: ignore
-app.add_exception_handler(JWTError, jwt_exception_handler)  # type: ignore
-app.add_exception_handler(BusinessLogicError, business_logic_exception_handler)  # type: ignore
-app.add_exception_handler(Exception, general_exception_handler)  # type: ignore
+# 統一エラーハンドリングミドルウェアを追加
+# ミドルウェア方式により、すべての例外を統一的に処理し、
+# エラー発生箇所の追跡機能を提供
+app.add_middleware(ErrorHandlingMiddleware)
 
 # ルーターをアプリケーションに追加
 if setting.DEV_MODE:

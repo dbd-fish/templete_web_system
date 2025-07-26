@@ -17,9 +17,9 @@ class Setting(BaseSettings):
     # セキュリティ設定
     SECRET_KEY: str = "your-secret-key-here-change-in-production-please"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240  # アクセストークンは長期間（4時間）- 401エラー緊急対策
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # リフレッシュトークンは長期間（30日）
-    
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # アクセストークンは短期間（30分）- H034一般的JWT実装
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 5  # リフレッシュトークンは短期間（5日）- J056要件
+
     # Cookie有効期限設定（JWTトークンと整合性を保つ）
     COOKIE_EXPIRE_BUFFER_MINUTES: int = 5  # Cookie期限をJWTより5分長く設定
 
@@ -59,22 +59,12 @@ class Setting(BaseSettings):
     # ログ出力設定
     ENABLE_CONSOLE_LOG: bool = False
 
-    # Redis設定
-    REDIS_HOST: str = "redis"
-    REDIS_PORT: int = 6379
-    REDIS_DB: int = 0
-    REDIS_PASSWORD: str = ""
 
     @property
-    def REDIS_SESSION_EXPIRE_SECONDS(self) -> int:
-        """Redisセッション期限をREFRESH_TOKEN_EXPIRE_DAYSに同期"""
-        return 60 * 60 * 24 * self.REFRESH_TOKEN_EXPIRE_DAYS
-    
-    @property
     def ACCESS_TOKEN_COOKIE_MAX_AGE(self) -> int:
-        """アクセストークンCookie有効期限（JWTより若干長め）"""
-        return 60 * (self.ACCESS_TOKEN_EXPIRE_MINUTES + self.COOKIE_EXPIRE_BUFFER_MINUTES)
-    
+        """アクセストークンCookie有効期限（JWTより若干長め：35分）"""
+        return 60 * (self.ACCESS_TOKEN_EXPIRE_MINUTES + self.COOKIE_EXPIRE_BUFFER_MINUTES)  # 30分+5分=35分
+
     @property
     def REFRESH_TOKEN_COOKIE_MAX_AGE(self) -> int:
         """リフレッシュトークンCookie有効期限"""

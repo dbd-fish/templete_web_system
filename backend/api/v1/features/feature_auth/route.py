@@ -6,7 +6,6 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request,
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.common.database import get_db
-from api.common.redis_client import session_store
 from api.common.response_schemas import MessageResponse, SuccessResponse, create_message_response, create_success_response
 from api.common.setting import setting
 from api.v1.features.feature_auth.crud import (
@@ -30,6 +29,7 @@ from api.v1.features.feature_auth.crud import (
 )
 from api.v1.features.feature_auth.google_oauth import generate_username_from_google_info, verify_google_id_token
 from api.v1.features.feature_auth.models.user import User
+
 from api.v1.features.feature_auth.schemas.user import (
     AdminUserListResponse,
     AdminUserResponse,
@@ -40,17 +40,14 @@ from api.v1.features.feature_auth.schemas.user import (
     PasswordChangeRequest,
     PasswordResetData,
     ProfileResponse,
-    RevokeSessionRequest,
     SendPasswordResetEmailData,
-    SessionInfoResponse,
     TokenData,
     TokenPairResponse,
     UserCreate,
     UserResponse,
-    UserSessionsResponse,
     UserUpdate,
 )
-from api.v1.features.feature_auth.security import authenticate_user, create_token_pair, require_admin_role, revoke_all_refresh_tokens_for_user, revoke_refresh_token, validate_refresh_token
+from api.v1.features.feature_auth.security import authenticate_user, create_access_token, create_token_pair, require_admin_role, validate_refresh_token
 
 # ログの設定
 logger = structlog.get_logger()
@@ -126,7 +123,7 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
         import json
         try:
             json_data = json.loads(body_str)
-            username = json_data.get("username", "")
+            username = json_data.get("email", "")
             password = json_data.get("password", "")
         except json.JSONDecodeError as e:
             logger.error("login - invalid JSON format")
@@ -162,10 +159,7 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        # NOTE: クライアントのIPの取得方法はプロキシなどに依存する可能性あり
-        # client_host = request.client.host
-        client_host = request.headers.get("X-Forwarded-For") or (request.client.host if request.client else "unknown")
-        access_token, refresh_token = await create_token_pair(user.email, client_host, request)  # トークンペアを生成
+        access_token, refresh_token = create_token_pair(user.email)  # JWTトークンペアを生成
         logger.info("login - success", user_id=user.user_id)
 
         # HttpOnlyクッキーとしてアクセストークンを設定
@@ -187,18 +181,9 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
             secure=not setting.DEV_MODE,  # 開発環境ではHTTPを許可、本番環境ではHTTPSのみ
             samesite="lax",  # クロスサイトリクエストに対する制御
         )
+
         logger.info("login - success", extra={"user_id": user.user_id})
         return create_message_response(message="ログインに成功しました")
-    except HTTPException as e:
-        # authenticate_userからのHTTPExceptionを再発生
-        logger.info("login - HTTPException caught", status_code=e.status_code, detail=e.detail, username=username)
-        raise
-    except Exception as e:
-        logger.error("login - unexpected error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error during login",
-        ) from e
     finally:
         logger.info("login - end")
 
@@ -230,35 +215,11 @@ async def login(request: Request, response: Response, db: AsyncSession = Depends
     - 401エラー: 認証失敗時（無効なトークン・ユーザー未存在）
     """,
 )
-async def get_me(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
     logger.info("get_me - start")
     try:
         user = await get_current_user(request, db)
         logger.info("get_me - success", user_id=user.user_id)
-        
-        # セッション延長: 新しいトークンペアを生成してCookieを更新
-        client_host = request.headers.get("X-Forwarded-For") or (request.client.host if request.client else "unknown")
-        access_token, refresh_token = await create_token_pair(user.email, client_host, request)
-        
-        # 新しいトークンでCookieを更新（セッション延長）
-        response.set_cookie(
-            key="authToken",
-            value=access_token,
-            httponly=True,
-            max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,
-            secure=not setting.DEV_MODE,
-            samesite="lax",
-        )
-        response.set_cookie(
-            key="refreshToken",
-            value=refresh_token,
-            httponly=True,
-            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,
-            secure=not setting.DEV_MODE,
-            samesite="lax",
-        )
-        
-        logger.info("get_me - session extended", user_id=user.user_id)
         user_data = UserResponse.model_validate(user)
         return create_success_response(message="ユーザー情報を取得しました", data=user_data.model_dump())
     finally:
@@ -422,11 +383,6 @@ async def send_verify_email(user: UserCreate, background_tasks: BackgroundTasks,
 async def logout(request: Request, response: Response):
     logger.info("logout - start")
     try:
-        # リフレッシュトークンを無効化
-        refresh_token = request.cookies.get("refreshToken")
-        if refresh_token:
-            await revoke_refresh_token(refresh_token)
-
         # 認証クッキーを削除してログアウト処理
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
         response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
@@ -568,12 +524,9 @@ async def update_user_profile(user_update: UserUpdate, request: Request, respons
         updated_user = await update_user_with_schema(db, current_user, user_update)
         logger.info("update_user_profile - user_updated", user_id=updated_user.user_id)
 
-        # 古いリフレッシュトークンを無効化
-        await revoke_all_refresh_tokens_for_user(current_user.email)
 
         # 新しい認証トークンペアを生成（更新されたユーザー情報で）
-        client_host = request.headers.get("X-Forwarded-For") or (request.client.host if request.client else "unknown")
-        access_token, refresh_token = await create_token_pair(updated_user.email, client_host, request)
+        access_token, refresh_token = create_token_pair(updated_user.email)  # client_ipパラメータ削除
         logger.info("update_user_profile - token_created")
 
         # HttpOnlyクッキーとして新しいアクセストークンを設定
@@ -646,8 +599,6 @@ async def delete_user_account(request: Request, response: Response, db: AsyncSes
         await delete_user(db, current_user)
         logger.info("delete_user_account - user_deleted", user_id=current_user.user_id)
 
-        # 全てのリフレッシュトークンを無効化
-        await revoke_all_refresh_tokens_for_user(current_user.email)
 
         # 認証クッキーを削除（ログアウト処理）
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
@@ -717,8 +668,6 @@ async def delete_account(request: Request, response: Response, db: AsyncSession 
         await delete_user(db, current_user)
         logger.info("delete_account - user_deleted", user_id=current_user.user_id)
 
-        # 全てのリフレッシュトークンを無効化
-        await revoke_all_refresh_tokens_for_user(current_user.email)
 
         # 認証クッキーを削除（ログアウト処理）
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
@@ -788,8 +737,6 @@ async def delete_user_account_alt(request: Request, response: Response, db: Asyn
         await delete_user(db, current_user)
         logger.info("delete_user_account_alt - user_deleted", user_id=current_user.user_id)
 
-        # 全てのリフレッシュトークンを無効化
-        await revoke_all_refresh_tokens_for_user(current_user.email)
 
         # 認証クッキーを削除（ログアウト処理）
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
@@ -810,16 +757,14 @@ async def delete_user_account_alt(request: Request, response: Response, db: Asyn
     **処理の流れ:**
     1. クッキーからリフレッシュトークンを取得
     2. validate_refresh_token()でリフレッシュトークンを検証
-    3. 新しいアクセストークンとリフレッシュトークンのペアを生成
-    4. 古いリフレッシュトークンを無効化
-    5. 新しいトークンペアをHttpOnlyクッキーに設定
-    6. TokenPairResponseとして返却
+    3. 新しいアクセストークンのみを生成
+    4. 新しいアクセストークンをHttpOnlyクッキーに設定
+    5. 既存のリフレッシュトークンと新しいアクセストークンを返却
 
     **セキュリティ:**
-    - 古いリフレッシュトークンは即座に無効化
-    - 新しいリフレッシュトークンがローテーション
-    - アクセストークンは短期間（15分）有効
-    - リフレッシュトークンは長期間（30日）有効
+    - リフレッシュトークンは更新せず、有効期限延長を防止
+    - アクセストークンのみ新規生成（30分有効）
+    - リフレッシュトークンの元の有効期限（5日）を維持
 
     **レスポンス:**
     - SuccessResponse[TokenPairResponse]: 新しいトークンペア情報
@@ -828,9 +773,12 @@ async def delete_user_account_alt(request: Request, response: Response, db: Asyn
 )
 async def refresh_token(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     logger.info("refresh_token - start")
+
     try:
         # クッキーからリフレッシュトークンを取得
         refresh_token = request.cookies.get("refreshToken")
+        logger.info("refresh_token - received token from cookie", token_present=bool(refresh_token))
+
         if not refresh_token:
             logger.error("refresh_token - no refresh token in cookies")
             raise HTTPException(
@@ -838,17 +786,18 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
                 detail="リフレッシュトークンが見つかりません",
             )
 
-        # リフレッシュトークンを検証してユーザーメールを取得
-        user_email = await validate_refresh_token(refresh_token)
-        logger.info("refresh_token - refresh token validated", user_email=user_email)
+        # JWTリフレッシュトークンを検証してユーザーメールを取得
+        logger.info("refresh_token - starting JWT validate_refresh_token call")
+        user_email = validate_refresh_token(refresh_token)
+        logger.info("refresh_token - JWT validate_refresh_token success", user_email=user_email)
+        logger.info("refresh_token - JWT refresh token validated", user_email=user_email)
 
-        # 古いリフレッシュトークンを無効化
-        await revoke_refresh_token(refresh_token)
+        # セキュリティ向上: リフレッシュトークンは更新せず、アクセストークンのみ生成
+        # これにより、リフレッシュトークンの有効期限が延長されることを防ぐ
+        access_token = create_access_token(user_email)
+        logger.info("refresh_token - new access token created")
 
-        # 新しいトークンペアを生成
-        client_host = request.headers.get("X-Forwarded-For") or (request.client.host if request.client else "unknown")
-        access_token, new_refresh_token = await create_token_pair(user_email, client_host, request)
-        logger.info("refresh_token - new token pair created")
+        # 新しいCookie設定
 
         # HttpOnlyクッキーとして新しいアクセストークンを設定
         response.set_cookie(
@@ -856,28 +805,19 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
             value=access_token,
             httponly=True,
             max_age=setting.ACCESS_TOKEN_COOKIE_MAX_AGE,  # JWTより若干長い期限で整合性確保
-            secure=not setting.DEV_MODE,
+            secure=not setting.DEV_MODE,  # 開発環境では False (HTTP許可)
             samesite="lax",
         )
 
-        # HttpOnlyクッキーとして新しいリフレッシュトークンを設定
-        response.set_cookie(
-            key="refreshToken",
-            value=new_refresh_token,
-            httponly=True,
-            max_age=setting.REFRESH_TOKEN_COOKIE_MAX_AGE,  # リフレッシュトークンCookie期限
-            secure=not setting.DEV_MODE,
-            samesite="lax",
-        )
 
         logger.info("refresh_token - success", user_email=user_email)
 
-        # レスポンスデータを作成
+        # レスポンスデータを作成（既存のリフレッシュトークンを返す）
         token_pair_data = TokenPairResponse(
             access_token=access_token,
-            refresh_token=new_refresh_token,
+            refresh_token=refresh_token,  # 既存のリフレッシュトークンをそのまま返す
             token_type="bearer",
-            expires_in=900,  # 15分 = 900秒
+            expires_in=1800,  # 30分 = 1800秒
         )
 
         return create_success_response(message="トークンが正常に更新されました", data=token_pair_data.model_dump())
@@ -974,8 +914,7 @@ async def google_login(google_request: GoogleLoginRequest, request: Request, res
             logger.info("google_login - new_user_created", user_id=user.user_id, email=user.email)
 
         # JWTトークンペアを生成
-        client_host = request.headers.get("X-Forwarded-For") or (request.client.host if request.client else "unknown")
-        access_token, refresh_token = await create_token_pair(user.email, client_host, request)
+        access_token, refresh_token = create_token_pair(user.email)
         logger.info("google_login - token_pair_created", user_id=user.user_id)
 
         # HttpOnlyクッキーとしてアクセストークンを設定
@@ -1001,20 +940,11 @@ async def google_login(google_request: GoogleLoginRequest, request: Request, res
         logger.info("google_login - success", user_id=user.user_id, email=user.email)
         return create_message_response(message="Googleログインに成功しました")
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
     except ValueError as e:
         logger.error("google_login - validation_error", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"認証エラー: {str(e)}",
-        ) from e
-    except Exception as e:
-        logger.error("google_login - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Googleログイン処理でエラーが発生しました",
         ) from e
     finally:
         logger.info("google_login - end")
@@ -1067,22 +997,11 @@ async def change_password(password_data: PasswordChangeRequest, request: Request
         await change_user_password(db, current_user, password_data.current_password, password_data.new_password)
         logger.info("change_password - password_changed", user_id=current_user.user_id)
 
-        # セキュリティ強化：パスワード変更後は全てのリフレッシュトークンを無効化
-        await revoke_all_refresh_tokens_for_user(current_user.email)
-        logger.info("change_password - all_refresh_tokens_revoked", user_id=current_user.user_id)
+        logger.info("change_password - jwt_stateless_design", user_id=current_user.user_id)
 
         logger.info("change_password - success", user_id=current_user.user_id)
         return create_message_response(message="パスワードが正常に変更されました。セキュリティのため再ログインしてください。")
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("change_password - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="パスワード変更処理でエラーが発生しました",
-        ) from e
     finally:
         logger.info("change_password - end")
 
@@ -1136,15 +1055,6 @@ async def get_user_profile(request: Request, db: AsyncSession = Depends(get_db))
         logger.info("get_user_profile - success", user_id=current_user.user_id)
         return create_success_response(message="プロフィール情報を取得しました", data=profile_response.model_dump())
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("get_user_profile - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="プロフィール取得処理でエラーが発生しました",
-        ) from e
     finally:
         logger.info("get_user_profile - end")
 
@@ -1200,12 +1110,9 @@ async def update_user_profile_advanced(profile_update: AdvancedUserUpdate, reque
         updated_user = await update_advanced_user_profile(db, current_user, profile_update)
         logger.info("update_user_profile_advanced - profile_updated", user_id=updated_user.user_id)
 
-        # 古いリフレッシュトークンを無効化
-        await revoke_all_refresh_tokens_for_user(current_user.email)
 
         # 新しい認証トークンペアを生成（更新されたユーザー情報で）
-        client_host = request.headers.get("X-Forwarded-For") or (request.client.host if request.client else "unknown")
-        access_token, refresh_token = await create_token_pair(updated_user.email, client_host, request)
+        access_token, refresh_token = create_token_pair(updated_user.email)  # client_ipパラメータ削除
         logger.info("update_user_profile_advanced - token_created")
 
         # HttpOnlyクッキーとして新しいアクセストークンを設定
@@ -1235,224 +1142,11 @@ async def update_user_profile_advanced(profile_update: AdvancedUserUpdate, reque
         logger.info("update_user_profile_advanced - success", user_id=updated_user.user_id)
         return create_success_response(message="プロフィール情報が正常に更新され、新しい認証トークンが発行されました", data=profile_response.model_dump())
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("update_user_profile_advanced - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="プロフィール更新処理でエラーが発生しました",
-        ) from e
     finally:
         logger.info("update_user_profile_advanced - end")
 
 
-@router.get(
-    "/sessions",
-    response_model=SuccessResponse[UserSessionsResponse],
-    summary="ユーザーセッション一覧取得",
-    description="""現在ログイン中のユーザーのアクティブセッション一覧を取得します。
 
-    **処理の流れ:**
-    1. get_current_user()で現在のユーザーを取得・認証
-    2. session_store.get_user_sessions()でセッション一覧を取得
-    3. UserSessionsResponseスキーマに変換
-    4. 成功レスポンスとして返却
-
-    **セッション情報:**
-    - refresh_token: リフレッシュトークン（UUIDベース）
-    - created_at: セッション作成日時
-    - last_used: 最終使用日時
-    - device_info: デバイス情報（プラットフォーム、IP、User-Agent等）
-
-    **認証必須:** JWTトークンが必要です。
-
-    **パラメータ:**
-    - request: リクエストオブジェクト（認証用）
-    - db: 非同期データベースセッション
-
-    **レスポンス:**
-    - SuccessResponse[UserSessionsResponse]: セッション一覧情報
-    - 401エラー: 未認証状態でのアクセス時
-    """,
-)
-async def get_user_sessions(request: Request, db: AsyncSession = Depends(get_db)):
-    logger.info("get_user_sessions - start")
-    try:
-        # 現在のユーザーを取得
-        current_user = await get_current_user(request, db)
-
-        # セッション一覧を取得
-        sessions = await session_store.get_user_sessions(current_user.email)
-        logger.info("get_user_sessions - sessions_retrieved", user_email=current_user.email, session_count=len(sessions))
-
-        # レスポンスデータを作成（セッション情報をSessionInfoResponseスキーマに変換）
-        session_info_list = []
-        for session in sessions:
-            # device_infoがstr形式の場合はJSONパースする
-            device_info_raw = session["device_info"]
-            device_info: dict[str, str] = {}
-            if isinstance(device_info_raw, str):
-                import json
-                try:
-                    parsed = json.loads(device_info_raw)
-                    if isinstance(parsed, dict):
-                        device_info = {str(k): str(v) for k, v in parsed.items()}
-                except json.JSONDecodeError:
-                    device_info = {}
-            elif isinstance(device_info_raw, dict):
-                device_info = {str(k): str(v) for k, v in device_info_raw.items()}
-
-            session_info = SessionInfoResponse(
-                refresh_token=session["refresh_token"],
-                created_at=session["created_at"],
-                last_used=session["last_used"],
-                device_info=device_info,
-            )
-            session_info_list.append(session_info)
-
-        user_sessions_response = UserSessionsResponse(user_email=current_user.email, session_count=len(sessions), sessions=session_info_list)
-
-        logger.info("get_user_sessions - success", user_email=current_user.email)
-        return create_success_response(message="セッション一覧を取得しました", data=user_sessions_response.model_dump())
-
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("get_user_sessions - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="セッション一覧取得処理でエラーが発生しました",
-        ) from e
-    finally:
-        logger.info("get_user_sessions - end")
-
-
-@router.post(
-    "/sessions/revoke-all",
-    response_model=SuccessResponse[MessageResponse],
-    summary="全セッション無効化",
-    description="""現在ログイン中のユーザーの全てのセッションを無効化します。
-
-    **処理の流れ:**
-    1. get_current_user()で現在のユーザーを取得・認証
-    2. session_store.revoke_all_refresh_tokens_for_user()で全セッション無効化
-    3. 現在のセッションも含めて認証クッキーを削除
-    4. ログアウト成功メッセージを返却
-
-    **セキュリティ機能:**
-    - 全デバイスからの強制ログアウト
-    - 不正アクセス疑いの際の緊急対応
-    - パスワード変更・セキュリティ侵害時の対応
-
-    **認証必須:** JWTトークンが必要です。
-
-    **注意事項:**
-    - 実行後は全てのデバイスで再ログインが必要
-    - 現在のセッションも無効化される
-
-    **パラメータ:**
-    - request: リクエストオブジェクト（認証用）
-    - response: レスポンスオブジェクト（クッキー削除用）
-    - db: 非同期データベースセッション
-
-    **レスポンス:**
-    - SuccessResponse[MessageResponse]: 全セッション無効化成功メッセージ
-    - 401エラー: 未認証状態でのアクセス時
-    """,
-)
-async def revoke_all_user_sessions(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
-    logger.info("revoke_all_user_sessions - start")
-    try:
-        # 現在のユーザーを取得
-        current_user = await get_current_user(request, db)
-
-        # 全てのリフレッシュトークンを無効化
-        revoked_count = await revoke_all_refresh_tokens_for_user(current_user.email)
-        logger.info("revoke_all_user_sessions - all_sessions_revoked", user_email=current_user.email, revoked_count=revoked_count)
-
-        # 現在のセッションも削除（認証クッキーをクリア）
-        response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
-        response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
-
-        logger.info("revoke_all_user_sessions - success", user_email=current_user.email, revoked_count=revoked_count)
-        return create_message_response(message=f"全てのセッション（{revoked_count}件）を無効化しました。再ログインしてください。")
-
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("revoke_all_user_sessions - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="全セッション無効化処理でエラーが発生しました",
-        ) from e
-    finally:
-        logger.info("revoke_all_user_sessions - end")
-
-
-@router.post(
-    "/sessions/revoke-device",
-    response_model=SuccessResponse[MessageResponse],
-    summary="デバイス別セッション無効化",
-    description="""指定したデバイスのセッションを無効化します。
-
-    **処理の流れ:**
-    1. get_current_user()で現在のユーザーを取得・認証
-    2. RevokeSessionRequestでデバイスIDを受信
-    3. session_store.revoke_session_by_device()でデバイス別セッション無効化
-    4. 無効化結果をレスポンスで返却
-
-    **使用ケース:**
-    - 紛失・盗難デバイスからのログアウト
-    - 特定デバイスでの不正アクセス疑い対応
-    - セキュリティ管理の強化
-
-    **認証必須:** JWTトークンが必要です。
-
-    **パラメータ:**
-    - revoke_request: 無効化対象のデバイスID
-    - request: リクエストオブジェクト（認証用）
-    - db: 非同期データベースセッション
-
-    **レスポンス:**
-    - SuccessResponse[MessageResponse]: デバイス別セッション無効化結果
-    - 404エラー: 指定されたデバイスIDが見つからない場合
-    - 401エラー: 未認証状態でのアクセス時
-    """,
-)
-async def revoke_device_session(revoke_request: RevokeSessionRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    logger.info("revoke_device_session - start", device_id=revoke_request.device_id)
-    try:
-        # 現在のユーザーを取得
-        current_user = await get_current_user(request, db)
-
-        # デバイス別セッション無効化
-        success = await session_store.revoke_session_by_device(current_user.email, revoke_request.device_id)
-
-        if success:
-            logger.info("revoke_device_session - device_session_revoked", user_email=current_user.email, device_id=revoke_request.device_id)
-            return create_message_response(message=f"デバイス（{revoke_request.device_id}）のセッションを無効化しました")
-        else:
-            logger.warning("revoke_device_session - device_not_found", user_email=current_user.email, device_id=revoke_request.device_id)
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="指定されたデバイスのセッションが見つかりません",
-            )
-
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("revoke_device_session - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="デバイス別セッション無効化処理でエラーが発生しました",
-        ) from e
-    finally:
-        logger.info("revoke_device_session - end")
 
 
 
@@ -1543,15 +1237,6 @@ async def get_users_for_admin(
         logger.info("get_users_for_admin - success", total_count=total_count)
         return create_success_response(message="ユーザー一覧を取得しました", data=user_list_response.model_dump())
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("get_users_for_admin - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー一覧取得処理でエラーが発生しました",
-        ) from e
     finally:
         logger.info("get_users_for_admin - end")
 
@@ -1612,15 +1297,6 @@ async def get_user_for_admin(request: Request, user_id: str, db: AsyncSession = 
         logger.info("get_user_for_admin - success", target_user_id=user.user_id)
         return create_success_response(message="ユーザー情報を取得しました", data=admin_user_response.model_dump())
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("get_user_for_admin - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー情報取得処理でエラーが発生しました",
-        ) from e
     finally:
         logger.info("get_user_for_admin - end")
 
@@ -1696,15 +1372,6 @@ async def update_user_for_admin(
         logger.info("update_user_for_admin - success", target_user_id=updated_user.user_id)
         return create_success_response(message="ユーザー情報を更新しました", data=admin_user_response.model_dump())
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("update_user_for_admin - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー情報更新処理でエラーが発生しました",
-        ) from e
     finally:
         logger.info("update_user_for_admin - end")
 
@@ -1755,15 +1422,6 @@ async def delete_user_for_admin(request: Request, user_id: str, db: AsyncSession
         logger.info("delete_user_for_admin - success", target_user_id=deleted_user.user_id)
         return create_message_response(message="ユーザーを削除しました")
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("delete_user_for_admin - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー削除処理でエラーが発生しました",
-        ) from e
     finally:
         logger.info("delete_user_for_admin - end")
 
@@ -1831,14 +1489,5 @@ async def restore_user_for_admin(request: Request, user_id: str, db: AsyncSessio
         logger.info("restore_user_for_admin - success", target_user_id=restored_user.user_id)
         return create_success_response(message="ユーザーを復活させました", data=admin_user_response.model_dump())
 
-    except HTTPException:
-        # HTTPExceptionは再発生させる
-        raise
-    except Exception as e:
-        logger.error("restore_user_for_admin - unexpected_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="ユーザー復活処理でエラーが発生しました",
-        ) from e
     finally:
         logger.info("restore_user_for_admin - end")

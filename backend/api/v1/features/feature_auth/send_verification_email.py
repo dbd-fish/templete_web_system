@@ -80,8 +80,5 @@ async def send_verification_email(email: str, verification_url: str):
                 server.login(setting.SMTP_USERNAME, setting.SMTP_PASSWORD)  # ログイン
             server.sendmail(msg["From"], email, msg.as_string())  # メール送信
         logger.info("Verification email sent", email=email)
-    except Exception as e:
-        logger.info("Failed to send verification email", email=email, error=str(e))
-        raise e
     finally:
         logger.info("send_verification_email - end")

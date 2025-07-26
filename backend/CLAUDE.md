@@ -40,10 +40,9 @@ backend/
 │   │   │   └── request_validation_error.py
 │   │   ├── middleware/          # カスタムミドルウェア
 │   │   │   ├── add_userIP_middleware.py
-│   │   │   └── error_handler_middleware.py
+│   │   │   └── error_handling_middleware.py
 │   │   ├── database.py          # データベース接続設定
 │   │   ├── setting.py           # 設定管理（Pydantic BaseSettings）
-│   │   ├── exception_handlers.py # 統一エラーハンドリング
 │   │   ├── response_schemas.py  # レスポンス統一スキーマ
 │   │   └── test_data.py         # テストデータ（環境変数対応）
 │   ├── v1/                      # API v1
@@ -299,7 +298,7 @@ api/tests/v1/features/feature_auth/
 └── unit/
     ├── test_crud.py                 # CRUD操作単体テスト（24件）
     ├── test_email_sending.py        # メール送信単体テスト（9件）
-    ├── test_exception_handlers.py   # 例外ハンドラー単体テスト（15件）
+    ├── test_exceptions.py           # BusinessLogicError単体テスト（2件）
     ├── test_response_schemas.py     # レスポンススキーマ単体テスト（21件）
     ├── test_route_utils.py          # ルートユーティリティ単体テスト（12件）
     └── test_security.py             # セキュリティ単体テスト（9件）
@@ -472,7 +471,7 @@ tail -f backend/logs/server/sql/sqlalchemy_$(date +%Y-%m-%d).log
 #### アプリケーション
 - **非同期処理**: uvicorn + asyncio の活用
 - **レスポンス圧縮**: gzip 圧縮有効化
-- **キャッシュ**: 必要に応じてRedis導入検討
+- **キャッシュ**: 必要に応じて導入検討
 
 ## 📈 CI/CD対応
 

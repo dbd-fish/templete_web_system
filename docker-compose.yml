@@ -43,7 +43,6 @@ services:
     stdin_open: true
     depends_on:
       - db
-      - redis
     networks:
       - frontend-network
       - backend-network
@@ -52,6 +51,7 @@ services:
       - ENVIRONMENT=development
       - CORS_ORIGINS=http://localhost:5173,https://localhost:5173
       - WATCHFILES_FORCE_POLLING=true
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30  # H034: 一般的JWT+リフレッシュトークンシステム
 
   db:
     image: postgres:13
@@ -74,23 +74,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis_container
-    ports:
-      - "6379:6379"
-    networks:
-      - backend-network
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    environment:
-      - TZ=Asia/Tokyo
 
   # Cypress E2E Testing (Cypress公式推奨: run-and-exit パターン)
   cypress:
@@ -120,5 +103,4 @@ networks:
 
 volumes:
   postgres_data:
-  redis_data:
   frontend_node_modules:

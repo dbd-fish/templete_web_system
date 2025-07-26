@@ -1,17 +1,15 @@
-import uuid
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-import jwt
 import structlog
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import or_
 from sqlalchemy.future import select
 
 from api.common.database import AsyncSession
-from api.common.redis_client import get_device_info_from_request, session_store
 from api.common.setting import setting
 from api.v1.features.feature_auth.models.user import User
 
@@ -72,71 +70,69 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         logger.info("verify_password - end")
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
-    """アクセストークンを作成する。
+def create_access_token(user_email: str, expires_delta: timedelta | None = None) -> str:
+    """JWTアクセストークンを作成する
 
     Args:
-        data (dict): トークンに含めるデータ。
+        user_email (str): ユーザーのメールアドレス。
         expires_delta (timedelta, optional): トークンの有効期限。
 
     Returns:
         str: 作成されたJWTアクセストークン。
 
     """
-    logger.info("create_access_token - start")
+    logger.info("create_access_token - start", user_email=user_email)
     try:
-        to_encode = data.copy()
-        to_encode.update({"token_type": "access"})  # トークンタイプを明示
-        # ZoneInfoクラスで日本時間を設定し、有効期限を計算
         expire = datetime.now(ZoneInfo("Asia/Tokyo")) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-        to_encode.update({"exp": expire})
-        logger.debug("create_access_token - to_encode prepared")
-        # PyJWTライブラリでペイロードを秘密鍵と指定アルゴリズムで署名してJWTを生成
+        to_encode = {
+            "email": user_email,  # ユーザーメール
+            "exp": int(expire.timestamp()),  # 有効期限（30分）
+        }
+
+        logger.debug("create_access_token - JWT payload prepared", user_email=user_email)
+        # python-joseライブラリでJWTアクセストークンを生成
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-        logger.info("create_access_token - success")
-        logger.info("create_access_token - expire", expire=expire)
-        # PyJWT 2.x系では文字列を返すが、型チェックのために明示的にstrにキャスト
-        return str(encoded_jwt)
+        logger.info("create_access_token - simplified JWT created", user_email=user_email, expire=expire)
+        return encoded_jwt
     finally:
         logger.info("create_access_token - end")
 
 
-async def create_refresh_token(user_email: str, request: Request | None = None) -> str:
-    """リフレッシュトークンを作成する。
+def create_refresh_token(user_email: str, expires_delta: timedelta | None = None) -> str:
+    """JWTリフレッシュトークンを作成する
 
     Args:
         user_email (str): ユーザーのメールアドレス。
-        request (Request, optional): リクエストオブジェクト（デバイス情報取得用）
+        expires_delta (timedelta, optional): トークンの有効期限。
 
     Returns:
-        str: 作成されたリフレッシュトークン。
+        str: 作成されたJWTリフレッシュトークン。
 
     """
     logger.info("create_refresh_token - start", user_email=user_email)
     try:
-        # UUIDライブラリでランダムなUUID4形式のリフレッシュトークンを生成
-        refresh_token = str(uuid.uuid4())
+        expire = datetime.now(ZoneInfo("Asia/Tokyo")) + (expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
+        to_encode = {
+            "email": user_email,  # ユーザーメール
+            "exp": int(expire.timestamp()),  # 有効期限（5日）
+        }
 
-        # デバイス情報を取得（User-Agent、IP等のリクエスト情報を解析）
-        device_info = await get_device_info_from_request(request) if request else {}
+        logger.debug("create_refresh_token - JWT payload prepared", user_email=user_email)
 
-        # Redisセッションストアにリフレッシュトークンとデバイス情報を保存
-        await session_store.store_refresh_token(refresh_token, user_email, device_info)
+        # python-joseでJWTリフレッシュトークンを生成
+        refresh_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-
-        logger.info("create_refresh_token - success", user_email=user_email)
+        logger.info("create_refresh_token - simplified JWT created", user_email=user_email, expire=expire)
         return refresh_token
     finally:
         logger.info("create_refresh_token - end")
 
 
-async def create_token_pair(user_email: str, client_ip: str, request: Request | None = None) -> tuple[str, str]:
-    """アクセストークンとリフレッシュトークンのペアを作成する。
+def create_token_pair(user_email: str) -> tuple[str, str]:
+    """JWTアクセストークンとリフレッシュトークンのペアを作成する。
 
     Args:
         user_email (str): ユーザーのメールアドレス。
-        client_ip (str): クライアントのIPアドレス。
-        request (Request, optional): リクエストオブジェクト（デバイス情報取得用）
 
     Returns:
         Tuple[str, str]: (access_token, refresh_token)のタプル。
@@ -144,9 +140,9 @@ async def create_token_pair(user_email: str, client_ip: str, request: Request | 
     """
     logger.info("create_token_pair - start", user_email=user_email)
     try:
-        access_token = create_access_token(data={"sub": user_email, "client_ip": client_ip})
-        refresh_token = await create_refresh_token(user_email, request)
-        logger.info("create_token_pair - success", user_email=user_email)
+        access_token = create_access_token(user_email)
+        refresh_token = create_refresh_token(user_email)
+        logger.info("create_token_pair - simplified JWT pair created", user_email=user_email)
         return access_token, refresh_token
     finally:
         logger.info("create_token_pair - end")
@@ -169,13 +165,14 @@ def create_verification_token(data: dict, expires_delta: timedelta | None = None
         to_encode.update({"token_type": "verification"})  # トークンタイプを明示
         # ZoneInfoで日本時間を取得し、デフォルト24時間の有効期限を設定
         expire = datetime.now(ZoneInfo("Asia/Tokyo")) + (expires_delta or timedelta(hours=24))
-        to_encode.update({"exp": expire})
+        # python-jose用にUTCタイムスタンプに変換
+        to_encode.update({"exp": int(expire.timestamp())})
         logger.debug("create_verification_token - to_encode prepared")
-        # PyJWTでメール認証用の署名付きトークンを生成
+        # python-joseでメール認証用の署名付きトークンを生成
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         logger.info("create_verification_token - success")
         logger.info("create_verification_token - expire", expire=expire)
-        return str(encoded_jwt)
+        return encoded_jwt
     finally:
         logger.info("create_verification_token - end")
 
@@ -195,34 +192,11 @@ def decode_access_token(token: str) -> dict:
     """
     logger.info("decode_access_token - start")
     try:
-        # PyJWTライブラリでJWTトークンを秘密鍵と指定アルゴリズムで検証・デコード
+        # python-joseライブラリでJWTトークンを秘密鍵と指定アルゴリズムで検証・デコード
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-        # トークンタイプの検証（access以外は拒否）
-        if payload.get("token_type") != "access":
-            logger.error("Invalid token type")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="無効なトークンタイプです",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
 
         logger.info("decode_access_token - success")
         return payload
-    except jwt.ExpiredSignatureError:
-        logger.error("Token has expired")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="トークンが期限切れです",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from None
-    except jwt.InvalidTokenError:
-        logger.error("Invalid token")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="無効なトークンです",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from None
     finally:
         logger.info("decode_access_token - end")
 
@@ -242,7 +216,7 @@ def decode_verification_token(token: str) -> dict:
     """
     logger.info("decode_verification_token - start")
     try:
-        # PyJWTでメール認証用トークンを検証・デコード
+        # python-joseでメール認証用トークンを検証・デコード
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
         # トークンタイプの検証（verification以外は拒否）
@@ -255,27 +229,47 @@ def decode_verification_token(token: str) -> dict:
 
         logger.info("decode_verification_token - success")
         return payload
-    except jwt.ExpiredSignatureError:
-        logger.error("Verification token has expired")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="認証トークンが期限切れです",
-        ) from None
-    except jwt.InvalidTokenError:
-        logger.error("Invalid verification token")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="無効な認証トークンです",
-        ) from None
     finally:
         logger.info("decode_verification_token - end")
 
 
-async def validate_refresh_token(refresh_token: str) -> str:
-    """リフレッシュトークンを検証してユーザーメールを取得する。
+def decode_refresh_token(token: str) -> dict:
+    """JWTリフレッシュトークンをデコードしてペイロードを取得する（一般的JWT+リフレッシュトークンシステム標準実装）。
 
     Args:
-        refresh_token (str): 検証対象のリフレッシュトークン。
+        token (str): デコード対象のJWTリフレッシュトークン。
+
+    Returns:
+        dict: デコードされたペイロード情報。
+
+    Raises:
+        HTTPException: トークンが無効または不正な場合。
+
+    """
+    logger.info("decode_refresh_token - start")
+    try:
+        # python-joseライブラリでJWTリフレッシュトークンを検証・デコード
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # 必須フィールドの確認
+        if not payload.get("email"):
+            logger.error("Missing email in refresh token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="リフレッシュトークンにemailが含まれていません",
+            )
+
+        logger.info("decode_refresh_token - success", email=payload.get("email"))
+        return payload
+    finally:
+        logger.info("decode_refresh_token - end")
+
+
+def validate_refresh_token(refresh_token: str) -> str:
+    """JWTリフレッシュトークンを検証してユーザーメールを取得する（一般的JWT+リフレッシュトークンシステム標準実装）。
+
+    Args:
+        refresh_token (str): 検証対象のJWTリフレッシュトークン。
 
     Returns:
         str: ユーザーのメールアドレス。
@@ -285,61 +279,25 @@ async def validate_refresh_token(refresh_token: str) -> str:
 
     """
     logger.info("validate_refresh_token - start")
+    logger.info("validate_refresh_token - JWT validation", token_length=len(refresh_token))
     try:
-        # Redisセッションストアでリフレッシュトークンの有効性を検証しユーザーメールを取得
-        user_email = await session_store.validate_refresh_token(refresh_token)
+        # JWTリフレッシュトークンをデコードして検証
+        payload = decode_refresh_token(refresh_token)
+
+        # emailを取得
+        user_email = payload.get("email")
         if not user_email:
-            logger.error("Invalid refresh token")
+            logger.error("validate_refresh_token - email not found in JWT payload")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="無効なリフレッシュトークンです",
+                detail="リフレッシュトークンにemailが含まれていません",
             )
 
-
-        logger.info("validate_refresh_token - success", user_email=user_email)
+        logger.info("validate_refresh_token - JWT validation successful", user_email=user_email)
         return user_email
     finally:
         logger.info("validate_refresh_token - end")
 
-
-async def revoke_refresh_token(refresh_token: str) -> None:
-    """リフレッシュトークンを無効化する。
-
-    Args:
-        refresh_token (str): 無効化対象のリフレッシュトークン。
-
-    """
-    logger.info("revoke_refresh_token - start")
-    try:
-        # Redisセッションストアから指定されたリフレッシュトークンを無効化
-        await session_store.revoke_refresh_token(refresh_token)
-
-
-        logger.info("revoke_refresh_token - success")
-    finally:
-        logger.info("revoke_refresh_token - end")
-
-
-async def revoke_all_refresh_tokens_for_user(user_email: str) -> int:
-    """特定ユーザーのすべてのリフレッシュトークンを無効化する。
-
-    Args:
-        user_email (str): 対象ユーザーのメールアドレス。
-
-    Returns:
-        int: 無効化されたトークン数
-
-    """
-    logger.info("revoke_all_refresh_tokens_for_user - start", user_email=user_email)
-    try:
-        # Redisセッションストアで指定ユーザーの全リフレッシュトークンを無効化
-        revoked_count = await session_store.revoke_all_refresh_tokens_for_user(user_email)
-
-
-        logger.info("revoke_all_refresh_tokens_for_user - success", user_email=user_email, revoked_count=revoked_count)
-        return revoked_count
-    finally:
-        logger.info("revoke_all_refresh_tokens_for_user - end")
 
 
 async def authenticate_user(username_or_email: str, password: str, db: AsyncSession) -> User:

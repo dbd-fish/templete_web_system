@@ -63,7 +63,11 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
 
     # structlog用のProcessorFormatterを設定（ファイル出力用）
     file_formatter = structlog.stdlib.ProcessorFormatter(
-        processor=structlog.processors.JSONRenderer(indent=4, sort_keys=True),
+        processor=structlog.processors.JSONRenderer(
+            indent=4,           # JSON出力を4スペースでインデント（可読性向上）
+            sort_keys=True,     # JSONキーをアルファベット順でソート（一貫性確保）
+            ensure_ascii=False  # 日本語文字をUnicodeエスケープせず直接出力（可読性向上）
+        ),
         foreign_pre_chain=[
             structlog.contextvars.merge_contextvars,
             structlog.processors.TimeStamper(fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False),
@@ -125,6 +129,15 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
             structlog.stdlib.PositionalArgumentsFormatter(),  # 位置引数をフォーマット
             structlog.processors.StackInfoRenderer(),  # スタック情報をレンダリング
             structlog.processors.format_exc_info,  # 例外情報をフォーマット
+            structlog.processors.ExceptionPrettyPrinter(),  # 例外のトレースバックを整形
+            structlog.processors.CallsiteParameterAdder(  # 呼び出し元情報を追加
+                [CallsiteParameter.PATHNAME, CallsiteParameter.FUNC_NAME, CallsiteParameter.LINENO],
+                additional_ignores=[
+                    "structlog",  # structlog自体のコードを無視
+                    "logging",     # loggingモジュールを無視
+                    "error_handling_middleware",  # エラーハンドリングミドルウェアを無視
+                ]
+            ),
             structlog.processors.UnicodeDecoder(),  # Unicode文字をデコード
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,  # stdlibハンドラで使用可能にする
         ],

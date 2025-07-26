@@ -76,7 +76,7 @@ docker compose up -d frontend backend db redis
 #### Docker環境管理
 ```bash
 # 基本サービス起動（最も使用頻度が高い）
-docker compose up -d frontend backend db redis
+docker compose up -d frontend backend db
 
 # 開発用ログ確認（リアルタイム）
 docker compose logs -f frontend backend
