@@ -69,14 +69,14 @@ class TestVerifyGoogleIdToken:
 
     @pytest.mark.asyncio
     @patch("api.v1.features.feature_auth.google_oauth.id_token.verify_oauth2_token")
-    @patch("api.v1.features.feature_auth.google_oauth.setting")
-    async def test_verify_google_id_token_success(self, mock_setting, mock_verify):
+    @patch("api.v1.features.feature_auth.google_oauth.auth_setting")
+    async def test_verify_google_id_token_success(self, mock_auth_setting, mock_verify):
         """Google IDトークン検証成功テスト
 
         【正常系】有効なGoogle IDトークンが正常に検証されることを確認。
         """
         # Arrange: Google OAuth検証成功時のレスポンスを準備
-        mock_setting.GOOGLE_CLIENT_ID = "test-client-id"
+        mock_auth_setting.GOOGLE_CLIENT_ID = "test-client-id"
         mock_verify.return_value = {
             "iss": "accounts.google.com",
             "aud": "test-client-id",
@@ -114,11 +114,11 @@ class TestVerifyGoogleIdToken:
 
     @pytest.mark.asyncio
     @patch("api.v1.features.feature_auth.google_oauth.id_token.verify_oauth2_token")
-    @patch("api.v1.features.feature_auth.google_oauth.setting")
-    async def test_verify_google_id_token_invalid_audience(self, mock_setting, mock_verify):
+    @patch("api.v1.features.feature_auth.google_oauth.auth_setting")
+    async def test_verify_google_id_token_invalid_audience(self, mock_auth_setting, mock_verify):
         """無効なaudienceでのトークン検証失敗テスト"""
         # モックの設定
-        mock_setting.GOOGLE_CLIENT_ID = "correct-client-id"
+        mock_auth_setting.GOOGLE_CLIENT_ID = "correct-client-id"
         mock_verify.return_value = {"iss": "accounts.google.com", "aud": "wrong-client-id", "email": "test@example.com", "email_verified": True, "name": "Test User", "sub": "12345"}
 
         # テスト実行とアサーション

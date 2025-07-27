@@ -639,12 +639,12 @@ async def test_authentication_with_deleted_user() -> None:
         assert delete_response.status_code == 200
 
         deleted_login_data = {"username": TestData.TEST_USER_EMAIL_1, "password": TestData.TEST_USER_PASSWORD}
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        headers = {"Content-Type": "application/json"}
 
         # Act: 論理削除済みユーザーでログインを試行
         login_deleted_response = await client.post(
             "/api/v1/auth/login",
-            data=deleted_login_data,
+            json=deleted_login_data,
             headers=headers,
         )
 
