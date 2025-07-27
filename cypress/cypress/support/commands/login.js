@@ -1,10 +1,12 @@
 // ログイン処理をコマンド化（直接API呼び出し版）
 Cypress.Commands.add('login', (email = 'targetuser@example.com', password = 'Password123456+-') => {
-  // 直接APIでログインを実行
+  // 直接APIでログインを実行（JSON形式）
   cy.request({
     method: 'POST',
     url: 'http://backend:8000/api/v1/auth/login',
-    form: true,
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: {
       username: email,
       password: password,
