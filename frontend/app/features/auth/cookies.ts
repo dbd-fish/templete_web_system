@@ -1,5 +1,3 @@
-import { createCookie } from 'react-router';
-
 // NOTE:ブラウザの開発者モードでHttpOnlyのクッキーを確認できる
 
 /**

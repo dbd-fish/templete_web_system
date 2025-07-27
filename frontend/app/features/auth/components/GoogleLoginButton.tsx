@@ -94,7 +94,7 @@ export default function GoogleLoginButton({
     };
 
     initializeAuth();
-  }, [disabled, onError]);
+  }, [disabled, onError, handleGoogleCredential]);
 
   /**
    * Googleから受け取った認証情報を処理
