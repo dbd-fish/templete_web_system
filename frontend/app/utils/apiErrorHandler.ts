@@ -54,7 +54,7 @@ export const handleApiError = async (response: Response): Promise<never> => {
  */
 const refreshAccessToken = async (cookieHeader?: string): Promise<void> => {
   const now = Date.now();
-  
+
   // クールダウンチェック
   if (now - lastRefreshTime < REFRESH_COOLDOWN) {
     return;
@@ -74,7 +74,7 @@ const refreshAccessToken = async (cookieHeader?: string): Promise<void> => {
 
   const requestHeaders = {
     'Content-Type': 'application/json',
-    ...(refreshTokenOnly && { 'Cookie': refreshTokenOnly }),
+    ...(refreshTokenOnly && { Cookie: refreshTokenOnly }),
   };
 
   const refreshRequestOptions = {
@@ -83,7 +83,10 @@ const refreshAccessToken = async (cookieHeader?: string): Promise<void> => {
     credentials: 'include' as RequestCredentials,
   };
 
-  const refreshResponse = await fetch(`${apiUrl}/api/v1/auth/refresh`, refreshRequestOptions);
+  const refreshResponse = await fetch(
+    `${apiUrl}/api/v1/auth/refresh`,
+    refreshRequestOptions,
+  );
 
   if (!refreshResponse.ok) {
     throw new Error(`RefreshToken failed: ${refreshResponse.status}`);
@@ -95,7 +98,7 @@ const refreshAccessToken = async (cookieHeader?: string): Promise<void> => {
 
 /**
  * 新要件対応: JWT+リフレッシュトークンシステム - 自動リフレッシュ対応APIリクエスト
- * - アクセストークンのみでの認可（新要件: アクセストークンのみをバックエンドに送信）  
+ * - アクセストークンのみでの認可（新要件: アクセストークンのみをバックエンドに送信）
  * - 401エラー検知時の自動トークンリフレッシュ（リフレッシュトークンのみ使用）
  * - 新アクセストークン取得後の元リクエスト再実行
  * - 同時リクエストのキューイング機能
@@ -133,21 +136,24 @@ export const apiRequest = async (
       headers,
       credentials: 'include' as RequestCredentials,
     };
-    
+
     return fetch(url, requestOptions);
   };
 
   const response = await makeRequest();
 
   // 401エラー検知時の自動リフレッシュ
-  if (response.status === 401 && !url.includes('/auth/refresh') && !url.includes('/auth/login')) {
-    
+  if (
+    response.status === 401 &&
+    !url.includes('/auth/refresh') &&
+    !url.includes('/auth/login')
+  ) {
     // 自動リフレッシュ有効性確認
     if (!ENABLE_AUTO_REFRESH) {
       await handleApiError(response);
       return response;
     }
-    
+
     if (isRefreshing) {
       // 同時リクエストのキューイング
       return new Promise((resolve, reject) => {
@@ -161,11 +167,11 @@ export const apiRequest = async (
 
     try {
       await refreshAccessToken(cookieHeader);
-      
+
       // キューに溜まったリクエストを処理
       failedQueue.forEach(({ resolve }) => resolve());
       failedQueue = [];
-      
+
       isRefreshing = false;
 
       // 元のリクエストを再実行
@@ -179,16 +185,18 @@ export const apiRequest = async (
       failedQueue.forEach(({ reject }) => reject(error));
       failedQueue = [];
       isRefreshing = false;
-      
+
       // 期限切れ時のセッション無効化
       try {
         // Cookie削除を試行（可能な場合）
-        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie =
+          'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie =
+          'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       } catch {
         // SSR環境ではCookie削除不可
       }
-      
+
       // 認証エラー処理とログインリダイレクト
       await handleApiError(response);
       throw error;

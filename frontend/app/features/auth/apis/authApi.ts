@@ -3,7 +3,7 @@
  *
  * @description
  * すべての認証・ユーザー管理API関数を集約
- * 既存の実装パターンを維持しながら単一ファイルに統合
+ * 各API関数で個別に処理を記述
  */
 
 import {
@@ -14,7 +14,7 @@ import {
 } from '../types';
 import { apiRequest } from '~/utils/apiErrorHandler';
 import { getApiUrl } from '~/config/api';
-import { extractAuthTokens } from '../cookies';
+import { extractAuthTokens, extractRefreshToken } from '../cookies';
 
 // ==================== 認証関連 ====================
 
@@ -24,27 +24,22 @@ import { extractAuthTokens } from '../cookies';
  * - 成功時: 新しいアクセストークンを含むレスポンスを返す
  * - 失敗時: エラーをスロー
  */
-export const refreshToken = async (request: Request) => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
+export const refreshToken = async (request: Request): Promise<Response> => {
   const apiUrl = getApiUrl();
-
-  try {
-    // セキュリティ: 認証に必要なトークンCookieのみを抽出
-    const cookieHeader = request.headers.get('Cookie');
-    const authOnlyCookies = extractAuthTokens(cookieHeader);
-    
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/refresh`,
-      {
-        method: 'POST',
+  const cookieHeader = request.headers.get('Cookie');
+  const refreshTokenCookie = extractRefreshToken(cookieHeader);
+  
+  return apiRequest(
+    `${apiUrl}/api/v1/auth/refresh`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(refreshTokenCookie && { Cookie: refreshTokenCookie }),
       },
-      authOnlyCookies,
-    );
-
-    return response;
-  } catch (error) {
-    throw error;
-  }
+    },
+    refreshTokenCookie,
+  );
 };
 
 /**
@@ -56,23 +51,22 @@ export const refreshToken = async (request: Request) => {
  * @param email - ユーザーのメールアドレス
  * @param password - ユーザーのパスワード
  */
-export const login = async (email: string, password: string) => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
+export const login = async (
+  email: string,
+  password: string,
+): Promise<Response> => {
   const apiUrl = getApiUrl();
-
-  try {
-    const response = await apiRequest(`${apiUrl}/api/v1/auth/login`, {
-      method: 'POST',
-      body: JSON.stringify({
-        username: email, // emailアドレスをusernameフィールドで送信（OAuth2互換）
-        password: password,
-      }),
-    });
-
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  
+  return apiRequest(`${apiUrl}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username: email, // emailアドレスをusernameフィールドで送信（OAuth2互換）
+      password: password,
+    }),
+  });
 };
 
 /**
@@ -81,27 +75,22 @@ export const login = async (email: string, password: string) => {
  * - 成功時: レスポンスを返す
  * - 失敗時: エラーメッセージをスロー
  */
-export const logout = async (request: Request) => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
+export const logout = async (request: Request): Promise<Response> => {
   const apiUrl = getApiUrl();
-
-  try {
-    // セキュリティ: 認証に必要なトークンCookieのみを抽出
-    const cookieHeader = request.headers.get('Cookie');
-    const authOnlyCookies = extractAuthTokens(cookieHeader);
-    
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/logout`,
-      {
-        method: 'POST',
+  const cookieHeader = request.headers.get('Cookie');
+  const authTokens = extractAuthTokens(cookieHeader);
+  
+  return apiRequest(
+    `${apiUrl}/api/v1/auth/logout`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authTokens && { Cookie: authTokens }),
       },
-      authOnlyCookies,
-    );
-
-    return response;
-  } catch (error) {
-    throw error;
-  }
+    },
+    authTokens,
+  );
 };
 
 // ==================== ユーザー管理 ====================
@@ -112,25 +101,26 @@ export const logout = async (request: Request) => {
  * - 成功時: ユーザー情報オブジェクトを返す
  * - 失敗時: null を返す
  */
-export const getUser = async (request: Request) => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
+export const getUser = async (
+  request: Request,
+): Promise<UserResponse | null> => {
   const apiUrl = getApiUrl();
-
-  // セキュリティ: 認証に必要なトークンCookieのみを抽出
   const cookieHeader = request.headers.get('Cookie');
-  const authOnlyCookies = extractAuthTokens(cookieHeader);
+  const authTokens = extractAuthTokens(cookieHeader);
 
   try {
     const response = await apiRequest(
       `${apiUrl}/api/v1/auth/me`,
       {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authTokens && { Cookie: authTokens }),
+        },
       },
-      authOnlyCookies,
+      authTokens,
     );
-
-    const data = (await response.json()) as UserResponse;
-    return data;
+    return (await response.json()) as UserResponse;
   } catch (error) {
     // 認証エラーの場合はnullを返す
     if (error instanceof Error && error.message.includes('401')) {
@@ -150,27 +140,24 @@ export const updateUser = async (
   request: Request,
   updateData: UserUpdate,
 ): Promise<UserResponse> => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
   const apiUrl = getApiUrl();
+  const cookieHeader = request.headers.get('Cookie');
+  const authTokens = extractAuthTokens(cookieHeader);
 
-  try {
-    // セキュリティ: 認証に必要なトークンCookieのみを抽出
-    const cookieHeader = request.headers.get('Cookie');
-    const authOnlyCookies = extractAuthTokens(cookieHeader);
-    
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/me`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify(updateData),
+  const response = await apiRequest(
+    `${apiUrl}/api/v1/auth/me`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authTokens && { Cookie: authTokens }),
       },
-      authOnlyCookies,
-    );
-
-    return (await response.json()) as UserResponse;
-  } catch (error) {
-    throw error;
-  }
+      body: JSON.stringify(updateData),
+    },
+    authTokens,
+  );
+  
+  return (await response.json()) as UserResponse;
 };
 
 /**
@@ -182,26 +169,23 @@ export const updateUser = async (
 export const deleteUser = async (
   request: Request,
 ): Promise<MessageResponse> => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
   const apiUrl = getApiUrl();
+  const cookieHeader = request.headers.get('Cookie');
+  const authTokens = extractAuthTokens(cookieHeader);
 
-  try {
-    // セキュリティ: 認証に必要なトークンCookieのみを抽出
-    const cookieHeader = request.headers.get('Cookie');
-    const authOnlyCookies = extractAuthTokens(cookieHeader);
-    
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/user`,
-      {
-        method: 'DELETE',
+  const response = await apiRequest(
+    `${apiUrl}/api/v1/auth/user`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authTokens && { Cookie: authTokens }),
       },
-      authOnlyCookies,
-    );
-
-    return (await response.json()) as MessageResponse;
-  } catch (error) {
-    throw error;
-  }
+    },
+    authTokens,
+  );
+  
+  return (await response.json()) as MessageResponse;
 };
 
 // ==================== 登録関連 ====================
@@ -213,24 +197,20 @@ export const deleteUser = async (
  * - 失敗時: エラーをスロー
  */
 export const signup = async (token: string): Promise<boolean> => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
   const apiUrl = getApiUrl();
-
-  try {
-    const signupData = {
+  
+  const response = await apiRequest(`${apiUrl}/api/v1/auth/signup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
       token: token,
-    };
-
-    const response = await apiRequest(`${apiUrl}/api/v1/auth/signup`, {
-      method: 'POST',
-      body: JSON.stringify(signupData),
-    });
-
-    const data = (await response.json()) as SuccessResponse;
-    return data.success;
-  } catch (error) {
-    throw error;
-  }
+    }),
+  });
+  
+  const data = (await response.json()) as SuccessResponse;
+  return data.success;
 };
 
 /**
@@ -244,37 +224,30 @@ export const sendVerifyEmail = async (
   password: string,
   username: string,
 ): Promise<SuccessResponse> => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
+  // 各フィールドをトリムし、空文字列チェック
+  const trimmedEmail = email.trim();
+  const trimmedPassword = password.trim();
+  const trimmedUsername = username.trim();
+
+  if (!trimmedEmail || !trimmedPassword || !trimmedUsername) {
+    throw new Error('すべてのフィールドが必要です');
+  }
+
   const apiUrl = getApiUrl();
-
-  try {
-    // 各フィールドをトリムし、空文字列チェック
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
-    const trimmedUsername = username.trim();
-
-    if (!trimmedEmail || !trimmedPassword || !trimmedUsername) {
-      throw new Error('すべてのフィールドが必要です');
-    }
-
-    const verifyEmailData = {
+  
+  const response = await apiRequest(`${apiUrl}/api/v1/auth/send-verify-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
       email: trimmedEmail,
       password: trimmedPassword,
       username: trimmedUsername,
-    };
-
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/send-verify-email`,
-      {
-        method: 'POST',
-        body: JSON.stringify(verifyEmailData),
-      },
-    );
-
-    return (await response.json()) as SuccessResponse;
-  } catch (error) {
-    throw error;
-  }
+    }),
+  });
+  
+  return (await response.json()) as SuccessResponse;
 };
 
 // ==================== パスワードリセット ====================
@@ -288,33 +261,29 @@ export const sendVerifyEmail = async (
 export const sendPasswordResetEmail = async (
   email: string,
 ): Promise<SuccessResponse> => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
-  const apiUrl = getApiUrl();
+  // メールアドレスをトリムし、空文字列チェック
+  const trimmedEmail = email.trim();
 
-  try {
-    // メールアドレスをトリムし、空文字列チェック
-    const trimmedEmail = email.trim();
-
-    if (!trimmedEmail) {
-      throw new Error('メールアドレスが必要です');
-    }
-
-    const resetEmailData = {
-      email: trimmedEmail,
-    };
-
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/send-password-reset-email`,
-      {
-        method: 'POST',
-        body: JSON.stringify(resetEmailData),
-      },
-    );
-
-    return (await response.json()) as SuccessResponse;
-  } catch (error) {
-    throw error;
+  if (!trimmedEmail) {
+    throw new Error('メールアドレスが必要です');
   }
+
+  const apiUrl = getApiUrl();
+  
+  const response = await apiRequest(
+    `${apiUrl}/api/v1/auth/send-password-reset-email`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: trimmedEmail,
+      }),
+    },
+  );
+  
+  return (await response.json()) as SuccessResponse;
 };
 
 /**
@@ -327,22 +296,18 @@ export const resetPassword = async (
   token: string,
   newPassword: string,
 ): Promise<SuccessResponse> => {
-  // 実際のバックエンドAPIに接続（Docker環境対応）
   const apiUrl = getApiUrl();
-
-  try {
-    const resetData = {
+  
+  const response = await apiRequest(`${apiUrl}/api/v1/auth/reset-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
       token: token,
       new_password: newPassword.trim(), // パスワードはトリム処理
-    };
-
-    const response = await apiRequest(`${apiUrl}/api/v1/auth/reset-password`, {
-      method: 'POST',
-      body: JSON.stringify(resetData),
-    });
-
-    return (await response.json()) as SuccessResponse;
-  } catch (error) {
-    throw error;
-  }
+    }),
+  });
+  
+  return (await response.json()) as SuccessResponse;
 };

@@ -36,11 +36,18 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     // authApi.tsのlogin関数を使用して統一性を確保
-    await login(email, password);
+    const loginResponse = await login(email, password);
 
+    // レスポンスからSet-Cookieヘッダーを取得
+    const setCookieHeader = loginResponse.headers.get('set-cookie');
+    
     // 認証成功時はマイページにリダイレクト
-    // HttpOnly Cookieはサーバー側で設定される
-    return redirect('/mypage');
+    // Set-Cookieヘッダーを含めてリダイレクト
+    return redirect('/mypage', {
+      headers: {
+        ...(setCookieHeader && { 'Set-Cookie': setCookieHeader }),
+      },
+    });
   } catch (error) {
     console.error('ログインエラー:', error);
 
