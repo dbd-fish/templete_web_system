@@ -97,7 +97,7 @@ async def test_create_access_token_expired():
     ここでは単体テストとしてJWTError(jose.exceptions)の発生を確認。
     """
     from jose.exceptions import JWTError
-    
+
     # Arrange: 既に期限切れのトークンを準備
     user_email = "test@example.com"
     expired_delta = timedelta(seconds=-1)  # 1秒前に期限切れ
@@ -138,7 +138,7 @@ async def test_decode_access_token_invalid_token():
     ここでは単体テストとしてJWTError(jose.exceptions)の発生を確認。
     """
     from jose.exceptions import JWTError
-    
+
     # Arrange: 不正な形式のトークンを準備
     invalid_tokens = [
         "invalid.token.value",  # 不正な署名

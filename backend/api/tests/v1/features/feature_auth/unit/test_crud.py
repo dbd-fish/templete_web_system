@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 
 from api.common.test_data import TestData
 from api.v1.features.feature_auth.crud import (
@@ -31,7 +32,6 @@ from api.v1.features.feature_auth.crud import (
 )
 from api.v1.features.feature_auth.models.user import User
 from api.v1.features.feature_auth.schemas.user import UserCreate, UserUpdate
-from sqlalchemy.exc import SQLAlchemyError
 
 
 @pytest.mark.asyncio

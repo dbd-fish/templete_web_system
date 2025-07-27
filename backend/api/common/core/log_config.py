@@ -66,7 +66,7 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
         processor=structlog.processors.JSONRenderer(
             indent=4,           # JSON出力を4スペースでインデント（可読性向上）
             sort_keys=True,     # JSONキーをアルファベット順でソート（一貫性確保）
-            ensure_ascii=False  # 日本語文字をUnicodeエスケープせず直接出力（可読性向上）
+            ensure_ascii=False,  # 日本語文字をUnicodeエスケープせず直接出力（可読性向上）
         ),
         foreign_pre_chain=[
             structlog.contextvars.merge_contextvars,
@@ -136,7 +136,7 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
                     "structlog",  # structlog自体のコードを無視
                     "logging",     # loggingモジュールを無視
                     "error_handling_middleware",  # エラーハンドリングミドルウェアを無視
-                ]
+                ],
             ),
             structlog.processors.UnicodeDecoder(),  # Unicode文字をデコード
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,  # stdlibハンドラで使用可能にする

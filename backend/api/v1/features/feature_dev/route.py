@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.common.database import get_db
 from api.common.response_schemas import ErrorCodes, SuccessResponse, create_error_response, create_success_response
 from api.v1.features.feature_auth.crud import reset_password
-from api.v1.features.feature_auth.security import create_access_token, create_verification_token
+from api.v1.features.feature_auth.security import create_verification_token
 from api.v1.features.feature_dev.seed_data import clear_data, seed_data
 
 # ロガーの設定

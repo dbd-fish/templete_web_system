@@ -237,15 +237,15 @@ async def test_logout_user(authenticated_client: AsyncClient) -> None:
     response_json = response.json()
     assert response_json["success"] is True
     assert response_json["message"] == "ログアウトしました"
-    
+
     # Assert: クッキーが削除されているかを確認
     # Set-Cookieヘッダーでクッキーの削除を確認
     set_cookie_headers = response.headers.get_list("set-cookie")
-    
+
     # authTokenとrefreshTokenの削除を確認
     auth_token_deleted = any("authToken=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie_headers)
     refresh_token_deleted = any("refreshToken=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie_headers)
-    
+
     assert auth_token_deleted, "authTokenクッキーが削除されていません"
     assert refresh_token_deleted, "refreshTokenクッキーが削除されていません"
 
@@ -342,14 +342,14 @@ async def test_logout_with_invalid_token() -> None:
         data = response.json()
         assert data["success"] is True
         assert "ログアウトしました" in data["message"]
-        
+
         # Assert: 無効なトークンでもクッキーは削除される
         set_cookie_headers = response.headers.get_list("set-cookie")
-        
+
         # 具体的なクッキー削除を確認
         auth_token_deleted = any("authToken=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie_headers)
         refresh_token_deleted = any("refreshToken=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie_headers)
-        
+
         assert auth_token_deleted, "無効なトークンでもauthTokenクッキーが削除される"
         assert refresh_token_deleted, "無効なトークンでもrefreshTokenクッキーが削除される"
 
@@ -414,7 +414,7 @@ async def test_logout_with_partial_tokens() -> None:
         assert "ログアウトしました" in data["message"]
 
 
-@pytest.mark.asyncio(loop_scope="session") 
+@pytest.mark.asyncio(loop_scope="session")
 async def test_logout_after_successful_login() -> None:
     """POST /api/v1/auth/logout
 
@@ -426,30 +426,30 @@ async def test_logout_after_successful_login() -> None:
         # Act: まずログインしてトークンを取得
         login_data = {"username": TestData.TEST_USER_EMAIL_1, "password": TestData.TEST_USER_PASSWORD}
         login_response = await client.post("/api/v1/auth/login", json=login_data)
-        
+
         # Assert: ログイン成功を確認
         assert login_response.status_code == 200, login_response.text
-        
+
         # ログイン時にクッキーが設定されていることを確認
         set_cookie_headers = login_response.headers.get_list("set-cookie")
         assert len(set_cookie_headers) >= 2, "ログイン時にauthTokenとrefreshTokenが設定される"
-        
+
         # Act: 続いてログアウト処理
         logout_response = await client.post("/api/v1/auth/logout")
-        
+
         # Assert: ログアウト成功を確認
         assert logout_response.status_code == 200, logout_response.text
         logout_data = logout_response.json()
         assert logout_data["success"] is True
         assert "ログアウトしました" in logout_data["message"]
-        
+
         # Assert: ログアウト時にクッキーが削除されることを確認
         logout_set_cookie_headers = logout_response.headers.get_list("set-cookie")
-        
+
         # 具体的なクッキー削除を確認
         logout_auth_token_deleted = any("authToken=" in cookie and "Max-Age=0" in cookie for cookie in logout_set_cookie_headers)
         logout_refresh_token_deleted = any("refreshToken=" in cookie and "Max-Age=0" in cookie for cookie in logout_set_cookie_headers)
-        
+
         assert logout_auth_token_deleted, "ログアウト時にauthTokenクッキーが削除される"
         assert logout_refresh_token_deleted, "ログアウト時にrefreshTokenクッキーが削除される"
 

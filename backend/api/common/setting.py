@@ -55,10 +55,10 @@ class Setting(BaseSettings):
 
 
     model_config = SettingsConfigDict(
-        env_file=".env", 
-        env_file_encoding="utf-8", 
+        env_file=".env",
+        env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"  # 他の機能の環境変数を無視
+        extra="ignore",  # 他の機能の環境変数を無視
     )
 
 

@@ -6,7 +6,7 @@ FastAPIの例外処理を統一化し、エラー発生箇所の追跡機能を�
 
 import sys
 import traceback
-from typing import Any, Dict, Optional
+from typing import Any
 
 import structlog
 from fastapi import HTTPException, Request, status
@@ -33,10 +33,9 @@ class BusinessLogicError(Exception):
         super().__init__(self.message)
 
 
-def get_error_location() -> Dict[str, Any]:
+def get_error_location() -> dict[str, Any]:
     """
     例外が実際に発生した場所の情報を取得
-    
     Returns:
         dict: エラー発生箇所の情報
     """
@@ -44,10 +43,10 @@ def get_error_location() -> Dict[str, Any]:
     exc_type, exc_value, exc_tb = sys.exc_info()
     if not exc_tb:
         return {}
-    
+
     # トレースバックから最も深い（最初の）エラー発生箇所を取得
     tb_list = traceback.extract_tb(exc_tb)
-    
+
     # apiディレクトリ内で、middleware/error_handling_middleware.py以外の最初のフレームを探す
     for frame in tb_list:
         if "/api/" in frame.filename and "error_handling_middleware.py" not in frame.filename:
@@ -57,7 +56,7 @@ def get_error_location() -> Dict[str, Any]:
                 "error_line": frame.lineno,
                 "error_code": frame.line,  # 実際のコード行
             }
-    
+
     # 見つからない場合は最後のフレーム
     if tb_list:
         frame = tb_list[-1]
@@ -67,7 +66,7 @@ def get_error_location() -> Dict[str, Any]:
             "error_line": frame.lineno,
             "error_code": frame.line,
         }
-    
+
     return {}
 
 
@@ -77,11 +76,9 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         """
         リクエスト処理中の例外を統一的にハンドリング
-        
         Args:
             request: FastAPIリクエストオブジェクト
             call_next: 次のミドルウェアまたはエンドポイントを呼び出す関数
-            
         Returns:
             Response: 処理後のレスポンスオブジェクト
         """
@@ -104,7 +101,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     async def _handle_http_exception(self, request: Request, exc: HTTPException) -> JSONResponse:
         """HTTPException用のハンドラー"""
         error_location = get_error_location()
-        
+
         logger.warning(
             "HTTP exception occurred",
             status_code=exc.status_code,
@@ -112,7 +109,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             path=request.url.path,
             method=request.method,
             **error_location,
-            exc_info=True
+            exc_info=True,
         )
 
         # ステータスコードに応じてエラーコードを決定
@@ -134,8 +131,8 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             details={
                 "status_code": exc.status_code,
                 "path": request.url.path,
-                "method": request.method
-            }
+                "method": request.method,
+            },
         )
 
         return JSONResponse(status_code=exc.status_code, content=error_response)
@@ -143,14 +140,14 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     async def _handle_validation_error(self, request: Request, exc: RequestValidationError) -> JSONResponse:
         """バリデーションエラー用のハンドラー"""
         error_location = get_error_location()
-        
+
         logger.warning(
             "Validation error occurred",
             errors=exc.errors(),
             path=request.url.path,
             method=request.method,
             **error_location,
-            exc_info=True
+            exc_info=True,
         )
 
         # Format validation error details
@@ -160,7 +157,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 "field": ".".join(str(loc) for loc in error["loc"]),
                 "message": error["msg"],
                 "type": error["type"],
-                "input": error.get("input")
+                "input": error.get("input"),
             })
 
         error_response = create_error_response(
@@ -169,8 +166,8 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             details={
                 "validation_errors": validation_errors,
                 "path": request.url.path,
-                "method": request.method
-            }
+                "method": request.method,
+            },
         )
 
         return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response)
@@ -178,14 +175,14 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     async def _handle_sqlalchemy_error(self, request: Request, exc: SQLAlchemyError) -> JSONResponse:
         """SQLAlchemyエラー用のハンドラー"""
         error_location = get_error_location()
-        
+
         logger.error(
             "Database error occurred",
             error=str(exc),
             path=request.url.path,
             method=request.method,
             **error_location,
-            exc_info=True
+            exc_info=True,
         )
 
         error_response = create_error_response(
@@ -196,7 +193,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 "method": request.method,
                 # Don't include detailed error info in production
                 "error_detail": str(exc) if logger.level == "DEBUG" else None,
-            }
+            },
         )
 
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response)
@@ -204,14 +201,14 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     async def _handle_jwt_error(self, request: Request, exc: JWTError) -> JSONResponse:
         """JWTエラー用のハンドラー"""
         error_location = get_error_location()
-        
+
         logger.warning(
             "JWT error occurred",
             error=str(exc),
             path=request.url.path,
             method=request.method,
             **error_location,
-            exc_info=True
+            exc_info=True,
         )
 
         # エラーメッセージをより具体的に
@@ -228,7 +225,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             details={
                 "path": request.url.path,
                 "method": request.method,
-            }
+            },
         )
 
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=error_response)
@@ -236,7 +233,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     async def _handle_business_logic_error(self, request: Request, exc: BusinessLogicError) -> JSONResponse:
         """ビジネスロジックエラー用のハンドラー"""
         error_location = get_error_location()
-        
+
         logger.info(
             "Business logic error occurred",
             message=exc.message,
@@ -244,7 +241,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             path=request.url.path,
             method=request.method,
             **error_location,
-            exc_info=True
+            exc_info=True,
         )
 
         error_response = create_error_response(
@@ -253,8 +250,8 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             details={
                 **exc.details,
                 "path": request.url.path,
-                "method": request.method
-            }
+                "method": request.method,
+            },
         )
 
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=error_response)
@@ -262,7 +259,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     async def _handle_general_exception(self, request: Request, exc: Exception) -> JSONResponse:
         """予期しない例外用のハンドラー"""
         error_location = get_error_location()
-        
+
         logger.error(
             "Unexpected error occurred",
             error=str(exc),
@@ -270,7 +267,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             path=request.url.path,
             method=request.method,
             **error_location,
-            exc_info=True
+            exc_info=True,
         )
 
         error_response = create_error_response(
@@ -281,7 +278,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 "method": request.method,
                 # Don't include detailed error info in production
                 "error_type": type(exc).__name__ if logger.level == "DEBUG" else None,
-            }
+            },
         )
 
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response)

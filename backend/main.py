@@ -10,8 +10,8 @@ from api.common.core.log_config import logger
 from api.common.database import database
 from api.common.middleware import ErrorHandlingMiddleware
 from api.common.setting import setting
-from api.v1.features.feature_auth.setting import auth_setting
 from api.v1.features.feature_auth.route import router as auth_router
+from api.v1.features.feature_auth.setting import auth_setting
 from api.v1.features.feature_dev.route import router as dev_router
 
 # os.environで環境変数TZを設定し日本時間を指定

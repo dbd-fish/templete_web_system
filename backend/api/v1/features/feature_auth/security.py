@@ -4,14 +4,14 @@ from zoneinfo import ZoneInfo
 import structlog
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy import or_
 from sqlalchemy.future import select
 
 from api.common.database import AsyncSession
-from api.v1.features.feature_auth.setting import auth_setting
 from api.v1.features.feature_auth.models.user import User
+from api.v1.features.feature_auth.setting import auth_setting
 
 # ログの設定
 logger = structlog.get_logger()

@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.common.database import get_db
 from api.common.response_schemas import MessageResponse, SuccessResponse, create_message_response, create_success_response
 from api.common.setting import setting
-from api.v1.features.feature_auth.setting import auth_setting
 from api.v1.features.feature_auth.crud import (
     change_user_password,
     create_user_service,
@@ -28,7 +27,6 @@ from api.v1.features.feature_auth.crud import (
 )
 from api.v1.features.feature_auth.google_oauth import generate_username_from_google_info, verify_google_id_token
 from api.v1.features.feature_auth.models.user import User
-
 from api.v1.features.feature_auth.schemas.user import (
     AdminUserListResponse,
     AdminUserResponse,
@@ -48,6 +46,7 @@ from api.v1.features.feature_auth.schemas.user import (
     UserUpdate,
 )
 from api.v1.features.feature_auth.security import authenticate_user, create_access_token, create_token_pair, require_admin_role, validate_refresh_token
+from api.v1.features.feature_auth.setting import auth_setting
 
 # ログの設定
 logger = structlog.get_logger()
@@ -86,15 +85,15 @@ router = APIRouter()
 async def login(
     login_data: LoginRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     logger.info("login - start", email=login_data.username)
     logger.info("login - request received", email=login_data.username, password_length=len(login_data.password))
-    
+
     try:
         # NOTE: OAuth2仕様準拠のため、usernameフィールドでメールアドレスを受け取る
         user = await authenticate_user(login_data.username, login_data.password, db)
-        
+
         # JWTトークンペアを生成
         access_token, refresh_token = create_token_pair(user.email)
         logger.info("login - success", user_id=user.user_id)
@@ -325,18 +324,18 @@ async def logout(request: Request, response: Response):
         # アクセストークンとリフレッシュトークンの取得（存在確認のみ）
         access_token = request.cookies.get("authToken")
         refresh_token = request.cookies.get("refreshToken")
-        
-        logger.info("logout - tokens found", 
-                   access_token_exists=bool(access_token), 
+
+        logger.info("logout - tokens found",
+                   access_token_exists=bool(access_token),
                    refresh_token_exists=bool(refresh_token))
-        
+
         # 認証クッキーを削除してログアウト処理（トークン検証なし、常に成功）
         # ログアウトは寛容な設計とし、無効なトークンでも確実に実行する
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
         response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
-        
-        logger.info("logout - success - both cookies deleted", 
-                   access_token_deleted=True, 
+
+        logger.info("logout - success - both cookies deleted",
+                   access_token_deleted=True,
                    refresh_token_deleted=True)
         return create_message_response(message="ログアウトしました")
     except Exception as e:
