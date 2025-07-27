@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 templete_web_system/
 ├── docker-compose.yml          # マルチコンテナオーケストレーション
-├── frontend/                   # React Router + Vite アプリケーション
+├── frontend/                   # React Router v7 + Vite アプリケーション
 │   ├── Dockerfile             # フロントエンド用Dockerfile
 │   ├── CLAUDE.md              # フロントエンド開発ガイド
 │   ├── package.json           # Node.js依存関係
@@ -29,7 +29,7 @@ templete_web_system/
 │   ├── CLAUDE.md              # バックエンド開発ガイド
 │   ├── pyproject.toml         # Python依存関係（Poetry）
 │   ├── main.py                # FastAPIエントリーポイント
-│   ├── app/                   # アプリケーションロジック
+│   ├── api/                   # アプリケーションロジック
 │   ├── alembic/               # データベースマイグレーション
 │   └── tests/                 # バックエンドテスト
 ├── cypress/                    # Cypress E2Eテスト
@@ -41,6 +41,10 @@ templete_web_system/
 ├── init-scripts/              # データベース初期化スクリプト
 ├── docs/                      # プロジェクトドキュメント（空）
 ├── scripts/                   # 開発・デプロイスクリプト（空）
+├── claude/                    # Claude関連ドキュメント
+│   └── temp_doc/              # 設計ドキュメント
+│       └── 基本設計/
+│           └── 認証・認可システム仕様書.md
 └── CLAUDE.md                  # このファイル（プロジェクト全体）
 ```
 
@@ -63,10 +67,10 @@ cd templete_web_system
 docker compose build
 
 # 3. 基本サービス起動
-docker compose up -d frontend backend db redis
+docker compose up -d frontend backend db
 
 # 4. 動作確認
-# フロントエンド: http://localhost:5173
+# フロントエンド: http://localhost:5173 (dev) / http://localhost:3000 (prod)
 # バックエンドAPI: http://localhost:8000/docs
 # データベース: localhost:5432
 ```
@@ -114,29 +118,28 @@ docker compose --profile test run --rm cypress
 
 各アプリケーションの詳細な開発情報は、それぞれのCLAUDE.mdを参照してください：
 
-- **[frontend/CLAUDE.md](./frontend/CLAUDE.md)**: React Router + Vite フロントエンド
+- **[frontend/CLAUDE.md](./frontend/CLAUDE.md)**: React Router v7 + Vite フロントエンド
 - **[backend/CLAUDE.md](./backend/CLAUDE.md)**: FastAPI + PostgreSQL バックエンド  
 - **[cypress/CLAUDE.md](./cypress/CLAUDE.md)**: Cypress E2Eテスト
 
 ## アーキテクチャ概要
 
 ### コンテナ構成
-- **フロントエンド**: React Router + Vite（ポート3000/5173、HTTP/HTTPS対応）
+- **フロントエンド**: React Router v7 + Vite（ポート3000/5173、HTTP/HTTPS対応）
 - **バックエンド**: FastAPI + uvicorn（ポート8000、structlogログ）
 - **データベース**: PostgreSQL 13（ポート5432）
-- **Redis**: Redis 7（ポート6379、基本セッション管理のみ）
-- **Cypress**: Cypress 13.17.0（run-and-exit設定、HTTP接続）
+- **Cypress**: Cypress 13.17.0（run-and-exit設定、実際のAPI接続）
 
 ### ネットワーク構成
 - `frontend-network`: フロントエンド ↔ バックエンド ↔ Cypress
-- `backend-network`: バックエンド ↔ データベース ↔ Redis
+- `backend-network`: バックエンド ↔ データベース
 - セキュリティのためデータベースはフロントエンドから分離
 
 ### 主要技術スタック
-- **フロントエンド**: React 18 + React Router v7 + Vite + TypeScript + Tailwind CSS
-- **バックエンド**: FastAPI + SQLAlchemy 2.0 + Poetry + Python 3.13 + structlog
+- **フロントエンド**: React 18.3 + React Router v7.6 + Vite 5.4 + TypeScript 5.8 + Tailwind CSS 3.4
+- **バックエンド**: FastAPI 0.115.5 + SQLAlchemy 2.0 + Poetry + Python 3.13 + structlog
 - **データベース**: PostgreSQL 13 + asyncpg
-- **セッション管理**: Redis 7（基本機能のみ、監視機能は削除済み）
+- **セッション管理**: JWT + HttpOnly Cookies（30分/5日期限）
 - **テスト**: Cypress 13.17.0 + pytest
 - **インフラ**: Docker + Docker Compose
 
@@ -151,15 +154,14 @@ docker compose --profile test run --rm cypress
 | バックエンドAPI | http://localhost:8000 | FastAPIアプリケーション | 8000 |
 | Swagger UI | http://localhost:8000/docs | API仕様書 | 8000 |
 | PostgreSQL | localhost:5432 | データベース | 5432 |
-| Redis | localhost:6379 | セッション管理（基本機能のみ） | 6379 |
 
 ### よく使用するコマンド組み合わせ
 ```bash
 # 開発開始
-docker compose up -d frontend backend db redis && docker compose logs -f frontend backend
+docker compose up -d frontend backend db && docker compose logs -f frontend backend
 
 # 依存関係更新後の再起動
-docker compose down && docker compose build && docker compose up -d frontend backend db redis
+docker compose down && docker compose build && docker compose up -d frontend backend db
 
 # フロントエンド品質チェック
 docker compose exec frontend npm run typecheck && docker compose exec frontend npm run lint
@@ -168,12 +170,12 @@ docker compose exec frontend npm run typecheck && docker compose exec frontend n
 docker compose exec backend poetry run pytest --cov && docker compose exec backend poetry run ruff check . && docker compose exec backend poetry run mypy .
 
 # 完全なテストサイクル
-docker compose up -d frontend backend db redis && docker compose --profile test run --rm cypress
+docker compose up -d frontend backend db && docker compose --profile test run --rm cypress
 ```
 
 ## 開発フロー
 
-1. **基本環境起動**: `docker compose up -d frontend backend db redis` で基本サービス起動
+1. **基本環境起動**: `docker compose up -d frontend backend db` で基本サービス起動
 2. **フロントエンド開発**: `http://localhost:5173` でアクセス
 3. **バックエンドAPI**: `http://localhost:8000/docs` でSwagger UI確認
 4. **E2Eテスト実行**: `docker compose --profile test run --rm cypress`
@@ -196,16 +198,32 @@ docker compose up -d frontend backend db redis && docker compose --profile test 
 ### 開発時の注意
 - 各アプリの詳細開発情報は各ディレクトリの`CLAUDE.md`を参照
 - データベース接続は非同期PostgreSQL操作用にasyncpgを使用
-- Cypressテストはコンテナネットワーク内で`http://frontend:5173`をターゲット（HTTP接続）
+- Cypressテストはコンテナネットワーク内で`http://frontend:5173`をターゲット（実際のAPI接続）
 - フロントエンドはHTTPS/HTTP切り替え可能（`DISABLE_HTTPS=true`でHTTP化）
 - 全コンテナはライブ開発用のボリュームマウントを使用
-- 監視ツール（OpenTelemetry/Prometheus）は削除済み、structlogのみ使用
+- structlogによる構造化ログ（ensure_ascii=False設定で日本語対応）
 
 ### Dockerfile配置の設計思想
 - **開発者中心**: アプリ担当者がDockerfileを管理
 - **独立性重視**: 各アプリが自己完結型
 - **スケーラビリティ**: マイクロサービス化への対応
 - **標準準拠**: 業界標準パターンの採用
+
+## 認証・認可システム
+
+### JWT + HttpOnly Cookie認証
+- **アクセストークン**: 30分（自動リフレッシュ）
+- **リフレッシュトークン**: 5日
+- **Cookie設定**: HttpOnly, Secure, SameSite=lax
+- **自動トークンリフレッシュ**: 401エラー時に透明な更新
+
+### セキュリティ機能
+- **統一エラーハンドリング**: ミドルウェアによる集約処理
+- **エラー位置追跡**: 実際のエラー発生箇所をログに記録
+- **Cookie抽出**: 必要最小限のCookieのみ送信
+- **パスワード暗号化**: bcrypt + ソルト
+
+詳細は**[認証・認可システム仕様書](./claude/temp_doc/基本設計/認証・認可システム仕様書.md)**を参照
 
 ## トラブルシューティング
 
@@ -214,10 +232,10 @@ docker compose up -d frontend backend db redis && docker compose --profile test 
 #### 1. Docker関連
 ```bash
 # コンテナ起動エラー
-docker compose down -v && docker compose build && docker compose up -d frontend backend db redis
+docker compose down -v && docker compose build && docker compose up -d frontend backend db
 
 # ポート競合エラー
-docker compose down && lsof -ti:5173,3000,8000,5432,6379 | xargs kill -9
+docker compose down && lsof -ti:5173,3000,8000,5432 | xargs kill -9
 
 # ボリューム関連エラー（node_modules等）
 docker compose down -v && docker volume prune -f && docker compose build --no-cache
@@ -265,14 +283,14 @@ docker compose logs frontend | grep "Local:"
 docker compose logs backend | grep "Uvicorn running"
 
 # テスト環境リセット
-docker compose --profile test down && docker compose up -d frontend backend db redis
+docker compose --profile test down && docker compose up -d frontend backend db
 ```
 
 ### デバッグコマンド集
 ```bash
 # コンテナ状態確認
 docker compose ps -a
-docker compose logs frontend backend db redis
+docker compose logs frontend backend db
 
 # リソース使用量確認
 docker stats
@@ -300,3 +318,45 @@ docker compose config --profile test
 #### macOS環境
 - Docker Desktop設定でファイル共有を確認
 - Rosetta環境でのM1チップ互換性確認
+
+## 品質管理・静的解析
+
+### コード品質ツール（2025-01-27対応済み）
+#### フロントエンド
+- **ESLint**: 全警告修正済み（useEffect依存配列対応）
+- **TypeScript**: strict mode + 型安全性確保
+- **Prettier**: 統一されたコードフォーマット
+
+#### バックエンド  
+- **Ruff**: 全エラー修正済み（27個のエラー対応）
+- **mypy**: 43ファイルの型チェック
+- **pytest**: 92テストケース（89%カバレッジ）
+
+### 実施済み品質改善
+- **トレーリングカンマ**: COM812エラー対応
+- **空白行処理**: W293エラー対応
+- **重複定義削除**: F811エラー対応
+- **未使用import削除**: 全モジュールで実施
+
+## 最新の改善点（2025-01-27）
+
+### 技術スタック更新
+- **React Router**: v7.0 → v7.6（SSR・型生成強化）
+- **TypeScript**: v5.1 → v5.8（型システム改善）
+- **FastAPI**: 0.115.5（最新安定版）
+- **Python**: 3.13（最新バージョン）
+
+### アーキテクチャ改善
+1. **統一エラーハンドリング**: ミドルウェアによる集約
+2. **日本語ログ対応**: ensure_ascii=False設定
+3. **Cookie管理強化**: セキュリティ向上のための抽出機能
+4. **モックAPI削除**: Cypressで実際のAPIテスト
+5. **静的解析準拠**: Ruff/ESLint全エラー修正
+
+### セキュリティ強化
+- **最小権限原則**: 必要なCookieのみ送信
+- **エラー位置追跡**: デバッグ効率向上
+- **JWT管理**: アクセス/リフレッシュトークンの適切な管理
+- **HTTPS対応**: 開発・本番環境での暗号化通信
+
+この構成により、エンタープライズレベルのWebアプリケーション開発が可能な、保守性・スケーラビリティ・セキュリティに優れたテンプレートを提供します。

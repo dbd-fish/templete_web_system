@@ -86,8 +86,9 @@ app/
 │   │   ├── actions/           # React Router アクション
 │   │   │   └── logoutAction.tsx
 │   │   ├── apis/              # API関数
-│   │   │   └── authApi.ts     # 統合認証API
-│   │   ├── components/        # 認証コンポーネント（5ファイル）
+│   │   │   └── authApi.ts     # 統合認証API（個別API関数パターン）
+│   │   ├── components/        # 認証コンポーネント（6ファイル）
+│   │   │   ├── GoogleLoginButton.tsx
 │   │   │   ├── LoginForm.tsx
 │   │   │   ├── ProfileCard.tsx
 │   │   │   ├── ResetPasswordForm.tsx
@@ -98,7 +99,7 @@ app/
 │   │   ├── loaders/           # React Router ローダー（2ファイル）
 │   │   │   ├── authTokenLoader.tsx
 │   │   │   └── userDataLoader.tsx
-│   │   ├── pages/             # ページコンポーネント（9ファイル）
+│   │   ├── pages/             # ページコンポーネント（10ファイル）
 │   │   │   ├── home.tsx       # ホームページ
 │   │   │   ├── login.tsx      # ログインページ
 │   │   │   ├── mypage.tsx     # マイページ
@@ -110,7 +111,7 @@ app/
 │   │   │   ├── reset-password.tsx
 │   │   │   └── reset-password-complete.tsx
 │   │   ├── types.ts           # 認証専用型定義
-│   │   ├── cookies.ts         # Cookie管理
+│   │   ├── cookies.ts         # Cookie管理（extractAuthTokens, extractRefreshToken）
 │   │   └── passwordValidation.ts # パスワードバリデーション
 │   └── pages/                 # 静的ページ群
 │       └── pages/             # 静的ページ（6ファイル）
@@ -134,13 +135,14 @@ app/
 │   │   └── mockHelpers.ts    # ヘルパー関数
 │   ├── browser.ts             # ブラウザ用MSW設定
 │   └── server.ts              # サーバー用MSW設定
-├── utils/                     # アプリケーションユーティリティ（2ファイル）
-│   ├── apiErrorHandler.ts     # API エラーハンドリング
+├── utils/                     # アプリケーションユーティリティ（3ファイル）
+│   ├── apiClient.ts           # API Clientパターン実装（未使用）
+│   ├── apiErrorHandler.ts     # API エラーハンドリング（自動トークンリフレッシュ）
 │   └── types.ts               # 共通型定義
 ├── entry.client.tsx           # クライアントエントリーポイント
 ├── entry.server.tsx           # サーバーエントリーポイント
 ├── root.tsx                   # ルートコンポーネント
-├── routes.ts                  # ルーティング設定（15ルート）
+├── routes.ts                  # ルーティング設定（16ルート）
 └── tailwind.css               # Tailwind CSS
 ```
 
@@ -152,7 +154,7 @@ export default [
   // ホーム
   index('./features/auth/pages/home.tsx'),
   
-  // 認証関連（8ルート）
+  // 認証関連（9ルート）
   route('login', './features/auth/pages/login.tsx'),
   route('mypage', './features/auth/pages/mypage.tsx'),
   route('signup', './features/auth/pages/signup.tsx'),
@@ -416,8 +418,11 @@ export default function Login() {
 
 ### 認証システム
 - Cookie ベース認証（httpOnly、secure対応）
+- JWT トークンペア（アクセストークン30分、リフレッシュトークン5日）
+- 自動トークンリフレッシュ機能（401エラー時）
 - AuthenticationErrorによる統一エラーハンドリング
 - userDataLoaderによる認証状態管理
+- 個別API関数パターンによる実装
 
 ### スタイリング（cn関数の活用）
 ```typescript
@@ -451,9 +456,15 @@ import { cn } from '~/lib/utils';
 ```typescript
 // app/features/auth/apis/authApi.ts
 export const login = async (email: string, password: string) => {
-  const response = await apiFormRequest(`${apiUrl}/api/v1/auth/login`, {
-    username: email, // OAuth2形式
-    password: password,
+  const response = await apiRequest(`${apiUrl}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username: email, // OAuth2形式
+      password: password,
+    }),
   });
   return response;
 };
@@ -588,14 +599,58 @@ npx shadcn-ui@latest add [component-name]
 ```
 **重要**: 追加されたコンポーネントのファイル名は変更禁止（デフォルト命名維持）
 
+## Cookie管理システム
+
+### **セキュリティ強化（2025-01-27実装）**
+
+#### Cookie抽出機能
+```typescript
+// app/features/auth/cookies.ts
+export function extractSpecificCookies(
+  cookieHeader: string | null,
+  cookieNames: string[],
+): string {
+  if (!cookieHeader) return '';
+  
+  const cookies = cookieHeader.split(';').map((cookie) => cookie.trim());
+  const extractedCookies: string[] = [];
+  
+  for (const cookie of cookies) {
+    const [name] = cookie.split('=');
+    if (cookieNames.includes(name)) {
+      extractedCookies.push(cookie);
+    }
+  }
+  
+  return extractedCookies.join('; ');
+}
+
+// 認証トークンのみ抽出
+export function extractAuthTokens(cookieHeader: string | null): string {
+  return extractSpecificCookies(cookieHeader, ['authToken', 'refreshToken']);
+}
+
+// リフレッシュトークンのみ抽出
+export function extractRefreshToken(cookieHeader: string | null): string {
+  return extractSpecificCookies(cookieHeader, ['refreshToken']);
+}
+```
+
+#### セキュリティメリット
+- **最小権限原則**: 必要なCookieのみを送信
+- **情報漏洩防止**: 不要なCookieの除外
+- **攻撃面縮小**: サードパーティCookieの排除
+
 ## 最新の改善点
 
-### 実施済み改善
+### 実施済み改善（2025-01-27）
 1. **命名規則統一**: feature prefix削除、header統合、typo修正
 2. **型定義再編成**: Feature-based architecture に沿った型分離
 3. **CI環境対応**: shadcn/ui デフォルト命名維持で互換性確保
 4. **ディレクトリ構造最適化**: より保守しやすい構造に統一
 5. **依存関係最適化**: 未使用ライブラリ削除と最新バージョン更新
+6. **静的解析対応**: ESLint警告修正（useEffect依存配列）
+7. **Cookie管理強化**: セキュリティ強化のための抽出機能実装
 
 ### 最新の依存関係最適化
 削除した未使用ライブラリ:
@@ -608,5 +663,10 @@ npx shadcn-ui@latest add [component-name]
 - Radix UI: 全コンポーネント最新版（shadcn/ui基盤強化）
 - TypeScript: v5.1 → v5.8（型システム改善）
 - MSW: v2.7 → v2.10（モック機能向上）
+
+### 静的解析対応（2025-01-27）
+- **ESLint準拠**: 全警告修正済み
+- **useEffect依存配列**: react-hooks/exhaustive-deps対応
+- **Google認証コンポーネント**: handleGoogleCredential依存関係追加
 
 このアーキテクチャにより、大規模Webアプリケーションでも保守しやすく、型安全で高性能なフロントエンドを構築できます。
