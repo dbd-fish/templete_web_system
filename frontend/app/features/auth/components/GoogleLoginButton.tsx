@@ -43,6 +43,43 @@ export default function GoogleLoginButton({
   const [isInitialized, setIsInitialized] = useState(isDevelopment);
   const initializeAttempted = useRef(false);
 
+  /**
+   * Googleから受け取った認証情報を処理
+   */
+  const handleGoogleCredential = useCallback(
+    async (credential: string) => {
+      try {
+        setIsLoading(true);
+        if (onLoginStart) {
+          onLoginStart();
+        }
+
+        const result = await authenticateWithGoogle(credential);
+
+        if (result.success) {
+          if (onSuccess && result.message) {
+            onSuccess(result.message);
+          }
+        } else {
+          if (onError && result.error) {
+            onError(result.error);
+          }
+        }
+      } catch (error) {
+        console.error('Google認証処理エラー:', error);
+        if (onError) {
+          onError('Google認証処理中にエラーが発生しました');
+        }
+      } finally {
+        setIsLoading(false);
+        if (onLoginEnd) {
+          onLoginEnd();
+        }
+      }
+    },
+    [onLoginStart, onError, onSuccess, onLoginEnd],
+  );
+
   // Google認証の初期化
   useEffect(() => {
     if (initializeAttempted.current || disabled) {
@@ -94,44 +131,7 @@ export default function GoogleLoginButton({
     };
 
     initializeAuth();
-  }, [disabled, onError]);
-
-  /**
-   * Googleから受け取った認証情報を処理
-   */
-  const handleGoogleCredential = useCallback(
-    async (credential: string) => {
-      try {
-        setIsLoading(true);
-        if (onLoginStart) {
-          onLoginStart();
-        }
-
-        const result = await authenticateWithGoogle(credential);
-
-        if (result.success) {
-          if (onSuccess && result.message) {
-            onSuccess(result.message);
-          }
-        } else {
-          if (onError && result.error) {
-            onError(result.error);
-          }
-        }
-      } catch (error) {
-        console.error('Google認証処理エラー:', error);
-        if (onError) {
-          onError('Google認証処理中にエラーが発生しました');
-        }
-      } finally {
-        setIsLoading(false);
-        if (onLoginEnd) {
-          onLoginEnd();
-        }
-      }
-    },
-    [onLoginStart, onError, onSuccess, onLoginEnd],
-  );
+  }, [disabled, onError, handleGoogleCredential]);
 
   /**
    * Googleログインボタンクリック処理

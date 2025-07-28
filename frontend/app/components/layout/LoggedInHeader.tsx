@@ -90,12 +90,20 @@ export default function Header() {
                     </a>
                   </li>
                   <li>
-                    <a href="/mypage" className="hover:underline" data-cy="mypage-link">
+                    <a
+                      href="/mypage"
+                      className="hover:underline"
+                      data-cy="mypage-link"
+                    >
                       マイページ
                     </a>
                   </li>
                   <li>
-                    <a href="/settings" className="hover:underline" data-cy="settings-link">
+                    <a
+                      href="/settings"
+                      className="hover:underline"
+                      data-cy="settings-link"
+                    >
                       設定
                     </a>
                   </li>

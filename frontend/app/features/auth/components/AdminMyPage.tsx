@@ -295,7 +295,10 @@ export default function AdminMyPage({
 
           {/* ユーザー管理パネル */}
           {showUserManagement && (
-            <div className="bg-card rounded-lg border p-6" data-cy="user-management-panel">
+            <div
+              className="bg-card rounded-lg border p-6"
+              data-cy="user-management-panel"
+            >
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <svg
                   className="w-5 h-5 mr-2"
@@ -314,7 +317,10 @@ export default function AdminMyPage({
               </h3>
 
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300" data-cy="users-table">
+                <table
+                  className="w-full border-collapse border border-gray-300"
+                  data-cy="users-table"
+                >
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="border border-gray-300 px-4 py-2 text-left">
@@ -447,7 +453,10 @@ export default function AdminMyPage({
         {/* サイドバー（右側1カラム） */}
         <div className="space-y-6">
           {/* アカウント管理 */}
-          <div className="bg-card rounded-lg border p-6" data-cy="admin-account-management">
+          <div
+            className="bg-card rounded-lg border p-6"
+            data-cy="admin-account-management"
+          >
             <h3 className="text-lg font-semibold mb-4">アカウント管理</h3>
             <div className="space-y-3">
               <Form method="post" className="w-full">

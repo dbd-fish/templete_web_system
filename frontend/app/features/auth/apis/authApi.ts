@@ -28,7 +28,7 @@ export const refreshToken = async (request: Request): Promise<Response> => {
   const apiUrl = getApiUrl();
   const cookieHeader = request.headers.get('Cookie');
   const refreshTokenCookie = extractRefreshToken(cookieHeader);
-  
+
   return apiRequest(
     `${apiUrl}/api/v1/auth/refresh`,
     {
@@ -56,7 +56,7 @@ export const login = async (
   password: string,
 ): Promise<Response> => {
   const apiUrl = getApiUrl();
-  
+
   return apiRequest(`${apiUrl}/api/v1/auth/login`, {
     method: 'POST',
     headers: {
@@ -79,7 +79,7 @@ export const logout = async (request: Request): Promise<Response> => {
   const apiUrl = getApiUrl();
   const cookieHeader = request.headers.get('Cookie');
   const authTokens = extractAuthTokens(cookieHeader);
-  
+
   return apiRequest(
     `${apiUrl}/api/v1/auth/logout`,
     {
@@ -156,7 +156,7 @@ export const updateUser = async (
     },
     authTokens,
   );
-  
+
   return (await response.json()) as UserResponse;
 };
 
@@ -184,7 +184,7 @@ export const deleteUser = async (
     },
     authTokens,
   );
-  
+
   return (await response.json()) as MessageResponse;
 };
 
@@ -198,7 +198,7 @@ export const deleteUser = async (
  */
 export const signup = async (token: string): Promise<boolean> => {
   const apiUrl = getApiUrl();
-  
+
   const response = await apiRequest(`${apiUrl}/api/v1/auth/signup`, {
     method: 'POST',
     headers: {
@@ -208,7 +208,7 @@ export const signup = async (token: string): Promise<boolean> => {
       token: token,
     }),
   });
-  
+
   const data = (await response.json()) as SuccessResponse;
   return data.success;
 };
@@ -234,7 +234,7 @@ export const sendVerifyEmail = async (
   }
 
   const apiUrl = getApiUrl();
-  
+
   const response = await apiRequest(`${apiUrl}/api/v1/auth/send-verify-email`, {
     method: 'POST',
     headers: {
@@ -246,7 +246,7 @@ export const sendVerifyEmail = async (
       username: trimmedUsername,
     }),
   });
-  
+
   return (await response.json()) as SuccessResponse;
 };
 
@@ -269,7 +269,7 @@ export const sendPasswordResetEmail = async (
   }
 
   const apiUrl = getApiUrl();
-  
+
   const response = await apiRequest(
     `${apiUrl}/api/v1/auth/send-password-reset-email`,
     {
@@ -282,7 +282,7 @@ export const sendPasswordResetEmail = async (
       }),
     },
   );
-  
+
   return (await response.json()) as SuccessResponse;
 };
 
@@ -297,7 +297,7 @@ export const resetPassword = async (
   newPassword: string,
 ): Promise<SuccessResponse> => {
   const apiUrl = getApiUrl();
-  
+
   const response = await apiRequest(`${apiUrl}/api/v1/auth/reset-password`, {
     method: 'POST',
     headers: {
@@ -308,6 +308,6 @@ export const resetPassword = async (
       new_password: newPassword.trim(), // パスワードはトリム処理
     }),
   });
-  
+
   return (await response.json()) as SuccessResponse;
 };

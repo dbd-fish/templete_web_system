@@ -42,7 +42,12 @@ export default function SendResetPasswordForm() {
           required
         />
         {emailError && (
-          <div className="mt-1 text-xs text-destructive" data-cy="reset-email-error">{emailError}</div>
+          <div
+            className="mt-1 text-xs text-destructive"
+            data-cy="reset-email-error"
+          >
+            {emailError}
+          </div>
         )}
         <div className="mt-1 text-xs text-muted-foreground">
           ご登録のメールアドレスにパスワードリセット用のURLを送信します

@@ -71,7 +71,10 @@ export default function ResetPasswordForm() {
           minLength={8}
         />
         {passwordError && (
-          <div className="mt-1 text-xs text-destructive whitespace-pre-line" data-cy="new-password-error">
+          <div
+            className="mt-1 text-xs text-destructive whitespace-pre-line"
+            data-cy="new-password-error"
+          >
             {passwordError}
           </div>
         )}
@@ -97,7 +100,10 @@ export default function ResetPasswordForm() {
           minLength={8}
         />
         {confirmPasswordError && (
-          <div className="mt-1 text-xs text-destructive" data-cy="confirm-new-password-error">
+          <div
+            className="mt-1 text-xs text-destructive"
+            data-cy="confirm-new-password-error"
+          >
             {confirmPasswordError}
           </div>
         )}

@@ -122,11 +122,19 @@ export default function Home() {
           </aside>
 
           {/* メインコンテンツ */}
-          <section className="col-span-12 lg:col-span-8 bg-white rounded-lg shadow p-6 space-y-6" data-cy="main-content">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4" data-cy="home-title">
+          <section
+            className="col-span-12 lg:col-span-8 bg-white rounded-lg shadow p-6 space-y-6"
+            data-cy="main-content"
+          >
+            <h1
+              className="text-2xl font-bold text-gray-800 mb-4"
+              data-cy="home-title"
+            >
               Webシステム開発テンプレート
             </h1>
-            <p className="text-gray-600" data-cy="home-description">ホーム画面</p>
+            <p className="text-gray-600" data-cy="home-description">
+              ホーム画面
+            </p>
             <p className="text-gray-600">
               ここにフォームやUIコンポーネントの例を含めます。
             </p>

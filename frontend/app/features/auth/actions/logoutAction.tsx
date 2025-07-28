@@ -20,7 +20,7 @@ export async function logoutAction(request: Request) {
 
     // バックエンドからのSet-Cookieヘッダーを取得
     const setCookieHeaders = response.headers.get('set-cookie');
-    
+
     // バックエンドがauthTokenとrefreshTokenの両方を削除するSet-Cookieヘッダーを返す
     return redirect('/login', {
       headers: {

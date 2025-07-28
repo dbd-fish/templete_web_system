@@ -40,7 +40,7 @@ export const action: ActionFunction = async ({ request }) => {
 
     // レスポンスからSet-Cookieヘッダーを取得
     const setCookieHeader = loginResponse.headers.get('set-cookie');
-    
+
     // 認証成功時はマイページにリダイレクト
     // Set-Cookieヘッダーを含めてリダイレクト
     return redirect('/mypage', {
