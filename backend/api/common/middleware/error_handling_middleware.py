@@ -153,12 +153,14 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         # Format validation error details
         validation_errors = []
         for error in exc.errors():
-            validation_errors.append({
-                "field": ".".join(str(loc) for loc in error["loc"]),
-                "message": error["msg"],
-                "type": error["type"],
-                "input": error.get("input"),
-            })
+            validation_errors.append(
+                {
+                    "field": ".".join(str(loc) for loc in error["loc"]),
+                    "message": error["msg"],
+                    "type": error["type"],
+                    "input": error.get("input"),
+                }
+            )
 
         error_response = create_error_response(
             message="入力データの検証に失敗しました",

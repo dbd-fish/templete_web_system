@@ -45,9 +45,6 @@ async def clear_data_endpoint(
         logger.info("clear_data_endpoint - end")
 
 
-
-
-
 @router.post(
     "/seed_data",
     response_model=dict,
@@ -198,4 +195,3 @@ async def health_check_db(session: AsyncSession = Depends(get_db)) -> dict:
         return response
     finally:
         logger.info("health_check_db - end")
-

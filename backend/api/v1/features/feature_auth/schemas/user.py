@@ -20,12 +20,14 @@ class LoginRequest(BaseModel):
         examples=[TestData.TEST_USER_PASSWORD],
     )
 
-    model_config = {"json_schema_extra": {
-        "example": {
-            "username": "testuser@example.com",
-            "password": "Password123456+-",
-        },
-    }}
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "username": "testuser@example.com",
+                "password": "Password123456+-",
+            },
+        }
+    }
 
 
 class DirectUserCreate(BaseModel):
@@ -98,8 +100,6 @@ class DirectUserCreate(BaseModel):
             ],
         },
     )
-
-
 
 
 class UserCreate(BaseModel):
@@ -661,8 +661,6 @@ class RevokeSessionRequest(BaseModel):
         return v.strip()
 
 
-
-
 class ProfileImageUploadRequest(BaseModel):
     """プロフィール画像アップロードリクエストデータを表すモデル。"""
 
@@ -1026,6 +1024,7 @@ class AdminUserUpdateRequest(BaseModel):
         """電話番号の基本的な形式チェック"""
         if v is not None:
             import re
+
             if not re.match(r"^[0-9+\-\s\(\)]+$", v.strip()):
                 raise ValueError("電話番号に無効な文字が含まれています")
             return v.strip()

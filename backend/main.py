@@ -20,8 +20,6 @@ os.environ["TZ"] = "Asia/Tokyo"
 time.tzset()
 
 
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理を行うコンテキストマネージャ。"""

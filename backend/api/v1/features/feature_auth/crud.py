@@ -785,6 +785,7 @@ async def update_advanced_user_profile(db: AsyncSession, user: User, user_update
 # 管理者用機能
 # ============================================================================
 
+
 async def get_all_users_for_admin(db: AsyncSession, page: int = 1, page_size: int = 20, include_deleted: bool = False) -> tuple[list[User], int]:
     """管理者用: 全ユーザー一覧を取得します（ページネーション対応）。
 
@@ -811,6 +812,7 @@ async def get_all_users_for_admin(db: AsyncSession, page: int = 1, page_size: in
 
         # 全件数を取得するためのクエリ
         from sqlalchemy import func
+
         # SQLAlchemyのfunc.count()関数でレコード数をカウント
         count_query = select(func.count(User.user_id))
         if not include_deleted:
@@ -824,12 +826,7 @@ async def get_all_users_for_admin(db: AsyncSession, page: int = 1, page_size: in
         # ページネーション用クエリ
         offset = (page - 1) * page_size
         # SQLAlchemyのorder_by()で作成日時順の降順ソート、offset()でオフセット、limit()で件数制限
-        paginated_query = (
-            base_query
-            .order_by(User.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
+        paginated_query = base_query.order_by(User.created_at.desc()).offset(offset).limit(page_size)
 
         # 非同期データベースセッションでページネーションクエリを実行
         result = await db.execute(paginated_query)

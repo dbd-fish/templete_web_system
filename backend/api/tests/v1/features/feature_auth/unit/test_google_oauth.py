@@ -52,9 +52,13 @@ class TestGoogleUserInfo:
 
         # Act: オプショナルフィールド付きでGoogleUserInfoインスタンスを作成
         user_info = GoogleUserInfo(
-            email=email, name=name, sub=sub,
-            given_name=given_name, family_name=family_name,
-            picture=picture, locale=locale,
+            email=email,
+            name=name,
+            sub=sub,
+            given_name=given_name,
+            family_name=family_name,
+            picture=picture,
+            locale=locale,
         )
 
         # Assert: 各オプショナルフィールドが正しく設定されることを確認

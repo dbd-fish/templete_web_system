@@ -651,6 +651,7 @@ async def test_create_google_user_new_user():
         mock_session.refresh = AsyncMock()
 
         from api.v1.features.feature_auth.crud import create_google_user
+
         result = await create_google_user(mock_session, email, username, google_sub, full_name)
 
         # 検証
@@ -691,6 +692,7 @@ async def test_create_google_user_restore_deleted():
         mock_session.refresh = AsyncMock()
 
         from api.v1.features.feature_auth.crud import create_google_user
+
         result = await create_google_user(mock_session, email, username, google_sub, full_name)
 
         # 検証：ユーザーが復活していることを確認

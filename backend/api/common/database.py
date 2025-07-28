@@ -61,7 +61,7 @@ def configure_database(test_env: int = 0):
     # SQLAlchemyのsessionmakerで非同期セッションファクトリを作成
     async_session_local = sessionmaker(
         class_=AsyncSession,
-        autoflush=True,      # クエリ実行前に自動でflushを実行
+        autoflush=True,  # クエリ実行前に自動でflushを実行
         expire_on_commit=True,  # コミット時にオブジェクトの状態を期限切れに設定
     )
 

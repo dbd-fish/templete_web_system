@@ -294,7 +294,6 @@ def validate_refresh_token(refresh_token: str) -> str:
         logger.info("validate_refresh_token - end")
 
 
-
 async def authenticate_user(username_or_email: str, password: str, db: AsyncSession) -> User:
     """ユーザー名またはメールアドレスとパスワードを使用してユーザー認証を行う。
 

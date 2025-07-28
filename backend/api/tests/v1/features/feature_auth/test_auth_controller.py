@@ -383,6 +383,7 @@ async def test_logout_with_partial_tokens() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         # 有効なアクセストークンを生成
         from api.v1.features.feature_auth.security import create_access_token
+
         valid_access_token = create_access_token(TestData.TEST_USER_EMAIL_1)
         client.cookies.set("authToken", valid_access_token)
         # refreshTokenは設定しない
@@ -400,6 +401,7 @@ async def test_logout_with_partial_tokens() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
         # 有効なリフレッシュトークンを生成
         from api.v1.features.feature_auth.security import create_refresh_token
+
         valid_refresh_token = create_refresh_token(TestData.TEST_USER_EMAIL_1)
         client.cookies.set("refreshToken", valid_refresh_token)
         # authTokenは設定しない

@@ -63,7 +63,7 @@ asyncio_default_fixture_loop_scope = "session"
 lint.select = ["F", "E", "W", "I", "B", "UP", "COM"]
 
 # 除外するルールの指定（必要に応じて）
-lint.ignore = ["B008"]
+lint.ignore = ["B008", "COM812"]  # COM812: フォーマッターとの競合を避けるため除外
 
 # 自動修正可能なルールの指定
 lint.fixable = ["F", "E", "W", "I", "B", "UP"]

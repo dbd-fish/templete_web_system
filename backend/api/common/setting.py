@@ -14,7 +14,6 @@ class Setting(BaseSettings):
     DEV_MODE: bool = True
     APP_URL: str = "http://localhost:3000"
 
-
     # データベース設定
     DATABASE_HOST: str = "db"
     DATABASE_PORT: int = 5432
@@ -51,8 +50,6 @@ class Setting(BaseSettings):
 
     # ログ出力設定
     ENABLE_CONSOLE_LOG: bool = False
-
-
 
     model_config = SettingsConfigDict(
         env_file=".env",

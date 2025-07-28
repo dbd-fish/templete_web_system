@@ -1,4 +1,3 @@
-
 import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,7 +51,6 @@ from api.v1.features.feature_auth.setting import auth_setting
 logger = structlog.get_logger()
 
 router = APIRouter()
-
 
 
 @router.post(
@@ -325,18 +323,14 @@ async def logout(request: Request, response: Response):
         access_token = request.cookies.get("authToken")
         refresh_token = request.cookies.get("refreshToken")
 
-        logger.info("logout - tokens found",
-                   access_token_exists=bool(access_token),
-                   refresh_token_exists=bool(refresh_token))
+        logger.info("logout - tokens found", access_token_exists=bool(access_token), refresh_token_exists=bool(refresh_token))
 
         # 認証クッキーを削除してログアウト処理（トークン検証なし、常に成功）
         # ログアウトは寛容な設計とし、無効なトークンでも確実に実行する
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
         response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
 
-        logger.info("logout - success - both cookies deleted",
-                   access_token_deleted=True,
-                   refresh_token_deleted=True)
+        logger.info("logout - success - both cookies deleted", access_token_deleted=True, refresh_token_deleted=True)
         return create_message_response(message="ログアウトしました")
     except Exception as e:
         # 予期しないエラーでもログアウトは成功させる
@@ -480,7 +474,6 @@ async def update_user_profile(user_update: UserUpdate, request: Request, respons
         updated_user = await update_user_with_schema(db, current_user, user_update)
         logger.info("update_user_profile - user_updated", user_id=updated_user.user_id)
 
-
         # 新しい認証トークンペアを生成（更新されたユーザー情報で）
         access_token, refresh_token = create_token_pair(updated_user.email)  # client_ipパラメータ削除
         logger.info("update_user_profile - token_created")
@@ -555,7 +548,6 @@ async def delete_user_account(request: Request, response: Response, db: AsyncSes
         await delete_user(db, current_user)
         logger.info("delete_user_account - user_deleted", user_id=current_user.user_id)
 
-
         # 認証クッキーを削除（ログアウト処理）
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
         response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
@@ -624,7 +616,6 @@ async def delete_account(request: Request, response: Response, db: AsyncSession 
         await delete_user(db, current_user)
         logger.info("delete_account - user_deleted", user_id=current_user.user_id)
 
-
         # 認証クッキーを削除（ログアウト処理）
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
         response.delete_cookie(key="refreshToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
@@ -692,7 +683,6 @@ async def delete_user_account_alt(request: Request, response: Response, db: Asyn
         # ユーザーを論理削除
         await delete_user(db, current_user)
         logger.info("delete_user_account_alt - user_deleted", user_id=current_user.user_id)
-
 
         # 認証クッキーを削除（ログアウト処理）
         response.delete_cookie(key="authToken", httponly=True, secure=not setting.DEV_MODE, samesite="lax")
@@ -764,7 +754,6 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
             secure=not setting.DEV_MODE,  # 開発環境では False (HTTP許可)
             samesite="lax",
         )
-
 
         logger.info("refresh_token - success", user_email=user_email)
 
@@ -1066,7 +1055,6 @@ async def update_user_profile_advanced(profile_update: AdvancedUserUpdate, reque
         updated_user = await update_advanced_user_profile(db, current_user, profile_update)
         logger.info("update_user_profile_advanced - profile_updated", user_id=updated_user.user_id)
 
-
         # 新しい認証トークンペアを生成（更新されたユーザー情報で）
         access_token, refresh_token = create_token_pair(updated_user.email)  # client_ipパラメータ削除
         logger.info("update_user_profile_advanced - token_created")
@@ -1102,14 +1090,10 @@ async def update_user_profile_advanced(profile_update: AdvancedUserUpdate, reque
         logger.info("update_user_profile_advanced - end")
 
 
-
-
-
-
-
 # ============================================================================
 # 管理者専用エンドポイント
 # ============================================================================
+
 
 @router.get(
     "/admin/users",
