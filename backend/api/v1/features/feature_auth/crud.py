@@ -820,8 +820,8 @@ async def get_all_users_for_admin(db: AsyncSession, page: int = 1, page_size: in
 
         # 非同期データベースセッションでカウントクエリを実行
         count_result = await db.execute(count_query)
-        # scalar()で単一のスカラー値を取得
-        total_count = count_result.scalar()
+        # scalar()で単一のスカラー値を取得（Noneの場合は0を返す）
+        total_count = count_result.scalar() or 0
 
         # ページネーション用クエリ
         offset = (page - 1) * page_size

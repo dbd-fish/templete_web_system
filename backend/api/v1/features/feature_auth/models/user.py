@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import TIMESTAMP, Date, SmallInteger, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -41,7 +41,7 @@ class User(Base):
     contact_number: Mapped[str | None] = mapped_column(String(15), comment="連絡先電話番号")
 
     # 生年月日
-    date_of_birth: Mapped[Date | None] = mapped_column(Date, comment="生年月日")
+    date_of_birth: Mapped[date | None] = mapped_column(Date, comment="生年月日")
 
     # ユーザー権限
     user_role: Mapped[int] = mapped_column(SmallInteger, nullable=False, comment="ユーザー権限 (1: guest, 2: free, 3: regular, 4: admin, 5: owner)")
