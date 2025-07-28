@@ -295,7 +295,7 @@ export default function AdminMyPage({
 
           {/* ユーザー管理パネル */}
           {showUserManagement && (
-            <div className="bg-card rounded-lg border p-6">
+            <div className="bg-card rounded-lg border p-6" data-cy="user-management-panel">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <svg
                   className="w-5 h-5 mr-2"
@@ -314,7 +314,7 @@ export default function AdminMyPage({
               </h3>
 
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
+                <table className="w-full border-collapse border border-gray-300" data-cy="users-table">
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="border border-gray-300 px-4 py-2 text-left">
@@ -380,6 +380,7 @@ export default function AdminMyPage({
                               setEditMode(true);
                             }}
                             className="text-blue-600 hover:underline mr-2"
+                            data-cy="edit-user-button"
                           >
                             編集
                           </button>
@@ -398,6 +399,7 @@ export default function AdminMyPage({
                               <button
                                 type="submit"
                                 className="text-green-600 hover:underline"
+                                data-cy="restore-user-button"
                               >
                                 復活
                               </button>
@@ -417,6 +419,7 @@ export default function AdminMyPage({
                               <button
                                 type="submit"
                                 className="text-red-600 hover:underline"
+                                data-cy="delete-user-button"
                                 onClick={(e) => {
                                   if (
                                     !confirm(
@@ -444,7 +447,7 @@ export default function AdminMyPage({
         {/* サイドバー（右側1カラム） */}
         <div className="space-y-6">
           {/* アカウント管理 */}
-          <div className="bg-card rounded-lg border p-6">
+          <div className="bg-card rounded-lg border p-6" data-cy="admin-account-management">
             <h3 className="text-lg font-semibold mb-4">アカウント管理</h3>
             <div className="space-y-3">
               <Form method="post" className="w-full">
@@ -452,6 +455,7 @@ export default function AdminMyPage({
                 <button
                   type="submit"
                   className="w-full p-3 text-left border rounded-lg hover:bg-muted transition-colors"
+                  data-cy="admin-logout-button"
                 >
                   <div className="flex items-center">
                     <svg

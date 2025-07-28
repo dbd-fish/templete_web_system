@@ -25,7 +25,7 @@ export default function SendResetPasswordForm() {
   };
 
   return (
-    <Form method="post" className="space-y-4">
+    <Form method="post" className="space-y-4" data-cy="reset-password-form">
       {/* メールアドレス入力フィールド */}
       <div>
         <label htmlFor="email" className="block text-sm font-medium mb-1">
@@ -38,10 +38,11 @@ export default function SendResetPasswordForm() {
           placeholder="example@example.com"
           value={email}
           onChange={handleEmailChange}
+          data-cy="reset-email-input"
           required
         />
         {emailError && (
-          <div className="mt-1 text-xs text-destructive">{emailError}</div>
+          <div className="mt-1 text-xs text-destructive" data-cy="reset-email-error">{emailError}</div>
         )}
         <div className="mt-1 text-xs text-muted-foreground">
           ご登録のメールアドレスにパスワードリセット用のURLを送信します
@@ -54,6 +55,7 @@ export default function SendResetPasswordForm() {
           type="submit"
           className="w-full"
           disabled={!!emailError || !email}
+          data-cy="reset-submit-button"
         >
           リセット用メールを送信
         </Button>

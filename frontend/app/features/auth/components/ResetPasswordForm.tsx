@@ -53,7 +53,7 @@ export default function ResetPasswordForm() {
   };
 
   return (
-    <Form method="post" className="space-y-4">
+    <Form method="post" className="space-y-4" data-cy="new-password-form">
       {/* 新しいパスワード入力フィールド */}
       <div>
         <label htmlFor="newPassword" className="block text-sm font-medium mb-1">
@@ -66,11 +66,12 @@ export default function ResetPasswordForm() {
           placeholder="8文字以上、大文字・小文字・数字・記号を含む"
           value={newPassword}
           onChange={handlePasswordChange}
+          data-cy="new-password-input"
           required
           minLength={8}
         />
         {passwordError && (
-          <div className="mt-1 text-xs text-destructive whitespace-pre-line">
+          <div className="mt-1 text-xs text-destructive whitespace-pre-line" data-cy="new-password-error">
             {passwordError}
           </div>
         )}
@@ -91,11 +92,12 @@ export default function ResetPasswordForm() {
           placeholder="新しいパスワードを再入力"
           value={confirmPassword}
           onChange={handleConfirmPasswordChange}
+          data-cy="confirm-new-password-input"
           required
           minLength={8}
         />
         {confirmPasswordError && (
-          <div className="mt-1 text-xs text-destructive">
+          <div className="mt-1 text-xs text-destructive" data-cy="confirm-new-password-error">
             {confirmPasswordError}
           </div>
         )}
@@ -112,6 +114,7 @@ export default function ResetPasswordForm() {
             !newPassword ||
             !confirmPassword
           }
+          data-cy="new-password-submit-button"
         >
           パスワードをリセット
         </Button>

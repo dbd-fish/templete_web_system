@@ -85,12 +85,17 @@ export default function Header() {
               <div className="absolute top-10 right-0 bg-gray-700 text-gray-100 rounded-md shadow-md w-40 sm:w-48 p-3 sm:p-4">
                 <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                   <li>
-                    <a href="/" className="hover:underline">
+                    <a href="/" className="hover:underline" data-cy="home-link">
                       ホーム
                     </a>
                   </li>
                   <li>
-                    <a href="/settings" className="hover:underline">
+                    <a href="/mypage" className="hover:underline" data-cy="mypage-link">
+                      マイページ
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/settings" className="hover:underline" data-cy="settings-link">
                       設定
                     </a>
                   </li>

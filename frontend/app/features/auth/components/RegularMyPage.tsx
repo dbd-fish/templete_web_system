@@ -76,7 +76,9 @@ export default function RegularMyPage({
         {/* メインエリア（左側2カラム） */}
         <div className="lg:col-span-2 space-y-6">
           {/* プロフィール情報 */}
-          <ProfileCard />
+          <div data-cy="user-profile">
+            <ProfileCard />
+          </div>
 
           {/* セキュリティ設定エリア */}
           <div className="bg-card rounded-lg border p-6">
@@ -169,7 +171,7 @@ export default function RegularMyPage({
         {/* サイドバー（右側1カラム） */}
         <div className="space-y-6">
           {/* アカウント管理 */}
-          <div className="bg-card rounded-lg border p-6">
+          <div className="bg-card rounded-lg border p-6" data-cy="user-menu">
             <h3 className="text-lg font-semibold mb-4">アカウント管理</h3>
             <div className="space-y-3">
               <Form method="post" className="w-full">
