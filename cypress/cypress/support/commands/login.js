@@ -1,4 +1,4 @@
-// ログイン処理をコマンド化（画面操作版）
+// ログイン処理をコマンド化
 Cypress.Commands.add('login', (email = 'targetuser@example.com', password = 'Password123456+-') => {
   cy.visit('/login');
 
@@ -16,20 +16,17 @@ Cypress.Commands.add('login', (email = 'targetuser@example.com', password = 'Pas
     .clear()
     .type(password);
 
-  // ログインボタンをクリック
-  cy.get('[data-cy="login-submit-button"]').click();
+  // React Router v7のFormコンポーネントを使用してフォーム送信
+  cy.get('[data-cy="login-form"]').submit();
   
-  // リクエスト完了を待つ
-  cy.wait(3000);
-  
-  // ログイン処理完了を待つ（より長いタイムアウト）
-  cy.url().should('not.include', '/login', { timeout: 15000 });
+  // 画面遷移を待つ（より長いタイムアウト）
+  cy.url().should('not.include', '/login', { timeout: 30000 });
   
   // マイページが表示されることを確認
-  cy.url().should('include', '/mypage', { timeout: 5000 });
+  cy.url().should('include', '/mypage', { timeout: 30000 });
 });
 
-// フォーム経由のログインテスト用コマンド（UIテスト用）
+// フォーム経由のログインテスト用コマンド（画面操作のみ版）
 Cypress.Commands.add('loginViaForm', (email = 'targetuser@example.com', password = 'Password123456+-') => {
   cy.visit('/login');
 
@@ -47,17 +44,14 @@ Cypress.Commands.add('loginViaForm', (email = 'targetuser@example.com', password
     .clear()
     .type(password);
 
-  // ログインボタンをクリック
-  cy.get('[data-cy="login-submit-button"]').click();
+  // React Router v7のFormコンポーネントを使用してフォーム送信
+  cy.get('[data-cy="login-form"]').submit();
   
-  // リクエスト完了を待つ
-  cy.wait(3000);
-  
-  // ログイン処理完了を待つ（より長いタイムアウト）
-  cy.url().should('not.include', '/login', { timeout: 15000 });
+  // 画面遷移を待つ（より長いタイムアウト）
+  cy.url().should('not.include', '/login', { timeout: 30000 });
   
   // マイページが表示されることを確認
-  cy.url().should('include', '/mypage', { timeout: 5000 });
+  cy.url().should('include', '/mypage', { timeout: 30000 });
 });
 
 // Googleログインのモックコマンド

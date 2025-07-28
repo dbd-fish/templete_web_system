@@ -49,7 +49,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://template_user:template_password@db:5432/template_db
       - ENVIRONMENT=development
-      - CORS_ORIGINS=http://localhost:5173,https://localhost:5173
+      - CORS_ORIGINS=http://localhost:5173,https://localhost:5173,http://frontend:5173,https://frontend:5173
       - WATCHFILES_FORCE_POLLING=true
       - ACCESS_TOKEN_EXPIRE_MINUTES=30  # H034: 一般的JWT+リフレッシュトークンシステム
 
