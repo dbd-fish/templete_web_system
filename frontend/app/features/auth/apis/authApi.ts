@@ -3,7 +3,7 @@
  *
  * @description
  * すべての認証・ユーザー管理API関数を集約
- * 既存の実装パターンを維持しながら単一ファイルに統合
+ * 各API関数で個別に処理を記述
  */
 
 import {
@@ -12,9 +12,35 @@ import {
   SuccessResponse,
   UserUpdate,
 } from '../types';
-import { apiRequest, apiFormRequest } from '~/utils/apiErrorHandler';
+import { apiRequest } from '~/utils/apiErrorHandler';
+import { getApiUrl } from '~/config/api';
+import { extractAuthTokens, extractRefreshToken } from '../cookies';
 
 // ==================== 認証関連 ====================
+
+/**
+ * リフレッシュトークンを使用して新しいアクセストークンを取得する非同期関数
+ * - '/api/v1/auth/refresh' エンドポイントを使用してトークンリフレッシュリクエストを送信
+ * - 成功時: 新しいアクセストークンを含むレスポンスを返す
+ * - 失敗時: エラーをスロー
+ */
+export const refreshToken = async (request: Request): Promise<Response> => {
+  const apiUrl = getApiUrl();
+  const cookieHeader = request.headers.get('Cookie');
+  const refreshTokenCookie = extractRefreshToken(cookieHeader);
+
+  return apiRequest(
+    `${apiUrl}/api/v1/auth/refresh`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(refreshTokenCookie && { Cookie: refreshTokenCookie }),
+      },
+    },
+    refreshTokenCookie,
+  );
+};
 
 /**
  * ユーザーのログインを処理する非同期関数
@@ -25,19 +51,22 @@ import { apiRequest, apiFormRequest } from '~/utils/apiErrorHandler';
  * @param email - ユーザーのメールアドレス
  * @param password - ユーザーのパスワード
  */
-export const login = async (email: string, password: string) => {
-  const apiUrl = process.env.API_URL; // 環境変数からURLを取得
+export const login = async (
+  email: string,
+  password: string,
+): Promise<Response> => {
+  const apiUrl = getApiUrl();
 
-  try {
-    const response = await apiFormRequest(`${apiUrl}/api/v1/auth/login`, {
-      username: email, // OAuth2PasswordRequestFormは "username" フィールドを期待
+  return apiRequest(`${apiUrl}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username: email, // emailアドレスをusernameフィールドで送信（OAuth2互換）
       password: password,
-    });
-
-    return response;
-  } catch (error) {
-    throw error;
-  }
+    }),
+  });
 };
 
 /**
@@ -46,49 +75,52 @@ export const login = async (email: string, password: string) => {
  * - 成功時: レスポンスを返す
  * - 失敗時: エラーメッセージをスロー
  */
-export const logout = async (request: Request) => {
-  const apiUrl = process.env.API_URL; // 環境変数からURLを取得
+export const logout = async (request: Request): Promise<Response> => {
+  const apiUrl = getApiUrl();
+  const cookieHeader = request.headers.get('Cookie');
+  const authTokens = extractAuthTokens(cookieHeader);
 
-  try {
-    const cookieHeader = request.headers.get('Cookie');
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/logout`,
-      {
-        method: 'POST',
+  return apiRequest(
+    `${apiUrl}/api/v1/auth/logout`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authTokens && { Cookie: authTokens }),
       },
-      cookieHeader || '',
-    );
-
-    return response;
-  } catch (error) {
-    throw error;
-  }
+    },
+    authTokens,
+  );
 };
 
 // ==================== ユーザー管理 ====================
 
 /**
  * ユーザー情報を取得する非同期関数
- * - '/api/v1/auth/me' エンドポイントからユーザー情報を取得
+ * - '/api/v1/auth/me' エンドポイントからユーザー情報を取得（POSTメソッド）
  * - 成功時: ユーザー情報オブジェクトを返す
  * - 失敗時: null を返す
  */
-export const getUser = async (request: Request) => {
-  const apiUrl = process.env.API_URL; // 環境変数からURLを取得
-
+export const getUser = async (
+  request: Request,
+): Promise<UserResponse | null> => {
+  const apiUrl = getApiUrl();
   const cookieHeader = request.headers.get('Cookie');
+  const authTokens = extractAuthTokens(cookieHeader);
 
   try {
     const response = await apiRequest(
       `${apiUrl}/api/v1/auth/me`,
       {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authTokens && { Cookie: authTokens }),
+        },
       },
-      cookieHeader || '',
+      authTokens,
     );
-
-    const data = (await response.json()) as UserResponse;
-    return { username: data.username, email: data.email };
+    return (await response.json()) as UserResponse;
   } catch (error) {
     // 認証エラーの場合はnullを返す
     if (error instanceof Error && error.message.includes('401')) {
@@ -108,50 +140,52 @@ export const updateUser = async (
   request: Request,
   updateData: UserUpdate,
 ): Promise<UserResponse> => {
-  const apiUrl = process.env.API_URL;
+  const apiUrl = getApiUrl();
+  const cookieHeader = request.headers.get('Cookie');
+  const authTokens = extractAuthTokens(cookieHeader);
 
-  try {
-    const cookieHeader = request.headers.get('Cookie');
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/me`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify(updateData),
+  const response = await apiRequest(
+    `${apiUrl}/api/v1/auth/me`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authTokens && { Cookie: authTokens }),
       },
-      cookieHeader || '',
-    );
+      body: JSON.stringify(updateData),
+    },
+    authTokens,
+  );
 
-    return (await response.json()) as UserResponse;
-  } catch (error) {
-    throw error;
-  }
+  return (await response.json()) as UserResponse;
 };
 
 /**
  * ユーザーアカウントを削除する非同期関数
- * - '/api/v1/auth/me' エンドポイントでアカウントを削除
+ * - '/api/v1/auth/user' エンドポイントでアカウントを削除
  * - 成功時: メッセージレスポンスを返す
  * - 失敗時: エラーをスロー
  */
 export const deleteUser = async (
   request: Request,
 ): Promise<MessageResponse> => {
-  const apiUrl = process.env.API_URL;
+  const apiUrl = getApiUrl();
+  const cookieHeader = request.headers.get('Cookie');
+  const authTokens = extractAuthTokens(cookieHeader);
 
-  try {
-    const cookieHeader = request.headers.get('Cookie');
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/me`,
-      {
-        method: 'DELETE',
+  const response = await apiRequest(
+    `${apiUrl}/api/v1/auth/user`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authTokens && { Cookie: authTokens }),
       },
-      cookieHeader || '',
-    );
+    },
+    authTokens,
+  );
 
-    return (await response.json()) as MessageResponse;
-  } catch (error) {
-    throw error;
-  }
+  return (await response.json()) as MessageResponse;
 };
 
 // ==================== 登録関連 ====================
@@ -163,24 +197,20 @@ export const deleteUser = async (
  * - 失敗時: エラーをスロー
  */
 export const signup = async (token: string): Promise<boolean> => {
-  const apiUrl = process.env.API_URL;
+  const apiUrl = getApiUrl();
 
-  try {
-    const signupData = {
+  const response = await apiRequest(`${apiUrl}/api/v1/auth/signup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
       token: token,
-    };
+    }),
+  });
 
-    const response = await apiRequest(`${apiUrl}/api/v1/auth/signup`, {
-      method: 'POST',
-      body: JSON.stringify(signupData),
-    });
-
-    const data = (await response.json()) as SuccessResponse;
-    return data.success;
-  } catch (error) {
-    console.error('[signup] Error:', error);
-    throw error;
-  }
+  const data = (await response.json()) as SuccessResponse;
+  return data.success;
 };
 
 /**
@@ -194,37 +224,30 @@ export const sendVerifyEmail = async (
   password: string,
   username: string,
 ): Promise<SuccessResponse> => {
-  const apiUrl = process.env.API_URL;
+  // 各フィールドをトリムし、空文字列チェック
+  const trimmedEmail = email.trim();
+  const trimmedPassword = password.trim();
+  const trimmedUsername = username.trim();
 
-  try {
-    // 各フィールドをトリムし、空文字列チェック
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
-    const trimmedUsername = username.trim();
+  if (!trimmedEmail || !trimmedPassword || !trimmedUsername) {
+    throw new Error('すべてのフィールドが必要です');
+  }
 
-    if (!trimmedEmail || !trimmedPassword || !trimmedUsername) {
-      throw new Error('すべてのフィールドが必要です');
-    }
+  const apiUrl = getApiUrl();
 
-    const verifyEmailData = {
+  const response = await apiRequest(`${apiUrl}/api/v1/auth/send-verify-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
       email: trimmedEmail,
       password: trimmedPassword,
       username: trimmedUsername,
-    };
+    }),
+  });
 
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/send-verify-email`,
-      {
-        method: 'POST',
-        body: JSON.stringify(verifyEmailData),
-      },
-    );
-
-    return (await response.json()) as SuccessResponse;
-  } catch (error) {
-    console.error('[sendVerifyEmail] Error:', error);
-    throw error;
-  }
+  return (await response.json()) as SuccessResponse;
 };
 
 // ==================== パスワードリセット ====================
@@ -238,33 +261,29 @@ export const sendVerifyEmail = async (
 export const sendPasswordResetEmail = async (
   email: string,
 ): Promise<SuccessResponse> => {
-  const apiUrl = process.env.API_URL;
+  // メールアドレスをトリムし、空文字列チェック
+  const trimmedEmail = email.trim();
 
-  try {
-    // メールアドレスをトリムし、空文字列チェック
-    const trimmedEmail = email.trim();
-
-    if (!trimmedEmail) {
-      throw new Error('メールアドレスが必要です');
-    }
-
-    const resetEmailData = {
-      email: trimmedEmail,
-    };
-
-    const response = await apiRequest(
-      `${apiUrl}/api/v1/auth/send-password-reset-email`,
-      {
-        method: 'POST',
-        body: JSON.stringify(resetEmailData),
-      },
-    );
-
-    return (await response.json()) as SuccessResponse;
-  } catch (error) {
-    console.error('[sendPasswordResetEmail] Error:', error);
-    throw error;
+  if (!trimmedEmail) {
+    throw new Error('メールアドレスが必要です');
   }
+
+  const apiUrl = getApiUrl();
+
+  const response = await apiRequest(
+    `${apiUrl}/api/v1/auth/send-password-reset-email`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: trimmedEmail,
+      }),
+    },
+  );
+
+  return (await response.json()) as SuccessResponse;
 };
 
 /**
@@ -277,22 +296,18 @@ export const resetPassword = async (
   token: string,
   newPassword: string,
 ): Promise<SuccessResponse> => {
-  const apiUrl = process.env.API_URL;
+  const apiUrl = getApiUrl();
 
-  try {
-    const resetData = {
+  const response = await apiRequest(`${apiUrl}/api/v1/auth/reset-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
       token: token,
       new_password: newPassword.trim(), // パスワードはトリム処理
-    };
+    }),
+  });
 
-    const response = await apiRequest(`${apiUrl}/api/v1/auth/reset-password`, {
-      method: 'POST',
-      body: JSON.stringify(resetData),
-    });
-
-    return (await response.json()) as SuccessResponse;
-  } catch (error) {
-    console.error('[resetPassword] Error:', error);
-    throw error;
-  }
+  return (await response.json()) as SuccessResponse;
 };

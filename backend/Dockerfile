@@ -5,7 +5,7 @@
 FROM python:3.13
 
 # 作業ディレクトリを設定
-WORKDIR /app
+WORKDIR /app/backend
 ENV PYTHONUNBUFFERED=1
 
 # poetryインストール
@@ -13,17 +13,16 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
     ln -s /root/.local/bin/poetry /usr/local/bin/poetry
 
 # コンテナ内で仮想環境の作成を無効
-RUN poetry config virtualenvs.create false && \
-    poetry config virtualenvs.in-project true
+RUN poetry config virtualenvs.create false
 
-# バックエンドコードをコピー
-COPY . ./backend/
-
-# バックエンドディレクトリに移動
-WORKDIR /app/backend
+# pyproject.tomlとpoetry.lockを先にコピー（レイヤーキャッシュ最適化）
+COPY pyproject.toml poetry.lock* ./
 
 # 依存関係をインストール
 RUN poetry install --no-interaction --no-root
+
+# アプリケーションコードをコピー
+COPY . .
 
 # 環境変数の設定
 ENV PATH="/root/.local/bin:${PATH}"
@@ -33,4 +32,5 @@ ENV PYTHONPATH="/app/backend"
 EXPOSE 8000
 
 # FastAPIアプリケーションを起動
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# WSL2環境でのwatchfilesエラー対策のため、ポーリングモードを使用
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/backend", "--reload-delay", "2"]

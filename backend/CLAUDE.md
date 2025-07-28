@@ -4,10 +4,9 @@
 日本語で回答してください。
 また提供するコーディングはRuffやmypyに準拠したコーディングを提供してください。
 
-
 ## 🏗️ プロジェクト概要
 
-FastAPI + PostgreSQL + OpenTelemetry を使用した高性能RESTful APIバックエンドです。
+FastAPI + PostgreSQL + structlog を使用した高性能RESTful APIバックエンドです。
 
 ### 基本技術スタック
 - **フレームワーク**: FastAPI 0.115.5 + uvicorn
@@ -15,7 +14,7 @@ FastAPI + PostgreSQL + OpenTelemetry を使用した高性能RESTful APIバッ�
 - **ORM**: SQLAlchemy 2.0（非同期モード）
 - **言語**: Python 3.13
 - **依存関係管理**: Poetry（package-mode = false）
-- **監視**: OpenTelemetry + Prometheus（ポート8001）
+- **ログ**: structlog（JSON形式、ensure_ascii=False）
 - **開発ポート**: 8000
 
 ## 📁 ディレクトリ構成
@@ -35,15 +34,12 @@ backend/
 │   ├── common/                  # 共通機能
 │   │   ├── common.py            # 共通ユーティリティ
 │   │   ├── core/                # コア機能
-│   │   │   ├── log_config.py    # ログ設定（structlog + OpenTelemetry）
-│   │   │   ├── http_exception_handler.py
-│   │   │   └── request_validation_error.py
+│   │   │   └── log_config.py    # ログ設定（structlog、ensure_ascii=False）
 │   │   ├── middleware/          # カスタムミドルウェア
 │   │   │   ├── add_userIP_middleware.py
-│   │   │   └── error_handler_middleware.py
+│   │   │   └── error_handling_middleware.py  # 統一エラーハンドリング
 │   │   ├── database.py          # データベース接続設定
 │   │   ├── setting.py           # 設定管理（Pydantic BaseSettings）
-│   │   ├── exception_handlers.py # 統一エラーハンドリング
 │   │   ├── response_schemas.py  # レスポンス統一スキーマ
 │   │   └── test_data.py         # テストデータ（環境変数対応）
 │   ├── v1/                      # API v1
@@ -56,6 +52,8 @@ backend/
 │   │       │   ├── crud.py      # CRUD 操作
 │   │       │   ├── route.py     # API エンドポイント
 │   │       │   ├── security.py  # セキュリティ機能
+│   │       │   ├── setting.py   # 認証関連設定（JWT、トークン期限等）
+│   │       │   ├── google_oauth.py
 │   │       │   ├── send_verification_email.py
 │   │       │   └── send_reset_password_email.py
 │   │       └── feature_dev/     # 開発用機能
@@ -73,6 +71,13 @@ backend/
 │           └── feature_auth/    # 認証機能テスト
 │               ├── test_auth_controller.py
 │               └── unit/        # 単体テスト
+│                   ├── test_crud.py
+│                   ├── test_email_sending.py
+│                   ├── test_exceptions.py
+│                   ├── test_google_oauth.py
+│                   ├── test_response_schemas.py
+│                   ├── test_route_utils.py
+│                   └── test_security.py
 ├── logs/                        # ログファイル（日付別）
 │   └── server/
 │       ├── app/                 # アプリケーションログ
@@ -88,11 +93,8 @@ backend/
 
 ### Docker環境での開発
 ```bash
-# 開発環境（メトリクス外部アクセス可）
+# 開発環境
 docker compose up -d backend db
-
-# 本番環境（メトリクス内部ネットワークのみ）
-docker compose -f docker-compose.prod.yml up -d backend db
 
 # バックエンドコンテナ再ビルド
 docker compose build backend
@@ -120,7 +122,7 @@ poetry --version
 
 ### テスト実行
 ```bash
-# 全テスト実行（35テストケース）
+# 全テスト実行（92テストケース）
 poetry run pytest
 
 # カバレッジ付きテスト実行
@@ -135,7 +137,7 @@ poetry run pytest api/tests/v1/features/feature_auth/test_auth_controller.py
 
 ### コード品質ツール
 ```bash
-# リンティング実行
+# リンティング実行（全てPass）
 poetry run ruff check .
 
 # 自動修正付きリンティング
@@ -185,20 +187,8 @@ bcrypt = "==4.0.1"
 # 設定管理
 pydantic-settings = "^2.6.1"
 
-# ログ・監視
+# ログ
 structlog = "^24.4.0"
-
-# OpenTelemetry監視・メトリクス関連
-opentelemetry-distro = "^0.50b0"
-opentelemetry-api = "^1.29.0"
-opentelemetry-sdk = "^1.29.0"
-opentelemetry-instrumentation-fastapi = "^0.50b0"
-opentelemetry-instrumentation-sqlalchemy = "^0.50b0"
-opentelemetry-instrumentation-asyncpg = "^0.50b0"
-opentelemetry-instrumentation-logging = "^0.50b0"
-opentelemetry-exporter-prometheus = "^0.50b0"
-opentelemetry-exporter-otlp = "^1.29.0"
-opentelemetry-exporter-otlp-proto-grpc = "^1.29.0"
 
 # 開発・テスト
 pytest = "^8.3.3"
@@ -223,14 +213,13 @@ POSTGRES_PASSWORD = "template_password"
 TZ = "Asia/Tokyo"
 ```
 
-### ログ・監視設定
-- **ライブラリ**: structlog + OpenTelemetry
+### ログ設定
+- **ライブラリ**: structlog
 - **出力先**: `logs/server/app/app_YYYY-MM-DD.log`
 - **SQL ログ**: `logs/server/sql/sqlalchemy_YYYY-MM-DD.log`
 - **コンソール出力**: 開発時のみ有効
-- **トレース情報**: OpenTelemetryトレースIDとスパンIDをログに自動追加
-- **メトリクス**: Prometheusメトリクス（ポート8001）
-- **自動計装**: FastAPIの自動監視、SQLAlchemy・AsyncPG計装済み（※メトリクス出力は要確認）
+- **フォーマット**: JSON形式（ensure_ascii=False で日本語文字化け対策）
+- **エラー情報**: 実際のエラー発生箇所を get_error_location() で取得
 
 ## 📚 API ドキュメント
 
@@ -238,7 +227,6 @@ TZ = "Asia/Tokyo"
 - **Swagger UI**: `http://localhost:8000/docs`
 - **ReDoc**: `http://localhost:8000/redoc`
 - **OpenAPI JSON**: `http://localhost:8000/openapi.json`
-- **Prometheusメトリクス**: `http://localhost:8001/metrics`
 
 ### API エンドポイント
 
@@ -246,11 +234,14 @@ TZ = "Asia/Tokyo"
 ```
 POST /api/v1/auth/signup              # ユーザー登録（トークン認証）
 POST /api/v1/auth/send-verify-email   # 仮登録メール送信
-POST /api/v1/auth/login               # ログイン処理
-POST /api/v1/auth/logout              # ログアウト処理
+POST /api/v1/auth/login               # ログイン処理（JSON形式、username/password）
+POST /api/v1/auth/logout              # ログアウト処理（access/refreshトークン両方削除）
+POST /api/v1/auth/refresh             # トークンリフレッシュ（refreshトークンのみ使用）
+POST /api/v1/auth/me                  # ユーザー情報取得
+PATCH /api/v1/auth/me                 # ユーザー情報更新
+DELETE /api/v1/auth/user              # アカウント削除
 POST /api/v1/auth/send-password-reset-email  # パスワードリセットメール
 POST /api/v1/auth/reset-password      # パスワードリセット
-PATCH /api/v1/auth/update-user-info   # ユーザー情報更新
 ```
 
 #### 🛠️ 開発API（v1・開発環境のみ）
@@ -270,7 +261,7 @@ GET  /api/v1/dev/health_db            # データベース接続確認
   "success": true,
   "message": "操作が正常に完了しました",
   "data": { ... },
-  "timestamp": "2025-07-05T12:00:00Z"
+  "timestamp": "2025-01-27T12:00:00Z"
 }
 ```
 
@@ -281,7 +272,7 @@ GET  /api/v1/dev/health_db            # データベース接続確認
   "message": "エラーの説明",
   "error_code": "VALIDATION_ERROR",
   "details": { ... },
-  "timestamp": "2025-07-05T12:00:00Z"
+  "timestamp": "2025-01-27T12:00:00Z"
 }
 ```
 
@@ -299,7 +290,8 @@ api/tests/v1/features/feature_auth/
 └── unit/
     ├── test_crud.py                 # CRUD操作単体テスト（24件）
     ├── test_email_sending.py        # メール送信単体テスト（9件）
-    ├── test_exception_handlers.py   # 例外ハンドラー単体テスト（15件）
+    ├── test_exceptions.py           # BusinessLogicError単体テスト（2件）
+    ├── test_google_oauth.py         # Google OAuth単体テスト（6件）
     ├── test_response_schemas.py     # レスポンススキーマ単体テスト（21件）
     ├── test_route_utils.py          # ルートユーティリティ単体テスト（12件）
     └── test_security.py             # セキュリティ単体テスト（9件）
@@ -324,7 +316,9 @@ logging_fixture.py       # ログ設定
 ### 認証方式
 - **JWT トークン**: HS256 アルゴリズム
 - **クッキー認証**: HttpOnly, Secure, SameSite=lax
-- **トークン有効期限**: 240分（4時間）
+- **アクセストークン有効期限**: 30分
+- **リフレッシュトークン有効期限**: 5日
+- **設定ファイル**: `api/v1/features/feature_auth/setting.py` で一元管理
 
 ### パスワード処理
 - **ハッシュ化**: bcrypt（ソルト付き）
@@ -472,7 +466,7 @@ tail -f backend/logs/server/sql/sqlalchemy_$(date +%Y-%m-%d).log
 #### アプリケーション
 - **非同期処理**: uvicorn + asyncio の活用
 - **レスポンス圧縮**: gzip 圧縮有効化
-- **キャッシュ**: 必要に応じてRedis導入検討
+- **キャッシュ**: 必要に応じて導入検討
 
 ## 📈 CI/CD対応
 
@@ -512,62 +506,37 @@ tail -f backend/logs/server/sql/sqlalchemy_$(date +%Y-%m-%d).log
 - **フィールドバリデータ**: カスタムバリデーションロジックによる入力値検証
 - **GitGuardian対応**: テストデータは環境変数から読み取り、秘匿情報の誤コミットを防止
 
-## 🔍 監視・メトリクス詳細
+## 🔍 エラーハンドリング
 
-### OpenTelemetry統合状況
-- **自動計装**: FastAPIリクエスト監視、SQLAlchemy・AsyncPG計装済み（※データベースメトリクス要確認）
-- **トレース情報**: すべてのログにトレースID・スパンIDを自動追加
-- **Prometheus連携**: メトリクスをポート8001で公開（開発環境のみ）
+### ミドルウェアによる統一エラーハンドリング
+- **実装**: `api/common/middleware/error_handling_middleware.py`
+- **エラー位置取得**: `get_error_location()` で実際のエラー発生箇所を特定
+- **BusinessLogicError**: ビジネスロジックエラーの統一処理
+- **標準エラー**: 400番台、500番台エラーの統一フォーマット
 
-### 📊 利用可能なメトリクス
-```bash
-# 開発環境でのメトリクス確認
-curl http://localhost:8001/metrics
-
-# 確認済みメトリクス
-- http_server_duration_milliseconds  # HTTPリクエスト処理時間
-- http_server_active_requests        # 同時実行中のリクエスト数
-- http_server_response_size_bytes    # レスポンスサイズ
-- process_virtual_memory_bytes       # メモリ使用量
-- python_gc_objects_collected_total  # ガベージコレクション統計
+### エラーレスポンス形式
+```json
+{
+  "detail": "エラーメッセージ",
+  "type": "error_type",
+  "error_file": "security.py",
+  "error_function": "decode_access_token",
+  "error_line": 123,
+  "error_code": "raise JWTError('Invalid token')"
+}
 ```
 
-### 🚨 セキュリティ・運用上の制限
+## 🎯 静的解析対応
 
-#### 現在の実装状況
-- **開発環境**: `http://localhost:8001/metrics` でテキスト形式のメトリクス閲覧可能
-- **本番環境**: セキュリティ上の理由により8001ポートは外部公開不可
-- **運用状態**: OpenTelemetryは実装済みだが、本番環境での安全な閲覧方法が未確立
+### Ruff準拠（2025-01-27時点）
+- **全エラー修正済み**: 27個のエラーを修正
+- **トレーリングカンマ**: COM812エラー対応
+- **空白行処理**: W293エラー対応  
+- **重複定義削除**: F811エラー対応
 
-#### セキュリティリスク（本番環境）
-- **システム内部情報の漏洩**: メモリ使用量、CPU使用率、プロセス情報
-- **アプリケーション構造の露出**: エンドポイント一覧、処理時間統計
-- **攻撃の手がかり提供**: パフォーマンス特性、負荷状況の詳細情報
-
-#### 本番環境での推奨構成（将来実装予定）
-```yaml
-# 本番環境用設定例
-backend:
-  ports:
-    - "8000:8000"  # APIのみ外部公開
-    # - "8001:8001"  # メトリクスポートは公開しない
-  networks:
-    - app_network
-    - monitoring_network  # 監視専用内部ネットワーク
-
-# 監視ツールスタック（内部ネットワークのみ）
-prometheus:
-  networks:
-    - monitoring_network
-grafana:
-  networks:
-    - monitoring_network
-```
-
-### 📈 将来の監視環境拡張予定
-- **Prometheus Server**: メトリクス収集・保存
-- **Grafana**: ダッシュボード・可視化
-- **AlertManager**: アラート通知
-- **VPN/Bastion経由**: 安全な管理者アクセス
+### 品質向上ポイント
+- **一貫したコードスタイル**: Ruffルールに準拠
+- **保守性向上**: 統一されたフォーマット
+- **可読性向上**: 適切なインデントとスペース
 
 この構成により、高品質で保守性の高く、可観測性に優れたFastAPIバックエンドアプリケーションの開発が可能です。

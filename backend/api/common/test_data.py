@@ -1,6 +1,6 @@
 # 動作確認データ
 # gg:ignore - GitGuardian exclusion for test/demo data only
-from api.common.setting import setting
+from api.v1.features.feature_auth.setting import auth_setting
 
 
 class TestData:
@@ -48,5 +48,5 @@ class TestData:
 
     # JWT Token Examples (for documentation only - not real tokens)
     # 環境変数から読み込み
-    DOC_JWT_TOKEN_EXAMPLE = setting.DOC_JWT_TOKEN_EXAMPLE
-    DOC_RESET_TOKEN_EXAMPLE = setting.DOC_RESET_TOKEN_EXAMPLE
+    DOC_JWT_TOKEN_EXAMPLE = auth_setting.DOC_JWT_TOKEN_EXAMPLE
+    DOC_RESET_TOKEN_EXAMPLE = auth_setting.DOC_RESET_TOKEN_EXAMPLE

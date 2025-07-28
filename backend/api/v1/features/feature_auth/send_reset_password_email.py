@@ -72,8 +72,5 @@ async def send_reset_password_email(email: str, reset_password_url: str):
                 server.login(setting.SMTP_USERNAME, setting.SMTP_PASSWORD)  # ログイン
             server.sendmail(msg["From"], email, msg.as_string())  # メール送信
         logger.info("reset password email sent", email=email)
-    except Exception as e:
-        logger.info("Failed to send reset password email", email=email, error=str(e))
-        raise e
     finally:
         logger.info("send_reset_password_email - end")

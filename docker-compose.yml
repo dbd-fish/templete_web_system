@@ -11,8 +11,8 @@ services:
         limits:
           memory: 4G
     volumes:
-      - ./frontend:/app/frontend
-      - /app/frontend/node_modules  # node_modulesのマウント除外
+      - ./frontend:/app/frontend:cached
+      - frontend_node_modules:/app/frontend/node_modules  # node_modulesのマウント除外
     working_dir: /app/frontend
     ports:
       - "3000:3000" # 本番用
@@ -24,6 +24,7 @@ services:
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
+      - WATCHFILES_FORCE_POLLING=true
       - VITE_API_URL=http://backend:8000
 
   backend:
@@ -48,7 +49,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://template_user:template_password@db:5432/template_db
       - ENVIRONMENT=development
-      - CORS_ORIGINS=http://localhost:5173,https://localhost:5173
+      - CORS_ORIGINS=http://localhost:5173,https://localhost:5173,http://frontend:5173,https://frontend:5173
+      - WATCHFILES_FORCE_POLLING=true
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30  # H034: 一般的JWT+リフレッシュトークンシステム
 
   db:
     image: postgres:13
@@ -87,7 +90,7 @@ services:
     networks:
       - frontend-network
     environment:
-      - CYPRESS_baseUrl=http://frontend:5173
+      - CYPRESS_baseUrl=https://frontend:5173
     # Cypress公式推奨: プロファイル使用でテスト実行時のみ起動
     profiles:
       - test
@@ -100,3 +103,4 @@ networks:
 
 volumes:
   postgres_data:
+  frontend_node_modules:

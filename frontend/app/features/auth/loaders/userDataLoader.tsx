@@ -1,5 +1,5 @@
 import { AuthenticationError } from '../errors/AuthenticationError';
-import { getUserFromToken } from '~/mocks/data/auth';
+import { getUser } from '../apis/authApi';
 
 /**
  * 認証情報を取得します。
@@ -15,22 +15,8 @@ export async function userDataLoader(
   loginRequired: boolean = true,
 ) {
   try {
-    // Cookieから認証トークンを取得
-    const cookieHeader = request.headers.get('Cookie');
-    let authToken = null;
-
-    if (cookieHeader) {
-      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {} as Record<string, string>);
-
-      authToken = cookies.authToken;
-    }
-
-    // トークンからユーザー情報を取得
-    const userData = authToken ? getUserFromToken(authToken) : null;
+    // 実際のバックエンドAPIからユーザー情報を取得
+    const userData = await getUser(request);
 
     // ログインが必須の画面では下記でエラーがスローされる
     if (loginRequired && !userData) {
@@ -39,6 +25,16 @@ export async function userDataLoader(
 
     return userData;
   } catch (error) {
+    // 認証エラーの場合はAuthenticationErrorとして処理
+    if (
+      error instanceof Error &&
+      (error.message.includes('401') || error.message.includes('Unauthorized'))
+    ) {
+      if (loginRequired) {
+        throw new AuthenticationError('認証情報の取得に失敗しました。');
+      }
+      return null;
+    }
     throw error;
   }
 }

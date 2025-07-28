@@ -4,8 +4,6 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import structlog
-from opentelemetry import trace
-from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from structlog.processors import CallsiteParameter
 
 from api.common.setting import setting
@@ -65,7 +63,11 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
 
     # structlog用のProcessorFormatterを設定（ファイル出力用）
     file_formatter = structlog.stdlib.ProcessorFormatter(
-        processor=structlog.processors.JSONRenderer(indent=4, sort_keys=True),
+        processor=structlog.processors.JSONRenderer(
+            indent=4,  # JSON出力を4スペースでインデント（可読性向上）
+            sort_keys=True,  # JSONキーをアルファベット順でソート（一貫性確保）
+            ensure_ascii=False,  # 日本語文字をUnicodeエスケープせず直接出力（可読性向上）
+        ),
         foreign_pre_chain=[
             structlog.contextvars.merge_contextvars,
             structlog.processors.TimeStamper(fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False),
@@ -115,30 +117,26 @@ def configure_logging(test_env: int = 0) -> structlog.BoundLogger:
     # SQLAlchemyログの設定
     configure_sqlalchemy_logging(test_env)
 
-    # OpenTelemetry Logging instrumentationの初期化
-    LoggingInstrumentor().instrument(set_logging_format=True)
-
-    def add_trace_id(logger, name, event_dict):
-        """OpenTelemetryのトレースIDをログに追加するプロセッサ"""
-        span = trace.get_current_span()
-        if span and span.get_span_context().trace_id != 0:
-            trace_context = span.get_span_context()
-            event_dict["trace_id"] = f"{trace_context.trace_id:032x}"
-            event_dict["span_id"] = f"{trace_context.span_id:016x}"
-        return event_dict
-
     # structlogの設定
     structlog.configure(
         processors=[
             structlog.stdlib.filter_by_level,  # ログレベルでフィルタリング
             structlog.contextvars.merge_contextvars,  # リクエストスコープでの変数をログに統合
-            add_trace_id,  # OpenTelemetryトレースIDを追加
             structlog.processors.TimeStamper(fmt="iso", utc=False),  # ISOフォーマットのタイムスタンプを追加
             structlog.stdlib.add_logger_name,  # ロガー名を追加
             structlog.stdlib.add_log_level,  # ログレベルを追加
             structlog.stdlib.PositionalArgumentsFormatter(),  # 位置引数をフォーマット
             structlog.processors.StackInfoRenderer(),  # スタック情報をレンダリング
             structlog.processors.format_exc_info,  # 例外情報をフォーマット
+            structlog.processors.ExceptionPrettyPrinter(),  # 例外のトレースバックを整形
+            structlog.processors.CallsiteParameterAdder(  # 呼び出し元情報を追加
+                [CallsiteParameter.PATHNAME, CallsiteParameter.FUNC_NAME, CallsiteParameter.LINENO],
+                additional_ignores=[
+                    "structlog",  # structlog自体のコードを無視
+                    "logging",  # loggingモジュールを無視
+                    "error_handling_middleware",  # エラーハンドリングミドルウェアを無視
+                ],
+            ),
             structlog.processors.UnicodeDecoder(),  # Unicode文字をデコード
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,  # stdlibハンドラで使用可能にする
         ],

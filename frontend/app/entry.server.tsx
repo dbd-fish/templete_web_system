@@ -10,17 +10,7 @@ import { PassThrough } from 'node:stream';
 import type { EntryContext } from 'react-router';
 import { ServerRouter } from 'react-router';
 import { renderToPipeableStream } from 'react-dom/server';
-// NOTE: msw環境でモックAPIが動作するようなコードを残しておく。基本的に使わない方針。
-// import { server } from './mocks/server';
-
 const ABORT_DELAY = 5_000;
-
-// if (process.env.ENV_MODE === 'development') {
-//   console.log('[entry.server.tsx] Starting the server in development mode...');
-//   server.listen();
-// } else {
-//   console.log('[entry.server.tsx] Starting the server in production mode...');
-// }
 
 export default function handleRequest(
   request: Request,

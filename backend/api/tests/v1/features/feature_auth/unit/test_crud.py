@@ -5,9 +5,11 @@ CRUD操作の単体テスト（AAAパターン）
 import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 
 from api.common.test_data import TestData
 from api.v1.features.feature_auth.crud import (
@@ -352,7 +354,7 @@ async def test_get_current_user_success():
 
     # Act & Assert: トークンデコードとユーザー取得をモック化して実行
     with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode, patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user:
-        mock_decode.return_value = {"sub": TestData.TEST_USER_EMAIL_1}
+        mock_decode.return_value = {"email": TestData.TEST_USER_EMAIL_1}
         mock_get_user.return_value = mock_user
 
         result = await get_current_user(mock_request, mock_session)
@@ -363,10 +365,62 @@ async def test_get_current_user_success():
 
 
 @pytest.mark.asyncio
+async def test_get_current_user_invalid_token():
+    """get_current_user
+
+    【異常系】無効なトークンでHTTPExceptionが発生することを確認。
+    ミドルウェアが統一エラー形式でレスポンスを返す。
+    """
+    # Arrange: 無効なトークンを含むリクエストを準備
+    mock_request = MagicMock()
+    mock_request.cookies.get.return_value = "invalid_token"
+    mock_session = AsyncMock()
+
+    # Act & Assert: トークンデコードエラーが発生することを確認
+    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+        mock_decode.side_effect = Exception("Invalid token format")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_current_user(mock_request, mock_session)
+
+        # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "認証情報が無効です"
+        assert exc_info.value.headers == {"WWW-Authenticate": "Bearer"}
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_user_not_found():
+    """get_current_user
+
+    【異常系】有効なトークンだが該当ユーザーが存在しない場合の処理を確認。
+    ミドルウェアが統一エラー形式でレスポンスを返す。
+    """
+    # Arrange: 有効なトークンだが存在しないユーザーのメールアドレス
+    mock_request = MagicMock()
+    mock_request.cookies.get.return_value = "valid_token"
+    mock_session = AsyncMock()
+
+    # Act & Assert: ユーザー未発見エラーが発生することを確認
+    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode, patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user:
+        mock_decode.return_value = {"email": TestData.TEST_NONEXISTENT_EMAIL}
+        mock_get_user.return_value = None
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_current_user(mock_request, mock_session)
+
+        # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "認証情報が無効です"
+        assert exc_info.value.headers == {"WWW-Authenticate": "Bearer"}
+
+
+@pytest.mark.asyncio
 async def test_get_current_user_no_token():
     """get_current_user
 
     【異常系】トークンが存在しない場合にHTTPExceptionが発生することを確認。
+    ミドルウェアが統一エラー形式でレスポンスを返す。
     """
     # Arrange: トークンが存在しないリクエストを準備
     mock_request = MagicMock()
@@ -377,8 +431,10 @@ async def test_get_current_user_no_token():
     with pytest.raises(HTTPException) as exc_info:
         await get_current_user(mock_request, mock_session)
 
+    # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
     assert exc_info.value.status_code == 401
-    assert "認証情報が無効です" in str(exc_info.value.detail)
+    assert exc_info.value.detail == "認証情報が無効です"
+    assert exc_info.value.headers == {"WWW-Authenticate": "Bearer"}
 
 
 @pytest.mark.asyncio
@@ -478,8 +534,9 @@ async def test_create_user_service_user_already_exists():
         with pytest.raises(HTTPException) as exc_info:
             await create_user_service(email, username, password, mock_session)
 
+        # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
         assert exc_info.value.status_code == 409
-        assert "このメールアドレスは既に使用されています" in str(exc_info.value.detail)
+        assert exc_info.value.detail == "このメールアドレスは既に使用されています"
 
 
 @pytest.mark.asyncio
@@ -492,7 +549,7 @@ async def test_verify_email_token_success():
     token = "valid_email_token"
 
     # Act & Assert: トークンデコードをモック化して実行
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode:
         mock_decode.return_value = {"email": TestData.TEST_USER_EMAIL_1, "username": TestData.DOC_USERNAME_EXAMPLE, "password": TestData.DOC_PASSWORD_EXAMPLE}
 
         result = await verify_email_token(token)
@@ -513,14 +570,15 @@ async def test_verify_email_token_invalid_token():
     token = "invalid_token"
 
     # Act & Assert: 無効トークンエラーが発生することを確認
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode:
         mock_decode.side_effect = Exception("Invalid token")
 
         with pytest.raises(HTTPException) as exc_info:
             await verify_email_token(token)
 
+        # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
         assert exc_info.value.status_code == 400
-        assert "無効な認証トークンです" in str(exc_info.value.detail)
+        assert exc_info.value.detail == "無効な認証トークンです"
 
 
 @pytest.mark.asyncio
@@ -541,7 +599,7 @@ async def test_reset_password_email_success():
     mock_session = AsyncMock()
 
     # Act & Assert: ユーザー検索とメール送信をモック化して実行
-    with patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user, patch("api.v1.features.feature_auth.crud.create_access_token") as mock_create_token:
+    with patch("api.v1.features.feature_auth.crud.get_user_by_email") as mock_get_user, patch("api.v1.features.feature_auth.crud.create_verification_token") as mock_create_token:
         mock_get_user.return_value = mock_user
         mock_create_token.return_value = "reset_token"
 
@@ -549,6 +607,135 @@ async def test_reset_password_email_success():
 
         mock_get_user.assert_called_once_with(mock_session, email)
         mock_background_tasks.add_task.assert_called_once()
+
+
+# =============================================================================
+# Google OAuth 関連テスト
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_create_google_user_new_user():
+    """create_google_user
+
+    【正常系】新規Googleユーザーが正常に作成されることを確認。
+    """
+    # Arrange: 新規Googleユーザーデータを準備
+    email = "newgoogle@example.com"
+    username = "NewGoogleUser"
+    google_sub = "google_123456789"
+    full_name = "New Google User"
+
+    mock_session = AsyncMock()
+
+    # Act & Assert: 新規ユーザー作成をモック化して実行
+    with patch("api.v1.features.feature_auth.crud.get_user_by_email_including_deleted") as mock_get_user:
+        mock_get_user.return_value = None  # 既存ユーザーなし
+
+        # 新規ユーザー作成のモック
+        User(
+            email=email,
+            username=username,
+            user_status=User.STATUS_ACTIVE,
+            hashed_password="",  # Google認証なのでパスワードは空
+        )
+
+        # データベースモック設定
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.first.return_value = None  # ユーザー名重複なし
+        mock_result.scalars.return_value = mock_scalars
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.add = MagicMock()
+        mock_session.commit = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        from api.v1.features.feature_auth.crud import create_google_user
+
+        result = await create_google_user(mock_session, email, username, google_sub, full_name)
+
+        # 検証
+        assert result.email == email
+        assert result.username == username
+        assert result.user_status == User.STATUS_ACTIVE
+        assert result.hashed_password == ""
+
+
+@pytest.mark.asyncio
+async def test_create_google_user_restore_deleted():
+    """create_google_user
+
+    【正常系】論理削除済みユーザーがGoogle認証で復活することを確認。
+    """
+    # Arrange: 論理削除済みユーザーデータを準備
+    email = "deleted@example.com"
+    username = "RestoredGoogleUser"
+    google_sub = "google_987654321"
+    full_name = "Restored Google User"
+
+    mock_deleted_user = User(
+        email=email,
+        username="old_username",
+        user_status=User.STATUS_SUSPENDED,
+        deleted_at=datetime.now(ZoneInfo("Asia/Tokyo")),
+        hashed_password="old_hashed_password",
+    )
+
+    mock_session = AsyncMock()
+
+    # Act & Assert: 論理削除ユーザー復活をモック化して実行
+    with patch("api.v1.features.feature_auth.crud.get_user_by_email_including_deleted") as mock_get_user:
+        mock_get_user.return_value = mock_deleted_user
+
+        # データベースモック設定
+        mock_session.commit = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        from api.v1.features.feature_auth.crud import create_google_user
+
+        result = await create_google_user(mock_session, email, username, google_sub, full_name)
+
+        # 検証：ユーザーが復活していることを確認
+        assert result.email == email
+        assert result.username == username
+        assert result.user_status == User.STATUS_ACTIVE
+        assert result.deleted_at is None
+
+
+@pytest.mark.asyncio
+async def test_create_google_user_active_user_conflict():
+    """create_google_user
+
+    【異常系】既存のアクティブユーザーとの競合でHTTPExceptionが発生することを確認。
+    """
+    # Arrange: 既存アクティブユーザーデータを準備
+    email = "active@example.com"
+    username = "ActiveUser"
+    google_sub = "google_111111111"
+    full_name = "Active User"
+
+    mock_active_user = User(
+        email=email,
+        username=username,
+        user_status=User.STATUS_ACTIVE,
+        deleted_at=None,
+        hashed_password="existing_password",
+    )
+
+    mock_session = AsyncMock()
+
+    # Act & Assert: アクティブユーザー競合エラーをモック化
+    with patch("api.v1.features.feature_auth.crud.get_user_by_email_including_deleted") as mock_get_user:
+        mock_get_user.return_value = mock_active_user
+
+        from api.v1.features.feature_auth.crud import create_google_user
+
+        with pytest.raises(HTTPException) as exc_info:
+            await create_google_user(mock_session, email, username, google_sub, full_name)
+
+        # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
+        assert exc_info.value.status_code == 409
+        assert exc_info.value.detail == "このメールアドレスは既に登録されています"
 
 
 @pytest.mark.asyncio
@@ -569,8 +756,9 @@ async def test_reset_password_email_user_not_found():
         with pytest.raises(HTTPException) as exc_info:
             await reset_password_email(email, mock_background_tasks, mock_session)
 
+        # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
         assert exc_info.value.status_code == 404
-        assert "指定されたメールアドレスのユーザーが見つかりません" in str(exc_info.value.detail)
+        assert exc_info.value.detail == "指定されたメールアドレスのユーザーが見つかりません"
 
 
 @pytest.mark.asyncio
@@ -583,7 +771,7 @@ async def test_decode_password_reset_token_success():
     token = "valid_reset_token"
 
     # Act & Assert: トークンデコードをモック化して実行
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode:
         mock_decode.return_value = {"email": TestData.TEST_USER_EMAIL_1}
 
         result = await decode_password_reset_token(token)
@@ -601,14 +789,15 @@ async def test_decode_password_reset_token_invalid():
     token = "invalid_reset_token"
 
     # Act & Assert: 無効トークンエラーが発生することを確認
-    with patch("api.v1.features.feature_auth.crud.decode_access_token") as mock_decode:
+    with patch("api.v1.features.feature_auth.crud.decode_verification_token") as mock_decode:
         mock_decode.side_effect = Exception("Invalid token")
 
         with pytest.raises(HTTPException) as exc_info:
             await decode_password_reset_token(token)
 
+        # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
         assert exc_info.value.status_code == 400
-        assert "無効なリセットトークンです" in str(exc_info.value.detail)
+        assert exc_info.value.detail == "無効なリセットトークンです"
 
 
 @pytest.mark.asyncio
@@ -657,8 +846,9 @@ async def test_reset_password_user_not_found():
         with pytest.raises(HTTPException) as exc_info:
             await reset_password(email, new_password, mock_session)
 
+        # HTTPException自体の検証（ミドルウェアで統一フォーマットに変換される）
         assert exc_info.value.status_code == 404
-        assert "ユーザーが見つかりません" in str(exc_info.value.detail)
+        assert exc_info.value.detail == "ユーザーが見つかりません"
 
 
 @pytest.mark.asyncio
@@ -699,3 +889,71 @@ async def test_update_user_with_schema_success():
             contact_number=TestData.DOC_CONTACT_NUMBER,
             date_of_birth=None,
         )
+
+
+# =============================================================================
+# データベース例外処理テスト（エラーハンドリングミドルウェア対応）
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_create_user_database_error():
+    """create_user
+
+    【異常系】データベースエラーが発生した場合の処理を確認。
+    単体テストではSQLAlchemyErrorが適切に発生することを検証する。
+    実際のエラーハンドリングは統合テストでミドルウェアレベルで検証する。
+    """
+    # Arrange: データベースエラーを発生させるセッションモックを準備
+    new_user = User(
+        email=TestData.TEST_USER_EMAIL_1,
+        username=TestData.DOC_NEW_USERNAME,
+        hashed_password="hashed_password",
+        user_role=User.ROLE_FREE,
+        user_status=User.STATUS_ACTIVE,
+    )
+
+    mock_session = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.commit = AsyncMock(side_effect=SQLAlchemyError("Database connection failed"))
+    mock_session.refresh = AsyncMock()
+
+    # Act & Assert: データベースエラーが適切に発生することを確認
+    with pytest.raises(SQLAlchemyError) as exc_info:
+        await create_user(mock_session, new_user)
+
+    # 単体テストレベルでは元のエラーが発生することを確認
+    assert "Database connection failed" in str(exc_info.value)
+    mock_session.add.assert_called_once_with(new_user)
+    mock_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_update_user_password_database_error():
+    """update_user_password
+
+    【異常系】パスワード更新時のデータベースエラー処理を確認。
+    単体テストではSQLAlchemyErrorが適切に発生することを検証する。
+    """
+    # Arrange: データベースエラーを発生させるモックを準備
+    existing_user = User(
+        email=TestData.TEST_USER_EMAIL_1,
+        username=TestData.DOC_USERNAME_EXAMPLE,
+        hashed_password="old_password_hash",
+        user_role=User.ROLE_FREE,
+        user_status=User.STATUS_ACTIVE,
+    )
+    new_hashed_password = "new_password_hash"
+
+    mock_session = AsyncMock()
+    mock_session.commit = AsyncMock(side_effect=SQLAlchemyError("Database constraint violation"))
+    mock_session.refresh = AsyncMock()
+
+    # Act & Assert: データベースエラーが適切に発生することを確認
+    with pytest.raises(SQLAlchemyError) as exc_info:
+        await update_user_password(mock_session, existing_user, new_hashed_password)
+
+    # 単体テストレベルでは元のエラーが発生することを確認
+    assert "Database constraint violation" in str(exc_info.value)
+    assert existing_user.hashed_password == new_hashed_password  # 値は更新されている
+    mock_session.commit.assert_called_once()

@@ -57,15 +57,15 @@ async def test_create_access_token_no_expiry():
 
     【正常系】有効期限を指定しないJWTトークンが正常に作成・デコードできることを確認。
     """
-    # Arrange: トークンに含めるデータを準備
-    data = {"sub": "test_user_id"}
+    # Arrange: テスト用のユーザーメールを準備
+    user_email = "test@example.com"
 
     # Act: 有効期限なしでトークンを作成
-    token = create_access_token(data=data)
+    token = create_access_token(user_email=user_email)
 
     # Assert: トークンが正常にデコードできること
     decoded_data = decode_access_token(token)
-    assert decoded_data["sub"] == "test_user_id"
+    assert decoded_data["email"] == user_email
     assert "exp" in decoded_data  # デフォルトの有効期限が設定されていること
 
 
@@ -75,16 +75,16 @@ async def test_create_access_token_with_expiry():
 
     【正常系】有効期限を指定したJWTトークンが正常に作成・デコードできることを確認。
     """
-    # Arrange: トークンデータと有効期限を準備
-    data = {"sub": "test_user_id"}
+    # Arrange: テスト用のユーザーメールと有効期限を準備
+    user_email = "test@example.com"
     expires_delta = timedelta(seconds=60)
 
     # Act: 有効期限付きでトークンを作成
-    token = create_access_token(data=data, expires_delta=expires_delta)
+    token = create_access_token(user_email=user_email, expires_delta=expires_delta)
 
     # Assert: トークンが正常にデコードできること
     decoded_data = decode_access_token(token)
-    assert decoded_data["sub"] == "test_user_id"
+    assert decoded_data["email"] == user_email
     assert "exp" in decoded_data
 
 
@@ -93,48 +93,52 @@ async def test_create_access_token_expired():
     """create_access_token
 
     【異常系】期限切れのJWTトークンのデコードが適切にエラーになることを確認。
+    注意: 実際の動作ではJWTErrorがミドルウェアで捕捉されHTTPExceptionに変換されるため、
+    ここでは単体テストとしてJWTError(jose.exceptions)の発生を確認。
     """
-    # Arrange: 既に期限切れのトークンを準備
-    data = {"sub": "test_user_id"}
-    expired_delta = timedelta(seconds=-1)  # 1秒前に期限切れ
-    expired_token = create_access_token(data=data, expires_delta=expired_delta)
+    from jose.exceptions import JWTError
 
-    # Act & Assert: 期限切れトークンのデコードでHTTPExceptionが発生すること
-    try:
+    # Arrange: 既に期限切れのトークンを準備
+    user_email = "test@example.com"
+    expired_delta = timedelta(seconds=-1)  # 1秒前に期限切れ
+    expired_token = create_access_token(user_email=user_email, expires_delta=expired_delta)
+
+    # Act & Assert: 期限切れトークンのデコードでJWTErrorが発生すること
+    # ※ミドルウェアが適用されない単体テストではJWTErrorが直接発生
+    with pytest.raises(JWTError):
         decode_access_token(expired_token)
-        raise AssertionError("Expected HTTPException was not raised")
-    except HTTPException as e:
-        assert e.status_code == 401
-        assert "トークンが期限切れです" in str(e.detail)
-    except Exception as e:
-        raise AssertionError(f"Unexpected exception type: {type(e).__name__}: {e}") from e
 
 
 @pytest.mark.asyncio
 async def test_decode_access_token_missing_field():
     """decode_access_token
 
-    【正常系】subフィールドが欠落したトークンも正常にデコードできることを確認。
+    【正常系】簡素化されたJWTトークン（emailとexpのみ）が正常にデコードできることを確認。
     """
-    # Arrange: subフィールド以外のデータを含むトークンを準備
-    data = {"other_field": "value", "user_role": "admin"}
-    token = create_access_token(data=data)
+    # Arrange: テスト用ユーザーメールでトークンを準備
+    user_email = "test@example.com"
+    token = create_access_token(user_email=user_email)
 
     # Act: トークンをデコード
     decoded_data = decode_access_token(token)
 
-    # Assert: 含まれているフィールドは正しくデコードされ、subフィールドは含まれないこと
-    assert "sub" not in decoded_data
-    assert decoded_data["other_field"] == "value"
-    assert decoded_data["user_role"] == "admin"
+    # Assert: 簡素化されたJWT（emailとexpのみ）であることを確認
+    assert decoded_data["email"] == user_email
+    assert "exp" in decoded_data
+    # 簡素化されたJWTでは他のフィールドは含まれない
+    assert len(decoded_data) == 2  # email と exp のみ
 
 
 @pytest.mark.asyncio
 async def test_decode_access_token_invalid_token():
     """decode_access_token
 
-    【異常系】不正な形式のトークンでHTTPExceptionが発生することを確認。
+    【異常系】不正な形式のトークンでJWTErrorが発生することを確認。
+    注意: 実際の動作ではJWTErrorがミドルウェアで捕捉されHTTPExceptionに変換されるため、
+    ここでは単体テストとしてJWTError(jose.exceptions)の発生を確認。
     """
+    from jose.exceptions import JWTError
+
     # Arrange: 不正な形式のトークンを準備
     invalid_tokens = [
         "invalid.token.value",  # 不正な署名
@@ -143,11 +147,11 @@ async def test_decode_access_token_invalid_token():
         "not.a.jwt.token.at.all",  # 完全に不正な形式
     ]
 
-    # Act & Assert: 全ての不正トークンでHTTPExceptionが発生すること
+    # Act & Assert: 全ての不正トークンでJWTErrorが発生すること
+    # ※ミドルウェアが適用されない単体テストではJWTErrorが直接発生
     for invalid_token in invalid_tokens:
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(JWTError):
             decode_access_token(invalid_token)
-        assert exc_info.value.status_code == 401
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,5 @@
 import { redirect } from 'react-router';
 import { logout } from '~/features/auth/apis/authApi';
-import { authTokenCookie } from '~/features/auth/cookies';
 
 /**
  * ログアウト処理を実行するアクション関数。
@@ -17,21 +16,15 @@ import { authTokenCookie } from '~/features/auth/cookies';
 export async function logoutAction(request: Request) {
   try {
     // ログアウトAPIを呼び出し
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const response = await logout(request);
 
-    // デバッグ用: レスポンスの内容をコンソールに出力
-    // const authToken = response.headers.get('set-cookie'); // 仮定: fetchLoginDataがauthTokenを返す
+    // バックエンドからのSet-Cookieヘッダーを取得
+    const setCookieHeaders = response.headers.get('set-cookie');
 
-    // デバッグ用: クライアントから送信された既存のクッキーを取得
-    // const existingCookiesHeader = request.headers.get('Cookie');
-
-    // Cookieを破棄するためにmax-age=0のCookieを作成
-    const setCookieHeader = await authTokenCookie.serialize('', {});
-
+    // バックエンドがauthTokenとrefreshTokenの両方を削除するSet-Cookieヘッダーを返す
     return redirect('/login', {
       headers: {
-        'Set-Cookie': setCookieHeader,
+        ...(setCookieHeaders && { 'Set-Cookie': setCookieHeaders }),
       },
     });
   } catch (error) {

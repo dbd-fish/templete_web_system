@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.common.database import get_db
 from api.common.response_schemas import ErrorCodes, SuccessResponse, create_error_response, create_success_response
 from api.v1.features.feature_auth.crud import reset_password
-from api.v1.features.feature_auth.security import create_access_token
+from api.v1.features.feature_auth.security import create_verification_token
 from api.v1.features.feature_dev.seed_data import clear_data, seed_data
 
 # ロガーの設定
@@ -105,7 +105,7 @@ async def test_reset_password_endpoint(
     logger.info("test_reset_password_endpoint - start", email=test_data.email)
     try:
         # 1. パスワードリセットトークンを生成（実際のメール送信プロセスをシミュレート）
-        reset_token = create_access_token(data={"email": test_data.email}, expires_delta=timedelta(hours=1))
+        reset_token = create_verification_token(data={"email": test_data.email}, expires_delta=timedelta(hours=1))
         logger.info("test_reset_password_endpoint - token generated", email=test_data.email)
 
         # 2. 生成されたトークンを使ってパスワードリセットを実行

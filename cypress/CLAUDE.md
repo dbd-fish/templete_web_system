@@ -4,12 +4,16 @@
 日本語で回答してください。
 
 ## Cypress E2E テスト概要
+注意：Cypressテスト未完成！！
+
 
 Cypress 13.17.0を使用したエンドツーエンドテスト環境です。
 - **テストフレームワーク**: Cypress 13.17.0
 - **実行環境**: cypress/included Dockerイメージ
 - **ベースイメージ**: ヘッドレスブラウザ対応
 - **テスト対象**: フロントエンド（React Router + Vite）
+- **接続方式**: 実際のAPIテスト（モックAPI削除済み）
+- **テスト方針**: 画面操作中心のE2Eテスト（API直接呼び出し禁止）
 
 ## ディレクトリ構成
 
@@ -19,6 +23,14 @@ cypress/
 ├── cypress.config.js            # Cypress設定ファイル
 ├── run-tests.sh                 # テスト実行スクリプト
 ├── cypress/                     # Cypressテストファイル
+│   ├── e2e/                     # E2Eテスト
+│   │   ├── auth/                # 認証機能の基本動作テスト（API単位）
+│   │   │   ├── login.cy.js          # ログイン機能基本テスト
+│   │   │   └── token-refresh.cy.js  # トークンリフレッシュ基本テスト
+│   │   └── user-scenarios/          # 顧客操作シナリオベースE2Eテスト
+│   │       ├── user-journey.cy.js         # ユーザージャーニー全体テスト
+│   │       ├── authentication-flow.cy.js  # 認証フロー顧客シナリオ
+│   │       └── error-recovery.cy.js       # エラー対応・復旧シナリオ
 │   └── support/                 # サポートファイル
 │       ├── commands/            # カスタムコマンド
 │       │   ├── login.js         # ログイン関連コマンド
@@ -33,7 +45,7 @@ cypress/
 ### テスト実行（推奨方法）
 ```bash
 # 基本サービス起動（フロントエンド・バックエンド・データベース）
-docker compose up frontend backend db
+docker compose up -d frontend backend db
 
 # E2Eテスト実行（Cypress公式推奨: run-and-exit）
 docker compose --profile test run --rm cypress
@@ -94,25 +106,60 @@ npx cypress run --spec "cypress/e2e/**/*.cy.js"
 テストファイルは以下のように配置します：
 ```
 cypress/
-├── e2e/                         # E2Eテスト（ローカル環境用）
-│   └── **/*.cy.js
-└── front_st/                    # 画面単位テスト
+├── e2e/                         # E2Eテスト
+│   ├── auth/                    # 認証機能の基本動作テスト（API単位）
+│   │   ├── login.cy.js          # ログイン機能基本テスト
+│   │   └── token-refresh.cy.js  # トークンリフレッシュ基本テスト
+│   └── user-scenarios/          # 顧客操作シナリオベースE2Eテスト
+│       ├── user-journey.cy.js         # ユーザージャーニー全体テスト
+│       ├── authentication-flow.cy.js  # 認証フロー顧客シナリオ
+│       └── error-recovery.cy.js       # エラー対応・復旧シナリオ
+└── front_st/                    # 画面単位テスト（将来拡張用）
     └── **/*.cy.js
 ```
 
-### カスタムコマンド
+### テストの種類と目的（2025-01-27更新）
+- **auth/**: 個別機能の基本動作確認（画面操作ベースの動作テスト）
+- **user-scenarios/**: 顧客の実際の操作シナリオをベースとしたE2Eテスト
+  - ユーザージャーニー、認証フロー、エラー復旧など実際の顧客体験を重視
+- **画面操作によるテスト**: APIの直接呼び出しではなく、ユーザーの実際の操作をテスト
+- **実際のAPIとの統合**: フロントエンド操作を通じて実際のバックエンドAPIをテスト
+
+### カスタムコマンド（2025-07-28更新）
 事前定義されたカスタムコマンド：
-- **login.js**: ログイン処理の自動化
-- **logout.js**: ログアウト処理の自動化
+- **login.js**: 画面操作によるログイン処理の自動化（APIの直接呼び出し禁止）
+- **logout.js**: 画面操作によるログアウト処理の自動化
 - **errorHandling.js**: エラーハンドリング
 
 使用例：
 ```javascript
-// ログインコマンド使用
-cy.login('username', 'password')
+// ログインコマンド使用（画面操作版のみ）
+cy.login('targetuser@example.com', 'Password123456+-')  // フォーム入力からログインボタンクリックまで
 
-// ログアウトコマンド使用  
-cy.logout()
+// フォーム経由ログインコマンド（推奨）
+cy.loginViaForm('targetuser@example.com', 'Password123456+-')
+
+// 管理者ログイン
+cy.loginAsAdmin()  // admin@example.com でログイン
+
+// 一般ユーザーログイン 
+cy.loginAsUser()   // targetuser@example.com でログイン
+
+// ログアウトコマンド使用（画面操作版）
+cy.logout()  // ユーザーメニューからログアウトボタンクリックまで
+```
+
+### 利用可能なテストアカウント
+```javascript
+// 一般ユーザー
+email: 'targetuser@example.com'
+password: 'Password123456+-'
+role: 2 (無料会員)
+
+// 管理者ユーザー
+email: 'admin@example.com' 
+password: 'adminpassword'
+role: 4 (管理者)
 ```
 
 ## コンテナ設定詳細
@@ -131,6 +178,7 @@ cy.logout()
 ### ネットワーク構成
 - **frontend-network**: フロントエンド、バックエンド、Cypressが接続
 - **テスト対象**: `http://frontend:5173`（コンテナ間通信）
+- **API接続**: 実際のバックエンドAPI（`http://backend:8000`）を使用
 
 ## Docker Compose プロファイル使用法
 
@@ -170,6 +218,11 @@ docker compose down
 - `./cypress:/e2e` でボリュームマウント
 - ホストでテストファイル編集 → コンテナ内で即座に反映
 
+### API接続（2025-01-27更新）
+- **統合テスト**: フロントエンド ↔ バックエンド ↔ データベースの完全な統合テスト
+- **認証テスト**: 実際のJWTトークン、Cookieを使用した認証フロー
+- **画面操作中心**: APIの直接呼び出しではなく、実際のユーザー操作をシミュレート
+
 ## トラブルシューティング
 
 ### よくある問題
@@ -185,6 +238,11 @@ docker compose down
 3. **テストファイルが見つからない**:
    - ボリュームマウントが正しく設定されているか確認
    - `docker compose --profile test run --rm cypress sh -c "ls /e2e"` でファイル確認
+
+4. **API接続エラー**:
+   - バックエンドサービスが正常に起動しているか確認
+   - `docker compose logs backend` でバックエンドログ確認
+   - データベース接続確認: `docker compose logs db`
 
 ### デバッグ
 ```bash
@@ -224,3 +282,130 @@ npx cypress run --browser chrome --headed
 - ビデオ録画無効で高速化
 - 必要最小限のviewport設定
 - テスト並列実行の検討（`--parallel`オプション）
+
+## E2Eテスト戦略（2025-01-27更新）
+
+### 顧客シナリオベーステスト
+1. **user-journey.cy.js**:
+   - 新規ユーザーの初回訪問から会員登録、ログイン、主要機能利用まで
+   - 実際の顧客体験に沿ったフルジャーニーテスト
+
+2. **authentication-flow.cy.js**:
+   - ログイン・ログアウト・パスワードリセットのフローテスト
+   - トークンリフレッシュ、セッション管理のテスト
+
+3. **error-recovery.cy.js**:
+   - ネットワークエラー、サーバーエラー時の復旧シナリオ
+   - ユーザーが困った時の対処法テスト
+
+### 実際のAPIとの統合
+- **JWT認証**: 実際のトークン生成・検証
+- **Cookie管理**: HttpOnlyクッキーの実際の動作確認
+- **データベース**: 実際のPostgreSQLとの連携テスト
+- **エラーハンドリング**: 実際のAPIエラーレスポンス確認
+
+## 最新の改善点（2025-07-28）
+
+### data-cy属性による要素特定の最適化
+1. **data-cy属性の統一実装**: 全主要コンポーネントにテスト用の要素識別子を追加
+2. **安定したテスト実行**: CSSクラスやIDに依存しない安定した要素選択
+3. **保守性向上**: UI変更に影響されにくい堅牢なテスト設計
+4. **テスト可読性**: 明確な意図を持つ要素識別が可能
+
+### 実装済みdata-cy属性一覧
+
+#### ログイン・認証関連
+```javascript
+// ログインページ
+'[data-cy="login-title"]'          // ログインページタイトル
+'[data-cy="login-form"]'           // ログインフォーム
+'[data-cy="email-input"]'          // メールアドレス入力
+'[data-cy="password-input"]'       // パスワード入力
+'[data-cy="login-submit-button"]'  // ログインボタン
+'[data-cy="google-login-button"]'  // Googleログインボタン
+'[data-cy="forgot-password-link"]' // パスワード忘れリンク
+'[data-cy="signup-link"]'          // 新規登録リンク
+
+// サインアップページ
+'[data-cy="signup-title"]'              // サインアップページタイトル
+'[data-cy="signup-form"]'               // サインアップフォーム
+'[data-cy="signup-username-input"]'     // ユーザー名入力
+'[data-cy="signup-email-input"]'        // メールアドレス入力
+'[data-cy="signup-password-input"]'     // パスワード入力
+'[data-cy="signup-confirm-password-input"]' // パスワード確認入力
+'[data-cy="signup-submit-button"]'      // 登録ボタン
+'[data-cy="signup-login-link"]'         // ログインページリンク
+
+// パスワードリセット
+'[data-cy="reset-password-form"]'       // リセット申請フォーム
+'[data-cy="reset-email-input"]'         // メール入力
+'[data-cy="reset-submit-button"]'       // 送信ボタン
+'[data-cy="new-password-form"]'         // 新パスワードフォーム
+'[data-cy="new-password-input"]'        // 新パスワード入力
+'[data-cy="confirm-new-password-input"]' // 新パスワード確認入力
+'[data-cy="new-password-submit-button"]' // パスワード更新ボタン
+```
+
+#### マイページ・ユーザー管理
+```javascript
+// 一般ユーザーマイページ
+'[data-cy="mypage-title"]'          // マイページタイトル
+'[data-cy="user-profile"]'          // ユーザープロフィール
+'[data-cy="user-menu"]'             // ユーザーメニュー
+'[data-cy="logout-form-button"]'    // ログアウトボタン（フォーム）
+'[data-cy="delete-account-button"]' // アカウント削除ボタン
+'[data-cy="upgrade-button"]'        // アップグレードボタン
+
+// 管理者マイページ
+'[data-cy="admin-mypage-title"]'      // 管理者ページタイトル
+'[data-cy="user-management-toggle"]'  // ユーザー管理パネル切替
+'[data-cy="user-management-panel"]'   // ユーザー管理パネル
+'[data-cy="users-table"]'             // ユーザー一覧テーブル
+'[data-cy="edit-user-button"]'        // ユーザー編集ボタン
+'[data-cy="delete-user-button"]'      // ユーザー削除ボタン
+'[data-cy="restore-user-button"]'     // ユーザー復活ボタン
+'[data-cy="admin-account-management"]' // 管理者アカウント管理
+'[data-cy="admin-logout-button"]'     // 管理者ログアウトボタン
+```
+
+#### ヘッダー・ナビゲーション
+```javascript
+// ログイン後ヘッダー
+'[data-cy="user-menu-button"]'     // ユーザーメニューボタン
+'[data-cy="user-avatar"]'          // ユーザーアバター
+'[data-cy="logout-button"]'        // ログアウトボタン（ヘッダー）
+'[data-cy="mypage-link"]'          // マイページリンク
+'[data-cy="home-link"]'            // ホームリンク
+'[data-cy="settings-link"]'        // 設定リンク
+```
+
+#### ホームページ
+```javascript
+'[data-cy="main-content"]'     // メインコンテンツエリア
+'[data-cy="home-title"]'       // ホームページタイトル
+'[data-cy="home-description"]' // ホームページ説明
+```
+
+### 画面操作中心のテスト設計
+1. **ユーザー体験重視**: API直接呼び出しではなく実際のユーザー操作をシミュレート
+2. **真のE2Eテスト**: フロントエンド操作 → バックエンドAPI → データベースの完全なフロー
+3. **実際の動作確認**: 画面からの操作で発見できるUIとAPIの統合問題を検出
+4. **保守性向上**: APIの内部仕様変更に影響されにくいテスト設計
+
+### テスト設計の改善
+- **画面操作コマンド**: `cy.login()`, `cy.logout()`は全て画面操作ベース
+- **エンドツーエンド**: フォーム入力 → ボタンクリック → レスポンス → 画面遷移の完全フロー
+- **ユーザー中心**: 顧客が実際に行う操作パターンに基づくテストケース
+- **統合品質**: フロントエンド・バックエンド・データベースの真の統合テスト
+
+### 現在のテスト状況（2025-07-28）
+- **実装完了**: 主要コンポーネントのdata-cy属性追加
+- **テスト成功率**: login.cy.js で12テスト中4つが合格
+- **基本機能**: ページ表示、フォーム要素、Google認証ボタンは正常動作
+- **課題**: 実際のAPIログイン処理で8テストが失敗（継続調査中）
+
+### E2Eテストの価値向上
+- **顧客視点**: 実際のユーザー体験をテスト
+- **品質向上**: 画面操作レベルでの品質保証
+- **回帰防止**: UI変更時の既存機能影響確認
+- **信頼性向上**: 実際のユーザー操作での動作保証

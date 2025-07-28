@@ -1,11 +1,13 @@
 import { Link } from 'react-router';
 import { LoaderFunction } from 'react-router';
+import { CheckCircle, XCircle } from 'lucide-react';
 import { signup } from '~/features/auth/apis/authApi';
 import { useLoaderData } from 'react-router';
 import { LoaderDataType } from '~/utils/types';
 import Layout from '~/components/layout/Layout';
 import Main from '~/components/layout/Main';
 import SimpleCard from '~/components/common/SimpleCard';
+import { Button } from '~/components/ui/button';
 
 /**
  * ローダー関数:
@@ -53,47 +55,59 @@ export const loader: LoaderFunction = async ({ request }) => {
 export default function SignupVerifyCompete() {
   // ローダーデータから success と message を取得
   const loaderData = useLoaderData<LoaderDataType>();
+  const isSuccess = loaderData.signupData?.success;
 
   return (
     <Layout>
       <Main>
         <SimpleCard>
-          <h1 className="text-2xl font-bold text-center mb-6">
-            {loaderData.signupData?.success
-              ? '本登録が完了しました。'
-              : '本登録に失敗しました。'}
-          </h1>
-          {loaderData.signupData?.success ? (
-            <p className="text-center mb-6">
-              ご登録ありがとうございます。本登録が正常に完了しました。
-              <br />
-              早速ログインしてサービスをご利用ください。
-            </p>
-          ) : (
-            <div className="text-center mb-6">
-              <p>本登録に失敗しました。</p>
-              <p>仮登録からやり直してください。</p>
-              <p>
-                それでも登録できない場合は別メールアドレスで試してください。
-              </p>
-            </div>
-          )}
           <div className="text-center">
-            {loaderData.signupData?.success ? (
-              <Link
-                to="/login"
-                className="inline-block bg-primary text-primary-foreground px-4 py-2 rounded-md"
-              >
-                ログインページへ
-              </Link>
+            {isSuccess ? (
+              <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
             ) : (
-              <Link
-                to="/signup"
-                className="inline-block bg-primary text-primary-foreground px-4 py-2 rounded-md"
-              >
-                仮登録ページへ戻る
-              </Link>
+              <XCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
             )}
+            <h1 className="text-xl font-semibold mb-4">
+              {isSuccess ? '本登録が完了しました' : '本登録に失敗しました'}
+            </h1>
+          </div>
+
+          <div className="text-center mb-6 space-y-3">
+            {isSuccess ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  ご登録ありがとうございます。
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  本登録が正常に完了しました。
+                </p>
+                <p className="text-sm font-medium">
+                  早速ログインしてサービスをご利用ください。
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-destructive">
+                  本登録に失敗しました。
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  仮登録からやり直してください。
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  それでも登録できない場合は
+                  <br />
+                  別メールアドレスで試してください。
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="text-center">
+            <Button asChild className="w-full">
+              <Link to={isSuccess ? '/login' : '/signup'}>
+                {isSuccess ? 'ログインページへ' : '仮登録ページへ戻る'}
+              </Link>
+            </Button>
           </div>
         </SimpleCard>
       </Main>

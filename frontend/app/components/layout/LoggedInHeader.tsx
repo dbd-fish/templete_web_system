@@ -69,11 +69,13 @@ export default function Header() {
             <button
               onClick={() => setShowUserMenu((prev) => !prev)}
               className="flex items-center space-x-2 bg-gray-700 text-white text-sm sm:text-base px-3 py-2 rounded-md hover:bg-gray-600"
+              data-cy="user-menu-button"
             >
               <img
                 src="https://via.placeholder.com/40"
                 alt="User Avatar"
                 className="w-6 h-6 sm:w-8 sm:h-8 rounded-full"
+                data-cy="user-avatar"
               />
               <span className="hidden sm:block">
                 {user?.username || 'ゲスト'}
@@ -83,12 +85,25 @@ export default function Header() {
               <div className="absolute top-10 right-0 bg-gray-700 text-gray-100 rounded-md shadow-md w-40 sm:w-48 p-3 sm:p-4">
                 <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                   <li>
-                    <a href="/" className="hover:underline">
+                    <a href="/" className="hover:underline" data-cy="home-link">
                       ホーム
                     </a>
                   </li>
                   <li>
-                    <a href="/settings" className="hover:underline">
+                    <a
+                      href="/mypage"
+                      className="hover:underline"
+                      data-cy="mypage-link"
+                    >
+                      マイページ
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/settings"
+                      className="hover:underline"
+                      data-cy="settings-link"
+                    >
                       設定
                     </a>
                   </li>
@@ -96,6 +111,7 @@ export default function Header() {
                     <button
                       onClick={handleLogout}
                       className="w-full text-left text-red-500 hover:underline"
+                      data-cy="logout-button"
                     >
                       ログアウト
                     </button>

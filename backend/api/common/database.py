@@ -24,8 +24,10 @@ def get_database_url(test_env: int = 0) -> str:
     """
     if test_env == 1:
         return "postgresql+asyncpg://template_user:template_password@db:5432/pytest_template_db"
+    # configparserでalembic.iniファイルから設定を読み込み
     config = configparser.ConfigParser()
     config.read("alembic.ini")
+    # alembicセクションからsqlalchemy.url設定を取得
     return config.get("alembic", "sqlalchemy.url")
 
 
@@ -40,23 +42,27 @@ def configure_database(test_env: int = 0):
 
     """
     database_url = get_database_url(test_env)
+    # databasesライブラリのDatabaseクラスでデータベース接続オブジェクトを作成
     database = Database(database_url)
 
     # NOTE: AsyncAdaptedQueuePoolではPytest時にイベントループ絡みで失敗するため、開発時はNullPoolにする
     if setting.DEV_MODE:
         # 開発時はコネクションプーリングを保持せずに都度接続＆開放するように設定
         print("Pytest用のDB環境設定")
+        # SQLAlchemyのcreate_async_engineで非同期エンジンを作成（NullPoolでコネクションプーリングを無効化）
         engine = create_async_engine(database_url, echo=False, poolclass=NullPool)
     else:
         # 本番環境では非同期でもコネクションプーリングを使いまわすように設定
+        # SQLAlchemyのcreate_async_engineで非同期エンジンを作成（AsyncAdaptedQueuePoolでコネクションプーリングを有効化）
         engine = create_async_engine(database_url, echo=False, poolclass=AsyncAdaptedQueuePool)
 
     # TODO: autoflushとexpire_on_commitについて調査
     # NOTE: AsyncSessionを使用する場合はbindをasync withのタイミングにしなとmypyエラーとなる
+    # SQLAlchemyのsessionmakerで非同期セッションファクトリを作成
     async_session_local = sessionmaker(
         class_=AsyncSession,
-        autoflush=True,
-        expire_on_commit=True,
+        autoflush=True,  # クエリ実行前に自動でflushを実行
+        expire_on_commit=True,  # コミット時にオブジェクトの状態を期限切れに設定
     )
 
     return {
@@ -87,5 +93,6 @@ async def get_db() -> AsyncGenerator:
         AsyncSession: 非同期セッションインスタンス。
 
     """
+    # SQLAlchemyの非同期セッションをasync with文で管理し、エンジンをバインド
     async with AsyncSessionLocal(bind=engine) as session:
         yield session

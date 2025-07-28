@@ -5,16 +5,16 @@
 FROM node:22 AS development
 
 # 作業ディレクトリを設定
-WORKDIR /app
-
-# フロントエンドコードをコピー
-COPY . ./frontend/
-
-# フロントエンドディレクトリに移動
 WORKDIR /app/frontend
 
-# 依存関係をインストール
-RUN npm ci --only=production=false
+# package.jsonとpackage-lock.jsonを先にコピー（レイヤーキャッシュ最適化）
+COPY package*.json ./
+
+# 依存関係をインストール（development依存関係も含む）
+RUN npm ci
+
+# アプリケーションコードをコピー
+COPY . .
 
 # ポート3000と5173を公開（本番用と開発用）
 EXPOSE 3000 5173
