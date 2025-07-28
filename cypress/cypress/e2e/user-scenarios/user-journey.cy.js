@@ -85,8 +85,8 @@ describe('顧客ユーザージャーニー', () => {
       cy.get('[data-cy="logout-button"]').should('be.visible').click();
       
       // ステップ6: ログアウト完了確認
-      cy.url().should('include', '/');
-      cy.get('[data-cy="login-link"]').should('be.visible');
+      cy.url().should('include', '/login');
+      cy.get('[data-cy="login-title"]').should('be.visible');
     });
   });
 

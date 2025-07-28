@@ -1,47 +1,29 @@
-// ログイン処理をコマンド化（直接API呼び出し版）
+// ログイン処理をコマンド化（画面操作版）
 Cypress.Commands.add('login', (email = 'targetuser@example.com', password = 'Password123456+-') => {
-  // 直接APIでログインを実行（JSON形式）
-  cy.request({
-    method: 'POST',
-    url: 'http://backend:8000/api/v1/auth/login',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: {
-      username: email,
-      password: password,
-    },
-  }).then((response) => {
-    expect(response.status).to.eq(200);
-    
-    // Set-Cookieヘッダーからtokenを取得してCookieとして設定
-    const cookies = response.headers['set-cookie'];
-    if (cookies) {
-      cookies.forEach(cookie => {
-        if (cookie.includes('authToken=')) {
-          const tokenMatch = cookie.match(/authToken=([^;]+)/);
-          if (tokenMatch) {
-            cy.setCookie('authToken', tokenMatch[1], {
-              httpOnly: true,
-              sameSite: 'lax'
-            });
-          }
-        }
-        if (cookie.includes('refreshToken=')) {
-          const refreshMatch = cookie.match(/refreshToken=([^;]+)/);
-          if (refreshMatch) {
-            cy.setCookie('refreshToken', refreshMatch[1], {
-              httpOnly: true,
-              sameSite: 'lax'
-            });
-          }
-        }
-      });
-    }
-  });
+  cy.visit('/login');
+
+  // ページの読み込みを待つ
+  cy.get('[data-cy="login-title"]').should('be.visible');
   
-  // ログイン後、マイページに移動
-  cy.visit('/mypage');
+  // メールとパスワードを入力
+  cy.get('[data-cy="email-input"]')
+    .should('be.enabled')
+    .clear()
+    .type(email);
+
+  cy.get('[data-cy="password-input"]')
+    .should('be.enabled')
+    .clear()
+    .type(password);
+
+  // ログインボタンをクリック
+  cy.get('[data-cy="login-submit-button"]').click();
+  
+  // リクエスト完了を待つ
+  cy.wait(3000);
+  
+  // ログイン処理完了を待つ（より長いタイムアウト）
+  cy.url().should('not.include', '/login', { timeout: 15000 });
   
   // マイページが表示されることを確認
   cy.url().should('include', '/mypage', { timeout: 5000 });
@@ -103,12 +85,12 @@ Cypress.Commands.add('loginWithGoogle', () => {
   cy.get('[data-cy="google-login-button"]').click();
 });
 
-// 管理者としてログインするコマンド
+// 管理者としてログインするコマンド（画面操作版）
 Cypress.Commands.add('loginAsAdmin', () => {
-  cy.login('admin@example.com', 'adminpassword');
+  cy.loginViaForm('admin@example.com', 'adminpassword');
 });
 
-// 一般ユーザーとしてログインするコマンド
+// 一般ユーザーとしてログインするコマンド（画面操作版）
 Cypress.Commands.add('loginAsUser', () => {
-  cy.login('targetuser@example.com', 'Password123456+-');
+  cy.loginViaForm('targetuser@example.com', 'Password123456+-');
 });

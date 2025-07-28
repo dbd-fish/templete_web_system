@@ -8,10 +8,8 @@
  * - /cypress/e2e/user-scenarios/error-recovery.cy.js
  */
 describe('ログイン機能テスト（実API使用）', () => {
-  const baseUrl = 'http://frontend:5173';
-  
   beforeEach(() => {
-    cy.visit(baseUrl, { 
+    cy.visit('/', { 
       failOnStatusCode: false,
       timeout: 30000
     });
@@ -55,8 +53,8 @@ describe('ログイン機能テスト（実API使用）', () => {
       cy.getCookie('refreshToken').should('exist');
     });
 
-    it('APIコマンドでのログインが成功する', () => {
-      // 直接APIコマンドでログイン（実API使用）
+    it('ログインコマンド（画面操作版）が成功する', () => {
+      // 画面操作でのログイン
       cy.login('targetuser@example.com', 'Password123456+-');
       
       // Cookie確認

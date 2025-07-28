@@ -92,8 +92,8 @@ describe('認証フロー顧客シナリオ', () => {
       cy.get('[data-cy="logout-button"]').should('be.visible').click();
       
       // ステップ7: ログアウト完了確認
-      cy.url().should('not.include', '/mypage');
-      cy.get('[data-cy="login-link"]').should('be.visible');
+      cy.url().should('include', '/login');
+      cy.get('[data-cy="login-title"]').should('be.visible');
     });
   });
 

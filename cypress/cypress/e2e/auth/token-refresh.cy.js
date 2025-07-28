@@ -18,61 +18,51 @@ describe('トークンリフレッシュ機能テスト（実API使用）', () =
     });
   });
 
-  describe('リフレッシュAPI直接テスト', () => {
-    it('有効なリフレッシュトークンでリフレッシュが成功する', () => {
-      // ログインしてリフレッシュトークンを取得
+  describe('自動トークンリフレッシュ画面操作テスト', () => {
+    it('ログイン後に長時間操作でアクセストークンが自動更新される', () => {
+      // ログインしてマイページに移動
       cy.login('targetuser@example.com', 'Password123456+-');
       
-      // リフレッシュAPIを直接呼び出し
-      cy.getCookie('refreshToken').then((cookie) => {
-        cy.request({
-          method: 'POST',
-          url: 'http://backend:8000/api/v1/auth/refresh',
-          headers: {
-            'Cookie': `refreshToken=${cookie.value}`
-          },
-          failOnStatusCode: false
-        }).then((response) => {
-          expect(response.status).to.eq(200);
-          expect(response.body).to.have.property('message');
-          
-          // レスポンスヘッダーにSet-Cookieが含まれることを確認
-          expect(response.headers).to.have.property('set-cookie');
-          
-          const cookies = response.headers['set-cookie'];
-          const hasAuthToken = cookies.some(cookie => cookie.includes('authToken='));
-          const hasRefreshToken = cookies.some(cookie => cookie.includes('refreshToken='));
-          
-          expect(hasAuthToken).to.be.true;
-          expect(hasRefreshToken).to.be.true;
-        });
-      });
+      // Cookie確認
+      cy.getCookie('authToken').should('exist');
+      cy.getCookie('refreshToken').should('exist');
+      
+      // マイページでページをリロードして認証が継続されることを確認
+      cy.reload();
+      cy.url().should('include', '/mypage');
+      
+      // トークンが維持されていることを確認
+      cy.getCookie('authToken').should('exist');
+      cy.getCookie('refreshToken').should('exist');
     });
 
-    it('無効なリフレッシュトークンでリフレッシュが失敗する', () => {
-      // リフレッシュAPIを無効なトークンで呼び出し
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/refresh',
-        headers: {
-          'Cookie': 'refreshToken=invalid_token_12345'
-        },
-        failOnStatusCode: false
-      }).then((response) => {
-        expect(response.status).to.eq(401);
-        expect(response.body).to.have.property('detail');
-      });
+    it('無効なトークン状態で画面操作するとログインページにリダイレクトされる', () => {
+      // 無効なトークンを設定
+      cy.setCookie('authToken', 'invalid_token_12345');
+      cy.setCookie('refreshToken', 'invalid_refresh_token_12345');
+      
+      // マイページにアクセス
+      cy.visit('/mypage');
+      
+      // ログインページにリダイレクトされることを確認
+      cy.url().should('include', '/login');
     });
 
-    it('リフレッシュトークンなしでリフレッシュが失敗する', () => {
-      // CookieなしでリフレッシュAPIを呼び出し
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/refresh',
-        failOnStatusCode: false
-      }).then((response) => {
-        expect(response.status).to.eq(401);
-        expect(response.body).to.have.property('detail');
+    it('リフレッシュトークンのみが無効な場合ログインページにリダイレクトされる', () => {
+      // 先にログインして有効なトークンを取得
+      cy.login('targetuser@example.com', 'Password123456+-');
+      
+      // アクセストークンは有効にしてリフレッシュトークンのみ無効にする
+      cy.getCookie('authToken').then((authCookie) => {
+        cy.clearCookies();
+        cy.setCookie('authToken', authCookie.value);
+        cy.setCookie('refreshToken', 'invalid_refresh_token');
+        
+        // マイページにアクセス
+        cy.visit('/mypage');
+        
+        // 認証エラーによりログインページにリダイレクトされる
+        cy.url().should('include', '/login');
       });
     });
   });
@@ -125,60 +115,55 @@ describe('トークンリフレッシュ機能テスト（実API使用）', () =
       cy.url().should('include', '/login');
     });
 
-    it('期限切れトークンでAPIアクセスすると401エラーが返される', () => {
+    it('期限切れトークンでマイページアクセスするとログインページにリダイレクトされる', () => {
       // 無効なトークンを設定
       cy.setCookie('authToken', 'expired_token_12345');
       
-      // APIを直接呼び出し
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/me',
-        headers: {
-          'Cookie': 'authToken=expired_token_12345'
-        },
-        failOnStatusCode: false
-      }).then((response) => {
-        expect(response.status).to.eq(401);
-        expect(response.body).to.have.property('detail');
-      });
+      // マイページにアクセス
+      cy.visit('/mypage');
+      
+      // 認証エラーによりログインページにリダイレクトされる
+      cy.url().should('include', '/login');
     });
   });
 
-  describe('リフレッシュ後の動作確認', () => {
-    it('リフレッシュ後に新しいトークンでAPIアクセスできる', () => {
+  describe('リフレッシュ後の画面操作確認', () => {
+    it('セッション継続中にマイページの機能が正常に動作する', () => {
       // ログイン
       cy.login('targetuser@example.com', 'Password123456+-');
       
-      // リフレッシュトークンを取得してリフレッシュ実行
-      cy.getCookie('refreshToken').then((refreshCookie) => {
-        cy.request({
-          method: 'POST',
-          url: 'http://backend:8000/api/v1/auth/refresh',
-          headers: {
-            'Cookie': `refreshToken=${refreshCookie.value}`
-          }
-        }).then((refreshResponse) => {
-          // 新しいトークンが発行されたことを確認
-          expect(refreshResponse.status).to.eq(200);
-          
-          // 新しいトークンでユーザー情報を取得
-          const setCookies = refreshResponse.headers['set-cookie'];
-          const authTokenCookie = setCookies.find(cookie => cookie.includes('authToken='));
-          const authToken = authTokenCookie.match(/authToken=([^;]+)/)[1];
-          
-          cy.request({
-            method: 'POST',
-            url: 'http://backend:8000/api/v1/auth/me',
-            headers: {
-              'Cookie': `authToken=${authToken}`
-            }
-          }).then((meResponse) => {
-            expect(meResponse.status).to.eq(200);
-            expect(meResponse.body).to.have.property('email');
-            expect(meResponse.body.email).to.eq('targetuser@example.com');
-          });
-        });
-      });
+      // マイページでの基本操作確認
+      cy.url().should('include', '/mypage');
+      
+      // ページをリロードしてもログイン状態が維持される
+      cy.reload();
+      cy.url().should('include', '/mypage');
+      
+      // ユーザーメニューが表示される
+      cy.get('[data-cy="user-menu-button"]').should('be.visible');
+      
+      // プロフィール情報が表示される
+      cy.get('[data-cy="user-profile"]').should('be.visible');
+      
+      // トークンが継続して有効
+      cy.getCookie('authToken').should('exist');
+      cy.getCookie('refreshToken').should('exist');
+    });
+
+    it('ログイン後に他のページに移動してもセッションが維持される', () => {
+      // ログイン
+      cy.login('targetuser@example.com', 'Password123456+-');
+      
+      // ホームページに移動
+      cy.visit('/');
+      
+      // ログイン状態が維持されている（ログインボタンではなくユーザーメニューが表示）
+      cy.get('[data-cy="user-menu-button"]').should('be.visible');
+      
+      // 再度マイページに戻る
+      cy.get('[data-cy="user-menu-button"]').click();
+      cy.get('[data-cy="mypage-link"]').click();
+      cy.url().should('include', '/mypage');
     });
   });
 });

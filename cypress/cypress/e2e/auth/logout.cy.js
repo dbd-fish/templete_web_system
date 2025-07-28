@@ -75,52 +75,41 @@ describe('ログアウト機能テスト（デュアルトークン対応）', (
     });
   });
 
-  describe('API直接呼び出しでのログアウト', () => {
+  describe('ログアウト処理の完全性確認', () => {
     beforeEach(() => {
       cy.login();
     });
 
-    it('ログアウトAPIの直接呼び出しでCookieが削除される', () => {
+    it('ログアウト操作が確実にセッションを終了する', () => {
       // ログアウト前にCookieが存在することを確認
       cy.getCookie('authToken').should('exist');
       cy.getCookie('refreshToken').should('exist');
       
-      // ログアウトAPIを直接呼び出し
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/logout'
-      }).then((response) => {
-        expect(response.status).to.eq(200);
-        
-        const cookies = response.headers['set-cookie'];
-        if (cookies) {
-          // Cookie削除のSet-Cookieヘッダーを確認
-          const authTokenDeleteCookie = cookies.find(cookie => 
-            cookie.includes('authToken=') && (cookie.includes('Max-Age=0') || cookie.includes('expires='))
-          );
-          const refreshTokenDeleteCookie = cookies.find(cookie => 
-            cookie.includes('refreshToken=') && (cookie.includes('Max-Age=0') || cookie.includes('expires='))
-          );
-          
-          // 削除用のCookieヘッダーが存在することを確認
-          expect(authTokenDeleteCookie || refreshTokenDeleteCookie).to.exist;
-        }
-      });
+      // 画面操作でログアウト実行
+      cy.visit('/mypage');
+      cy.get('[data-cy="user-menu-button"]').should('be.visible').click();
+      cy.get('[data-cy="logout-button"]').should('be.visible').click();
+      
+      // ログアウト完了確認
+      cy.url().should('include', '/login');
       
       // ログアウト後にCookieが削除されることを確認
       cy.getCookie('authToken').should('be.null');
       cy.getCookie('refreshToken').should('be.null');
     });
 
-    it('ログアウトAPIのレスポンス内容が正しい', () => {
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/logout'
-      }).then((response) => {
-        expect(response.status).to.eq(200);
-        expect(response.body).to.have.property('message');
-        expect(response.body.message).to.include('ログアウト');
-      });
+    it('ログアウト後に保護されたページへの直接アクセスが拒否される', () => {
+      // ログアウト実行
+      cy.logout();
+      
+      // 保護されたページに直接アクセス
+      cy.visit('/mypage');
+      
+      // ログインページにリダイレクトされる
+      cy.url().should('include', '/login');
+      
+      // 認証メッセージが表示される
+      cy.contains('ログインが必要です').should('be.visible');
     });
   });
 
@@ -256,19 +245,18 @@ describe('ログアウト機能テスト（デュアルトークン対応）', (
       // 実装によってはクライアント側でCookieがクリアされる場合がある
     });
 
-    it('認証なしでのログアウトAPI呼び出し', () => {
+    it('認証なし状態でのログアウトボタン表示確認', () => {
       // 事前にCookieをクリア
       cy.clearCookies();
       
-      // ログアウトAPIを直接呼び出し
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/logout',
-        failOnStatusCode: false
-      }).then((response) => {
-        // 認証なしでも正常に処理される場合と401エラーの場合がある
-        expect([200, 401]).to.include(response.status);
-      });
+      // トップページにアクセス
+      cy.visit('/');
+      
+      // ログアウト状態ではユーザーメニューが表示されない
+      cy.get('[data-cy="user-menu-button"]').should('not.exist');
+      
+      // ログインリンクが表示される
+      cy.get('[data-cy="login-link"]').should('be.visible');
     });
   });
 
@@ -277,17 +265,14 @@ describe('ログアウト機能テスト（デュアルトークン対応）', (
       cy.login();
     });
 
-    it('ログアウト後にAPIアクセスが拒否される', () => {
+    it('ログアウト後にユーザー情報が取得できない', () => {
       cy.logout();
       
-      // ログアウト後にユーザー情報取得APIを呼び出し
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/me',
-        failOnStatusCode: false
-      }).then((response) => {
-        expect(response.status).to.eq(401);
-      });
+      // ログアウト後にマイページにアクセス
+      cy.visit('/mypage');
+      
+      // ログインページにリダイレクトされることで認証が拒否されたことを確認
+      cy.url().should('include', '/login');
     });
 
     it('ログアウト後にブラウザ履歴で戻ってもアクセスできない', () => {

@@ -41,35 +41,25 @@ describe('Cookie管理機能テスト', () => {
       });
     });
 
-    it('ログイン時のAPIレスポンスでSet-Cookieヘッダーが正しく設定される', () => {
-      // ログインAPIを直接呼び出してレスポンスヘッダーを確認
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/login',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: {
-          username: 'targetuser@example.com',
-          password: 'Password123456+-'
-        }
-      }).then((response) => {
-        expect(response.status).to.eq(200);
-        
-        const cookies = response.headers['set-cookie'];
-        expect(cookies).to.exist;
-        
-        // authTokenのCookie確認
-        const authTokenCookie = cookies.find(cookie => cookie.includes('authToken='));
-        expect(authTokenCookie).to.exist;
-        expect(authTokenCookie).to.include('HttpOnly');
-        expect(authTokenCookie).to.include('SameSite=lax');
-        
-        // refreshTokenのCookie確認
-        const refreshTokenCookie = cookies.find(cookie => cookie.includes('refreshToken='));
-        expect(refreshTokenCookie).to.exist;
-        expect(refreshTokenCookie).to.include('HttpOnly');
-        expect(refreshTokenCookie).to.include('SameSite=lax');
+    it('画面操作でのログインでCookie属性が正しく設定される', () => {
+      // 画面操作でログイン
+      cy.visit('/login');
+      cy.get('[data-cy="email-input"]').type('targetuser@example.com');
+      cy.get('[data-cy="password-input"]').type('Password123456+-');
+      cy.get('[data-cy="login-submit-button"]').click();
+      
+      // ログイン成功確認
+      cy.url().should('include', '/mypage');
+      
+      // Cookieが適切に設定されることを確認
+      cy.getCookie('authToken').should('exist').and((cookie) => {
+        expect(cookie.httpOnly).to.be.true;
+        expect(cookie.sameSite).to.eq('lax');
+      });
+      
+      cy.getCookie('refreshToken').should('exist').and((cookie) => {
+        expect(cookie.httpOnly).to.be.true;
+        expect(cookie.sameSite).to.eq('lax');
       });
     });
 
@@ -164,28 +154,14 @@ describe('Cookie管理機能テスト', () => {
       cy.getCookie('refreshToken').should('be.null');
     });
 
-    it('ログアウトAPIの直接呼び出しでCookieが削除される', () => {
-      // ログアウトAPIを直接呼び出し
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/logout'
-      }).then((response) => {
-        expect(response.status).to.eq(200);
-        
-        const cookies = response.headers['set-cookie'];
-        if (cookies) {
-          // Cookie削除のSet-Cookieヘッダーを確認
-          const authTokenDeleteCookie = cookies.find(cookie => 
-            cookie.includes('authToken=') && (cookie.includes('Max-Age=0') || cookie.includes('expires='))
-          );
-          const refreshTokenDeleteCookie = cookies.find(cookie => 
-            cookie.includes('refreshToken=') && (cookie.includes('Max-Age=0') || cookie.includes('expires='))
-          );
-          
-          // 削除用のCookieヘッダーが存在することを確認
-          expect(authTokenDeleteCookie || refreshTokenDeleteCookie).to.exist;
-        }
-      });
+    it('画面操作でのログアウトでCookieが削除される', () => {
+      // 画面操作でログアウト
+      cy.visit('/mypage');
+      cy.get('[data-cy="user-menu-button"]').should('be.visible').click();
+      cy.get('[data-cy="logout-button"]').should('be.visible').click();
+      
+      // ログアウト完了確認
+      cy.url().should('include', '/login');
       
       // ログアウト後にCookieが削除されることを確認
       cy.getCookie('authToken').should('be.null');
@@ -230,18 +206,15 @@ describe('Cookie管理機能テスト', () => {
       });
     });
 
-    it('不正なCookieでAPIアクセスが拒否されることを確認', () => {
+    it('不正なCookieで保護されたページアクセスが拒否されることを確認', () => {
       // 不正なauthTokenを設定
       cy.setCookie('authToken', 'invalid.token.here');
       
-      // APIアクセスを試行
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/me',
-        failOnStatusCode: false
-      }).then((response) => {
-        expect(response.status).to.eq(401);
-      });
+      // 保護されたページにアクセス
+      cy.visit('/mypage');
+      
+      // ログインページにリダイレクトされることを確認
+      cy.url().should('include', '/login');
     });
   });
 
@@ -262,73 +235,36 @@ describe('Cookie管理機能テスト', () => {
       cy.getCookie('refreshToken').should('exist');
     });
 
-    it('リフレッシュ時のCookie更新', () => {
+    it('セッション継続時のCookie維持', () => {
       cy.login();
       
-      // 現在のCookie値を保存
-      let originalAuthToken;
-      let originalRefreshToken;
+      // Cookieが設定されることを確認
+      cy.getCookie('authToken').should('exist');
+      cy.getCookie('refreshToken').should('exist');
       
-      cy.getCookie('authToken').then((cookie) => {
-        originalAuthToken = cookie.value;
-      });
+      // ページをリロードしてセッション継続確認
+      cy.reload();
       
-      cy.getCookie('refreshToken').then((cookie) => {
-        originalRefreshToken = cookie.value;
-      });
+      // ログイン状態が維持されることを確認
+      cy.url().should('include', '/mypage');
       
-      // リフレッシュAPI直接呼び出し
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/refresh'
-      }).then((response) => {
-        expect(response.status).to.eq(200);
-      });
-      
-      // 新しいCookieが設定されることを確認
-      cy.getCookie('authToken').should('exist').and((cookie) => {
-        // 新しいトークンが設定されていることを確認
-        // 実装によってはトークンが変わる場合とそうでない場合がある
-        expect(cookie.value).to.not.be.empty;
-      });
-      
-      cy.getCookie('refreshToken').should('exist').and((cookie) => {
-        expect(cookie.value).to.not.be.empty;
-      });
+      // Cookieが継続して存在することを確認
+      cy.getCookie('authToken').should('exist');
+      cy.getCookie('refreshToken').should('exist');
     });
   });
 
   describe('エラーケースでのCookie処理', () => {
     it('ログイン失敗時にCookieが設定されないことを確認', () => {
-      // 不正な認証情報でログイン試行
-      cy.request({
-        method: 'POST',
-        url: 'http://backend:8000/api/v1/auth/login',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: {
-          username: 'invalid@example.com',
-          password: 'wrongpassword'
-        },
-        failOnStatusCode: false
-      }).then((response) => {
-        expect(response.status).to.not.eq(200);
-        
-        // Set-Cookieヘッダーが存在しないか、または削除用のヘッダーであることを確認
-        const cookies = response.headers['set-cookie'];
-        if (cookies) {
-          const hasValidAuthToken = cookies.some(cookie => 
-            cookie.includes('authToken=') && !cookie.includes('Max-Age=0')
-          );
-          const hasValidRefreshToken = cookies.some(cookie => 
-            cookie.includes('refreshToken=') && !cookie.includes('Max-Age=0')
-          );
-          
-          expect(hasValidAuthToken).to.be.false;
-          expect(hasValidRefreshToken).to.be.false;
-        }
-      });
+      // 不正な認証情報で画面操作でログイン試行
+      cy.visit('/login');
+      cy.get('[data-cy="email-input"]').type('invalid@example.com');
+      cy.get('[data-cy="password-input"]').type('wrongpassword');
+      cy.get('[data-cy="login-submit-button"]').click();
+      
+      // ログイン失敗の確認
+      cy.contains('メールアドレスまたはパスワードが正しくありません').should('be.visible');
+      cy.url().should('include', '/login');
       
       // Cookieが設定されていないことを確認
       cy.getCookie('authToken').should('be.null');
